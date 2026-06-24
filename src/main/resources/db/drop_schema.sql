@@ -1,0 +1,1 @@
+DROP DATABASE IF EXISTS `tritan_fantasy_rugby`;
