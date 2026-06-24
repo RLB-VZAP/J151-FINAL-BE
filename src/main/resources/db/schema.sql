@@ -1,10 +1,10 @@
 CREATE
-DATABASE IF NOT EXISTS `tritan_fantasy_rugby`
+DATABASE IF NOT EXISTS `tryton_fantasy_rugby`
 DEFAULT CHARACTER SET utf8mb4
 DEFAULT COLLATE utf8mb4_0900_ai_ci;
 
 USE
-`tritan_fantasy_rugby`;
+`tryton_fantasy_rugby`;
 
 SET
 FOREIGN_KEY_CHECKS = 0;
@@ -368,17 +368,16 @@ CREATE TABLE `leagueMembership`
 
 CREATE TABLE `leagueInvitation`
 (
-    `invitationId`       VARCHAR(36) NOT NULL,
-    `leagueId`           VARCHAR(36) NOT NULL,
-    `invited_user_id`    VARCHAR(36)          DEFAULT NULL,
-    `created_by_user_id` VARCHAR(36)          DEFAULT NULL,
-    `expiryDate`         DATETIME    NOT NULL,
-    `expired`            BOOLEAN     NOT NULL DEFAULT FALSE,
-    `acceptedAt`         DATETIME             DEFAULT NULL,
+    `invitationId` VARCHAR(36) NOT NULL,
+    `leagueId` VARCHAR(36) NOT NULL,
+    `invited_user_id` VARCHAR(36) DEFAULT NULL,
+    `created_by_user_id` VARCHAR(36) DEFAULT NULL,
+    `expiryDate` DATETIME NOT NULL,
+    `expired` BOOLEAN NOT NULL DEFAULT FALSE,
+    `acceptedAt` DATETIME DEFAULT NULL,
     PRIMARY KEY (`invitationId`),
-    UNIQUE KEY `uk_leagueInvitation_code` (`invitationCode`),
-    KEY                  `idx_leagueInvitation_league` (`leagueId`),
-    KEY                  `idx_leagueInvitation_invited_user` (`invited_user_id`),
+    KEY `idx_leagueInvitation_league` (`leagueId`),
+    KEY `idx_leagueInvitation_invited_user` (`invited_user_id`),
     CONSTRAINT `fk_leagueInvitation_league`
         FOREIGN KEY (`leagueId`) REFERENCES `league` (`leagueId`)
             ON DELETE CASCADE ON UPDATE CASCADE,
