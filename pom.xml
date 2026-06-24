@@ -57,6 +57,13 @@
             <version>5.10.2</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- Dependency for BasicDataSource -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-dbcp2</artifactId>
+            <version>2.14.0</version>
+        </dependency>
     </dependencies>
 
     <build>
