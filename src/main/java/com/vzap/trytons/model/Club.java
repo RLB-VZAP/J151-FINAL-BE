@@ -1,0 +1,20 @@
+package com.vzap.trytons.model;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.UUID;
+
+@NoArgsConstructor
+@Getter
+@Setter
+public class Club {
+
+    private UUID clubId;
+    private String clubName;
+    private String location;
+    private String homeVenue;
+    private int strengthRating;
+    private Boolean isActive;
+}
