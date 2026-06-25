@@ -19,4 +19,5 @@ public class MatchResult {
     private int simulationRunNumber;
 
     private Fixture fixture;
+    private Administrator approvedByAdmin;
 }

@@ -19,4 +19,9 @@ public class Locking {
     private String reason;
 
     private Fixture fixture;
+
+    private FantasyTeam fantasyTeam;
+    private Player player;
+    private Administrator lockedByAdmin;
+    private Transfer transfer;
 }

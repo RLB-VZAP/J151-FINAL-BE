@@ -20,4 +20,6 @@ public class Notification {
     private Boolean isRead;
     private String relatedEntityType;
     private UUID relatedEntityId;
+
+    private User user;
 }

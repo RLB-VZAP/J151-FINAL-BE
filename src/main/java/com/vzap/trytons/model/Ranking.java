@@ -21,4 +21,5 @@ public class Ranking {
     private LocalDateTime updatedAt;
 
     private Leaderboard leaderboard;
+    private FantasyTeam fantasyTeam;
 }

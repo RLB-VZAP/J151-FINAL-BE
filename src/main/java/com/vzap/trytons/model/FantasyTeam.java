@@ -1,22 +1,27 @@
 package com.vzap.trytons.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.util.Date;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
-public class FantasyTeam {
-    private UUID teamID, ownerUserId;
-    private String teamName;
-    private double totalTeamValue,remainingBudget;
-    private Date creationDate;
-    private int totalPoints,weeklyPoints;
-    private boolean isValid,isLocked;
 
+@NoArgsConstructor
+@Getter
+@Setter
+public class FantasyTeam {
+
+    private UUID teamId;
+    private String teamName;
+    private BigDecimal totalTeamValue;
+    private BigDecimal remainingBudget;
+    private LocalDateTime creationDate;
+    private int totalPoints;
+    private int weeklyPoints;
+    private Boolean isValid;
+    private Boolean isLocked;
+
+    private RegisteredUser owner;
 }

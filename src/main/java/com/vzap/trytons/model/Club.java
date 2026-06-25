@@ -1,19 +1,20 @@
 package com.vzap.trytons.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.UUID;
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
-public class Club {
-    private UUID clubID;
-    private String clubName, location, homeVenue;
-    private int strengthRating;
-    private boolean isActive;
 
+@NoArgsConstructor
+@Getter
+@Setter
+public class Club {
+
+    private UUID clubId;
+    private String clubName;
+    private String location;
+    private String homeVenue;
+    private int strengthRating;
+    private Boolean isActive;
 }

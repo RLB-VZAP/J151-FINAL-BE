@@ -21,4 +21,8 @@ public class Report {
     private String resolution;
 
     private ChatMessage chatMessage;
+
+    private User reporter;
+    private User reportedUser;
+    private Administrator resolvedByAdmin;
 }

@@ -1,19 +1,30 @@
 package com.vzap.trytons.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.UUID;
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
-public class PlayerStatistics {
-    private UUID statId,fixtureId, playerId,capturedByAdminUserId;
-    private int tries,assists, tackles, missedTackles, conversions, penalties, metersGained, yellowCards, redCards;
-    private Date statisticDate;
 
+@NoArgsConstructor
+@Getter
+@Setter
+public class PlayerStatistics {
+
+    private UUID statId;
+    private int tries;
+    private int assists;
+    private int tackles;
+    private int missedTackles;
+    private int conversions;
+    private int penalties;
+    private int metersGained;
+    private int yellowCards;
+    private int redCards;
+    private LocalDateTime statisticDate;
+
+    private Fixture fixture;
+    private Player player;
+    private Administrator capturedByAdmin;
 }

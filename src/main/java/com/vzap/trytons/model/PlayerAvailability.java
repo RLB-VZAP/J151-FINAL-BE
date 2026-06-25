@@ -1,20 +1,23 @@
 package com.vzap.trytons.model;
 
 import com.vzap.trytons.enums.AvailabilityStatus;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.UUID;
-@Data
-@AllArgsConstructor
+
 @NoArgsConstructor
-@Builder
+@Getter
+@Setter
 public class PlayerAvailability {
-    private UUID availabilityId,playerId;
-    private AvailabilityStatus availabilityStatus;
-    private Date effectiveDate,endDate;
+
+    private UUID availabilityId;
+    private AvailabilityStatus status;
+    private LocalDate effectiveDate;
+    private LocalDate endDate;
     private String notes;
+
+    private Player player;
 }

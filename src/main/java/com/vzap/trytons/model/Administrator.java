@@ -1,16 +1,13 @@
 package com.vzap.trytons.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.util.UUID;
-@AllArgsConstructor
+@Getter
+@Setter
 @NoArgsConstructor
-@Builder
+public class Administrator extends User {
 
-public class Administrator extends User{
     private int adminLevel;
-    private UUID userID;
 }

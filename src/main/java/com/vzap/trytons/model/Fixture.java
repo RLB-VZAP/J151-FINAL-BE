@@ -29,5 +29,9 @@ public class Fixture {
 
     private League league;
     private MatchResult matchResult;
-    private List<Locking>  lockings = new ArrayList<>();
+    private List<Locking> lockings = new ArrayList<>();
+
+    private Club homeClub;
+    private Club awayClub;
+    private List<PlayerStatistics> playerStatistics = new ArrayList<>();
 }
