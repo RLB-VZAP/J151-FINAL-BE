@@ -1,18 +1,25 @@
 package com.vzap.trytons.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
-@Data
-@AllArgsConstructor
+
 @NoArgsConstructor
-@Builder
+@Getter
+@Setter
 public class FantasyPoints {
-    private UUID pointsId, teamId, playerId, fixtureId, ruleId;
-    private int pointsEarned, matchRoundNumber, calculationVersion;
+
+    private UUID pointsId;
+    private int pointsEarned;
     private LocalDateTime calculationDate;
+    private int matchRoundNumber;
+    private int calculationVersion;
+
+    private FantasyTeam fantasyTeam;
+    private Player player;
+    private Fixture fixture;
+    private ScoringRule scoringRule;
 }

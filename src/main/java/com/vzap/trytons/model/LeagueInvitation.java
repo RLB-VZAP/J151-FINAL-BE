@@ -18,4 +18,6 @@ public class LeagueInvitation {
     private LocalDateTime acceptedAt;
 
     private League league;
+    private RegisteredUser invitedUser;
+    private RegisteredUser createdByUser;
 }

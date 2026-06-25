@@ -19,4 +19,6 @@ public class LeagueMembership {
     private LeagueMemberRole memberRole;
 
     private League league;
+    private RegisteredUser registeredUser;
+    private FantasyTeam fantasyTeam;
 }

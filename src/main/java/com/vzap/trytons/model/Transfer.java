@@ -1,24 +1,27 @@
 package com.vzap.trytons.model;
 
 import com.vzap.trytons.enums.TransferWindowStatus;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.UUID;
-@Data
+
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Getter
+@Setter
 public class Transfer {
+
     private UUID transferId;
-    private UUID teamId;
-    private UUID removedPlayerId;
-    private UUID addedPlayerId;
-    private Date transferDate;
-    private boolean penaltyApplied,confirmed;
-    private int penaltyPoints,roundNumber;
-    private TransferWindowStatus TransferWindowStatus;
+    private LocalDateTime transferDate;
+    private Boolean penaltyApplied;
+    private int penaltyPoints;
+    private TransferWindowStatus transferWindowStatus;
+    private int roundNumber;
+    private Boolean confirmed;
+
+    private FantasyTeam fantasyTeam;
+    private Player removedPlayer;
+    private Player addedPlayer;
 }

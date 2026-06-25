@@ -20,4 +20,7 @@ public class Log {
     private String ipAddress;
 
     private Notification notification;
+
+    private User user;
+    private Transfer transfer;
 }

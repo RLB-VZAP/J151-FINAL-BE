@@ -1,20 +1,14 @@
 package com.vzap.trytons.model;
 
 import com.vzap.trytons.enums.RegistrationStatus;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.util.UUID;
-
-
+@Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class RegisteredUser extends User{
+public class RegisteredUser extends User {
 
-    public RegistrationStatus registrationStatus;
-    public UUID userID;
-
+    private RegistrationStatus registrationStatus;
 }

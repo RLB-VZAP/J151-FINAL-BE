@@ -16,4 +16,7 @@ public class PrivateMessage {
     private LocalDateTime sentDate;
     private Boolean removed;
     private Boolean isRead;
+
+    private User sender;
+    private User receiver;
 }

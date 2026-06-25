@@ -1,22 +1,25 @@
 package com.vzap.trytons.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
-@Data
-@AllArgsConstructor
+
 @NoArgsConstructor
-@Builder
+@Getter
+@Setter
 public class PlayerRecommendation {
-    private UUID recommendationId,teamId,currentPlayerId,recommendedPlayerId;
+
+    private UUID recommendationId;
     private String reason;
-    private double score;
+    private BigDecimal score;
     private LocalDateTime createdAt;
-    private boolean isDismissed;
+    private Boolean isDismissed;
 
-
+    private FantasyTeam fantasyTeam;
+    private Player currentPlayer;
+    private Player recommendedPlayer;
 }

@@ -19,4 +19,6 @@ public class SystemReport {
     private String parametersJson;
     private String resultJson;
     private LocalDateTime generatedAt;
+
+    private Administrator generatedByAdmin;
 }

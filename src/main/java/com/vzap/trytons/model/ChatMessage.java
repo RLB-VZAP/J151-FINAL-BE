@@ -20,4 +20,7 @@ public class ChatMessage {
 
     private League league;
     private List<Report> reports = new ArrayList<>();
+
+    private User sender;
+    private User removedByUser;
 }

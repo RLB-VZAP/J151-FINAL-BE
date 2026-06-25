@@ -1,18 +1,19 @@
 package com.vzap.trytons.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.UUID;
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
-public class Position {
-    private UUID positionID;
-    private String positionName, positionCategory;
-    private int minRequired,maxAllowed;
 
+@NoArgsConstructor
+@Getter
+@Setter
+public class Position {
+
+    private UUID positionId;
+    private String positionName;
+    private String positionCategory;
+    private int minRequired;
+    private int maxAllowed;
 }

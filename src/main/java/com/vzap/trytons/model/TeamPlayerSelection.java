@@ -1,19 +1,23 @@
 package com.vzap.trytons.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.UUID;
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class TeamPlayerSelection {
-    private UUID selectionId,teamId,playerId;
-    private Date selectedDate;
-    private boolean isCaptain,isViceCaptain,isActive;
 
+@NoArgsConstructor
+@Getter
+@Setter
+public class TeamPlayerSelection {
+
+    private UUID selectionId;
+    private LocalDateTime selectedDate;
+    private Boolean isCaptain;
+    private Boolean isViceCaptain;
+    private Boolean isActive;
+
+    private FantasyTeam fantasyTeam;
+    private Player player;
 }
