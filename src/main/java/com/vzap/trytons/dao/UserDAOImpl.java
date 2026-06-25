@@ -19,15 +19,6 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
 
     private static final Logger LOG = Logger.getLogger(UserDAOImpl.class.getName());
 
-    //Validation for email Christan found on Stack Overflow: https://stackoverflow.com/questions/8204680/java-regex-email
-    public static final Pattern VALID_EMAIL_ADDRESS_REGEX =
-            Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE);
-
-    public static boolean validateEmail(String emailStr) {
-        Matcher matcher = VALID_EMAIL_ADDRESS_REGEX.matcher(emailStr);
-        return matcher.matches();
-    }
-
     //Override the interface's methods:
 
     //Get user by ID:
