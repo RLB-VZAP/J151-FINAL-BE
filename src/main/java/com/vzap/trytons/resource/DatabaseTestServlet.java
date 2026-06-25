@@ -1,4 +1,5 @@
-package com.vzap.trytons.servlet;
+//TODO Needs to be redone
+package com.vzap.trytons.resource;
 
 import com.vzap.trytons.dao.DatabaseTestDAO;
 

@@ -21,7 +21,6 @@ public class User {
     private String email;
     private String passwordHash;
     private String username;
-    private String displayName;
     private UserRole role;
     private Boolean isActive;
     private String profilePic;
