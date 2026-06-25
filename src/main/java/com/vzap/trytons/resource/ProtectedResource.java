@@ -1,4 +1,4 @@
-package com.vzap.trytons.filter;
+package com.vzap.trytons.resource;
 
 public class ProtectedResource {
 }
