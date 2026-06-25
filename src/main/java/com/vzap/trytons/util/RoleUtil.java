@@ -15,6 +15,11 @@ public class RoleUtil {
     public static boolean isAdmin (User user){
         if (user == null) return false;
         if (!isActive(user)) return false;
+        return user.getRole() == UserRole.ADMINISTRATOR;
+    }
+
+    public static boolean isLoggedIn (User user){
+        return user != null && isActive(user);
     }
 
 
