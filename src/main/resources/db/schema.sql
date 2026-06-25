@@ -51,7 +51,6 @@ CREATE TABLE `user`
     `email`            VARCHAR(255) NOT NULL,
     `passwordHash`     VARCHAR(255) NOT NULL,
     `username`         VARCHAR(100) NOT NULL,
-    `displayName`      VARCHAR(100) NOT NULL,
     `role`             ENUM('REGISTERED_USER','ADMINISTRATOR') NOT NULL DEFAULT 'REGISTERED_USER',
     `isActive`         BOOLEAN      NOT NULL DEFAULT TRUE,
     `profilePic`       VARCHAR(255)          DEFAULT NULL,
