@@ -17,7 +17,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @SuperBuilder
 public class User {
-
     private UUID userId;
     private String email;
     private String passwordHash;
