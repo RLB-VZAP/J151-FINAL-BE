@@ -11,8 +11,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Singleton
 public class UserDAOImpl extends BaseDAO implements UserDAO {
