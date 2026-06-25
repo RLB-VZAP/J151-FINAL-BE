@@ -1,12 +1,13 @@
 package com.vzap.trytons.dao;
 
+import com.vzap.trytons.enums.UserRole;
+import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.User;
 import jakarta.inject.Singleton;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import javax.management.relation.Role;
+import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -28,6 +29,33 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
         return matcher.matches();
     }
 
+    private User mapUser(ResultSet rs) throws SQLException {
+        String roleValue = rs.getString("role");
+
+        return User.builder()
+                .userId(UUID.fromString(rs.getString("userId")))
+                .email(rs.getString("email"))
+                .passwordHash(rs.getString("passwordHash"))
+                .username(rs.getString("username"))
+                .role(roleValue != null ? UserRole.valueOf(roleValue) : null)
+                .isActive(rs.getBoolean("isActive"))
+                .profilePic(rs.getString("profilePic"))
+                .registrationDate(rs.getTimestamp("registrationDate") != null ? rs.getTimestamp("registrationDate").toLocalDateTime() : null)
+                .lastLoginAt(rs.getTimestamp("last_login_at") != null ? rs.getTimestamp("last_login_at").toLocalDateTime() : null)
+                .build();
+        /*Added this to return:
+        username
+        displayName
+        role
+        isActive
+        profilePic
+        registrationDate
+        lastLoginAt*/
+    }
+
+
+
+
     //Override the interface's methods:
 
     //Get user by ID:
@@ -39,17 +67,22 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
 
             try(ResultSet rs = ps.executeQuery()){
                 if(rs.next()){
-                    User user = User.builder()
+
+                    /*User user = User.builder()
                             .userId(userId)
                             .email(rs.getString("email"))
                             .passwordHash(rs.getString("passwordHash"))
                             .build();
 
-                    return Optional.of(user);
+                    return Optional.of(user);*/
+
+                    return  Optional.of(mapUser(rs));
+                    //Returning the optional mapUser created rather with its added inclusions.
                 }
             }
         }catch(SQLException e){
             LOG.log(Level.SEVERE, "Unable to find user by ID.", e);
+            throw new DataAccessException("Unable to find user by ID.", e);
         }
         return Optional.empty();
     }
@@ -63,17 +96,20 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
 
             try(ResultSet rs = ps.executeQuery()){
                 if (rs.next()){
-                    User user = User.builder()
+                    /*User user = User.builder()
                             .userId(UUID.fromString(rs.getString("userId")))
                             .email(rs.getString("email"))
                             .passwordHash(rs.getString("passwordHash"))
                             .build();
 
-                    return Optional.of(user);
+                    return Optional.of(user);*/
+                    return  Optional.of(mapUser(rs));
+                    //Returning the optional mapUser created rather with its added inclusions.
                 }
             }
         }catch(SQLException e){
             LOG.log(Level.SEVERE, "Unable to find user by email.", e);
+            throw new DataAccessException("Unable to find user by email.", e);
         }
         return Optional.empty();
     }
@@ -87,17 +123,20 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
 
             try(ResultSet rs = ps.executeQuery()){
                 if (rs.next()){
-                    User user = User.builder()
+                    /*User user = User.builder()
                             .userId(UUID.fromString(rs.getString("userId")))
                             .email(rs.getString("email"))
                             .passwordHash(rs.getString("passwordHash"))
                             .build();
 
-                    return Optional.of(user);
+                    return Optional.of(user);*/
+                    return  Optional.of(mapUser(rs));
+                    //Returning the optional mapUser created rather with its added inclusions.
                 }
             }
         }catch(SQLException e){
             LOG.log(Level.SEVERE, "Unable to find user by username.", e);
+            throw new DataAccessException("Unable to find user by username.", e);
         }
         return Optional.empty();
     }
@@ -105,17 +144,22 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     //Register/create user:
     @Override
     public Optional<User> registerUser(User user) {
-        String query = "INSERT INTO user (userId, email, passwordHash) VALUES (?, ?, ?)";
+        String query = "INSERT INTO user (userId, email, passwordHash, username, role, isActive, profilePic) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
             ps.setString(1, user.getUserId().toString());
             ps.setString(2, user.getEmail());
             ps.setString(3, user.getPasswordHash());
+            ps.setString(4, user.getUsername());
+            ps.setString(5, user.getRole().name());
+            ps.setBoolean(6, user.getIsActive());
+            ps.setString(7, user.getProfilePic());
 
             if (ps.executeUpdate() > 0){
                 return Optional.of(user);
             }
         }catch(SQLException e){
             LOG.log(Level.SEVERE, "Unable to register user.", e);
+            throw new DataAccessException("Unable to register user.", e);
         }
         return Optional.empty();
     }
@@ -151,8 +195,23 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
             }
         }catch(SQLException e){
             LOG.log(Level.SEVERE, "Error checking if email exists.", e);
+            throw new DataAccessException("Error checking if email exists.", e);
         }
         return false;
+    }
+
+    @Override
+    public boolean updateLastLogin(UUID userId, LocalDateTime lastLoginAt){
+        String query = "UPDATE user SET last_login_at = ? WHERE userId = ?";
+        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+            ps.setTimestamp(1, Timestamp.valueOf(lastLoginAt));
+            ps.setString(2, userId.toString());
+
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to update last login.", e);
+            throw new DataAccessException("Failed to update last login.", e);
+        }
     }
 
     @Override
@@ -168,6 +227,7 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
             }
         }catch(SQLException e){
             LOG.log(Level.SEVERE, "Error checking if username exists.", e);
+            throw new DataAccessException("Error checking if username exists.", e);
         }
         return false;
     }
