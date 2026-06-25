@@ -10,6 +10,5 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @SuperBuilder
 public class RegisteredUser extends User {
-
     private RegistrationStatus registrationStatus;
 }
