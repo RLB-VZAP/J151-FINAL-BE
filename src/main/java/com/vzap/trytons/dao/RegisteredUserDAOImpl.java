@@ -32,7 +32,6 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
                             .email(rs.getString("email"))
                             .passwordHash(rs.getString("passwordHash"))
                             .username(rs.getString("username"))
-                            .displayName(rs.getString("displayName"))
                             .isActive(rs.getBoolean("isActive"))
                             .profilePic(rs.getString("profilePic"))
                             .registrationStatus(RegistrationStatus.valueOf(rs.getString("registrationStatus")))
@@ -49,11 +48,10 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
 
     @Override
     public Optional<RegisteredUser> updateProfile(RegisteredUser registeredUser) {
-    String query = "UPDATE registeredUser SET displayName = ?, profilePic = ? WHERE userId = ?";
+    String query = "UPDATE registeredUser SET profilePic = ? WHERE userId = ?";
     try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
-        ps.setString(1, registeredUser.getDisplayName());
-        ps.setString(2, registeredUser.getProfilePic());
-        ps.setString(3, registeredUser.getUserId().toString());
+        ps.setString(1, registeredUser.getProfilePic());
+        ps.setString(2, registeredUser.getUserId().toString());
 
         if (ps.executeUpdate() > 0){
             return Optional.of(registeredUser);
@@ -66,7 +64,7 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
 
     @Override
     public boolean deactivateAccount(UUID userId) {
-        String query = "UPDATE registeredUser SET isActive = false WHERE userId = ?";
+        String query = "UPDATE user SET isActive = false WHERE userId = ?";
         try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
             ps.setString(1, userId.toString());
 
