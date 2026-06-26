@@ -13,16 +13,11 @@ public final class PasswordUtil {
 
     public static String hashPassword(String rawPassword) {
         validatePasswordForHashing(rawPassword);
-
-        return BCrypt.hashpw(
-                rawPassword, BCrypt.gensalt(BCRYPT_WORK_FACTOR));
+        return BCrypt.hashpw(rawPassword, BCrypt.gensalt(BCRYPT_WORK_FACTOR));
     }
 
     public static boolean verifyPassword(String rawPassword, String storedPasswordHash) {
-        if (rawPassword == null
-                || rawPassword.isBlank()
-                || storedPasswordHash == null
-                || storedPasswordHash.isBlank()) {
+        if (rawPassword == null || rawPassword.isBlank() || storedPasswordHash == null || storedPasswordHash.isBlank()) {
             return false;
         }
 
