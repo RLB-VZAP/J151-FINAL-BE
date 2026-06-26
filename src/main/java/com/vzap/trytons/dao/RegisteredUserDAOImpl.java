@@ -77,4 +77,9 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
         }
         return false;
     }
+
+    @Override
+    public Optional<RegisteredUser> register(RegisteredUser newUser) {
+        return Optional.empty();
+    }
 }
