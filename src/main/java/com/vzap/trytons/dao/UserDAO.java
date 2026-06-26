@@ -10,8 +10,11 @@ public interface UserDAO {
     Optional<User> getUserById(UUID userId);
     Optional<User> getUserByEmail(String email);
     Optional<User> getUserByUsername(String username);
-    Optional<User> registerUser(User user);
-    Optional<User> updateUser(User user);
+
+    //Register/create user:
+    Optional<User> registerUser(User newUser);
+
+    Optional<User> updateUser(User newUser);
     boolean emailExists(String email);
     boolean usernameExists(String username);
     boolean updateLastLogin(UUID userId, LocalDateTime lastLoginAt);
