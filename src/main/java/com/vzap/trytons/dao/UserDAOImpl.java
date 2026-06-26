@@ -5,7 +5,6 @@ import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.User;
 import jakarta.inject.Singleton;
 
-import javax.management.relation.Role;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.Optional;
