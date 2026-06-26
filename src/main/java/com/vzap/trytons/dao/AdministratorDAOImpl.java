@@ -47,7 +47,7 @@ public class AdministratorDAOImpl extends BaseDAO implements AdministratorDAO{
 
     @Override
     public boolean deactivateUserAccount(UUID userId) {
-        String query = "UPDATE user SET isActive = false WHERE userId = ?";
+        String query = "UPDATE administrator SET isActive = false WHERE userId = ?";
         try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
             ps.setString(1, userId.toString());
 
