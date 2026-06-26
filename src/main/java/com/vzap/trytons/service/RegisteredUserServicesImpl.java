@@ -34,13 +34,15 @@ public class RegisteredUserServicesImpl implements RegisteredUserServices {
         newUser.setUserId(UUID.randomUUID());
         newUser.setRegistrationDate(LocalDateTime.now());
         String rawPassword = newUser.getPasswordHash();
-        newUser.setPasswordHash(BCrypt.hashpw(rawPassword, BCrypt.gensalt()));
+        newUser.setPasswordHash(BCrypt.hashpw(rawPassword, BCrypt.gensalt(12)));
         if (newUser.getRole() == null) {
             newUser.setRole(UserRole.REGISTERED_USER);
         }
         if (newUser.getRegistrationStatus() == null) {
             newUser.setRegistrationStatus(RegistrationStatus.PENDING);
         }
+
+        userDAO.registerUser(newUser).orElseThrow(() -> new DataAccessException("Failed to create user account.", null));
         return registeredUserDAO.register(newUser).orElseThrow(() -> new DataAccessException("Failed to register user.", null));
 
     }
