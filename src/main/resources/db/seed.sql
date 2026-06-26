@@ -1,5 +1,5 @@
     USE
-    tritan_fantasy_rugby;
+    tryton_fantasy_rugby;
 
     SET
     @adminId = UUID();
@@ -20,17 +20,17 @@
 
     INSERT INTO user
         (userId, email, passwordHash, username, displayName, role)
-    VALUES (@adminId, '[admin@tritan.com](mailto:admin@tritan.com)', '$2a$10$seedhash', 'admin', 'System Administrator',
+    VALUES (@adminId, 'admin@tritan.com', '$2a$10$seedhash', 'admin', 'System Administrator',
             'ADMINISTRATOR'),
-           (@johnId, '[john@test.com](mailto:john@test.com)', '$2a$10$seedhash', 'john', 'John Smith', 'REGISTERED_USER'),
-           (@sarahId, '[sarah@test.com](mailto:sarah@test.com)', '$2a$10$seedhash', 'sarah', 'Sarah Jones',
+           (@johnId, 'john@test.com', '$2a$10$seedhash', 'john', 'John Smith', 'REGISTERED_USER'),
+           (@sarahId, 'sarah@test.com', '$2a$10$seedhash', 'sarah', 'Sarah Jones',
             'REGISTERED_USER'),
-           (@mikeId, '[mike@test.com](mailto:mike@test.com)', '$2a$10$seedhash', 'mike', 'Mike Adams', 'REGISTERED_USER'),
-           (@emmaId, '[emma@test.com](mailto:emma@test.com)', '$2a$10$seedhash', 'emma', 'Emma Wilson', 'REGISTERED_USER'),
-           (@davidId, '[david@test.com](mailto:david@test.com)', '$2a$10$seedhash', 'david', 'David Brown',
+           (@mikeId, 'mike@test.com', '$2a$10$seedhash', 'mike', 'Mike Adams', 'REGISTERED_USER'),
+           (@emmaId, 'emma@test.com', '$2a$10$seedhash', 'emma', 'Emma Wilson', 'REGISTERED_USER'),
+           (@davidId, 'david@test.com', '$2a$10$seedhash', 'david', 'David Brown',
             'REGISTERED_USER'),
-           (@lisaId, '[lisa@test.com](mailto:lisa@test.com)', '$2a$10$seedhash', 'lisa', 'Lisa Taylor', 'REGISTERED_USER'),
-           (@tomId, '[tom@test.com](mailto:tom@test.com)', '$2a$10$seedhash', 'tom', 'Tom White', 'REGISTERED_USER');
+           (@lisaId, 'lisa@test.com', '$2a$10$seedhash', 'lisa', 'Lisa Taylor', 'REGISTERED_USER'),
+           (@tomId, 'tom@test.com', '$2a$10$seedhash', 'tom', 'Tom White', 'REGISTERED_USER');
 
     INSERT INTO administrator(userId, adminLevel)
     VALUES (@adminId, 5);
