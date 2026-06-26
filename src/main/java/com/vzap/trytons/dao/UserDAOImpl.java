@@ -1,5 +1,6 @@
 package com.vzap.trytons.dao;
 
+import com.vzap.trytons.enums.UserRole;
 import com.vzap.trytons.model.User;
 import jakarta.inject.Singleton;
 
@@ -93,15 +94,19 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
 
     //Register/create user:
     @Override
-    public Optional<User> registerUser(User user) {
-        String query = "INSERT INTO user (userId, email, passwordHash) VALUES (?, ?, ?)";
-        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
-            ps.setString(1, user.getUserId().toString());
-            ps.setString(2, user.getEmail());
-            ps.setString(3, user.getPasswordHash());
-
+    public Optional<User> registerUser(User newUser) {
+        String query = "INSERT INTO user (userId, email, passwordHash, username, displayName, role, isActive, profilePic) " + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        try(Connection con = getConnection();PreparedStatement ps = con.prepareStatement(query);) {
+            ps.setString(1, newUser.getUserId().toString());
+            ps.setString(2, newUser.getEmail());
+            ps.setString(3, newUser.getPasswordHash());
+            ps.setString(4, newUser.getUsername());
+            ps.setString(5, newUser.getDisplayName());
+            ps.setString(6, newUser.getRole() != null ? newUser.getRole().toString() : UserRole.REGISTERED_USER.toString());
+            ps.setBoolean(7, newUser.getIsActive() != null ? newUser.getIsActive() : true);
+            ps.setString(8, newUser.getProfilePic());
             if (ps.executeUpdate() > 0){
-                return Optional.of(user);
+                return Optional.of(newUser);
             }
         }catch(SQLException e){
             LOG.log(Level.SEVERE, "Unable to register user.", e);

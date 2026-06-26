@@ -1,6 +1,7 @@
 package com.vzap.trytons.dao;
 
 import com.vzap.trytons.enums.RegistrationStatus;
+import com.vzap.trytons.enums.UserRole;
 import com.vzap.trytons.model.RegisteredUser;
 import jakarta.inject.Singleton;
 
@@ -48,7 +49,7 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
 
     @Override
     public Optional<RegisteredUser> updateProfile(RegisteredUser registeredUser) {
-    String query = "UPDATE user SET displayName = ?, profilePic = ? WHERE userId = ?";
+    String query = "UPDATE registeredUser SET displayName = ?, profilePic = ? WHERE userId = ?";
     try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
         ps.setString(1, registeredUser.getDisplayName());
         ps.setString(2, registeredUser.getProfilePic());
@@ -65,7 +66,7 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
 
     @Override
     public boolean deactivateAccount(UUID userId) {
-        String query = "UPDATE user SET isActive = false WHERE userId = ?";
+        String query = "UPDATE registeredUser SET isActive = false WHERE userId = ?";
         try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
             ps.setString(1, userId.toString());
 
@@ -80,6 +81,21 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
 
     @Override
     public Optional<RegisteredUser> register(RegisteredUser newUser) {
+
+            String query = "INSERT INTO registeredUser (userId, registrationStatus) VALUES (?, ?)";
+
+            try (Connection con = getConnection(); PreparedStatement registeredPs = con.prepareStatement(query)) {
+                registeredPs.setString(1, newUser.getUserId().toString());
+                registeredPs.setString(2, newUser.getRegistrationStatus().name());
+
+                if (registeredPs.executeUpdate() > 0) {
+                    return Optional.of(newUser);
+                }
+
+            } catch (SQLException e) {
+                LOG.log(Level.SEVERE, "Unable to register user.", e);
+            }
+
         return Optional.empty();
     }
 }
