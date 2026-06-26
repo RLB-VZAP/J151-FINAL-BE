@@ -1,5 +1,5 @@
     USE
-    tritan_fantasy_rugby;
+    tryton_fantasy_rugby;
 
     SET
     @adminId = UUID();
