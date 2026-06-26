@@ -1,14 +1,14 @@
 package com.vzap.trytons.model;
 
 import com.vzap.trytons.enums.RegistrationStatus;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
 public class RegisteredUser extends User {
-
     private RegistrationStatus registrationStatus;
 }
