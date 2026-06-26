@@ -6,7 +6,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 public class DBConnectionManager {
-    private static final BasicDataSource  dataSource;
+    private static final BasicDataSource dataSource;
 
     static {
         dataSource = new BasicDataSource();

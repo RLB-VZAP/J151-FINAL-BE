@@ -1,5 +1,7 @@
 package com.vzap.trytons.util;
+
 import org.mindrot.jbcrypt.BCrypt;
+
 import java.nio.charset.StandardCharsets;
 
 public final class PasswordUtil {
