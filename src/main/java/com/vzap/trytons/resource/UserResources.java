@@ -10,14 +10,11 @@ import com.vzap.trytons.model.RegisteredUser;
 import com.vzap.trytons.service.RegisteredUserServices;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 import java.net.URI;
 
-
+@ApplicationPath("/api")
 @Path("/users")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
