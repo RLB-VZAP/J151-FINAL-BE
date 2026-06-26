@@ -13,24 +13,23 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Singleton
-public class AdministratorDAOImpl extends BaseDAO implements AdministratorDAO{
+public class AdministratorDAOImpl extends BaseDAO implements AdministratorDAO {
 
     private static final Logger LOG = Logger.getLogger(AdministratorDAOImpl.class.getName());
 
     @Override
     public Optional<Administrator> getAdministratorById(UUID userId) {
         String query = "SELECT u.*, a.adminLevel FROM user u JOIN administrator a ON u.userId = a.userId WHERE u.userId = ?";
-        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
             ps.setString(1, userId.toString());
 
-            try(ResultSet rs = ps.executeQuery()){
-                if(rs.next()){
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
                     Administrator a = Administrator.builder()
                             .userId(userId)
                             .email(rs.getString("email"))
                             .passwordHash(rs.getString("passwordHash"))
                             .username(rs.getString("username"))
-                            .displayName(rs.getString("displayName"))
                             .isActive(rs.getBoolean("isActive"))
                             .profilePic(rs.getString("profilePic"))
                             .adminLevel(rs.getInt("adminLevel"))
@@ -39,7 +38,7 @@ public class AdministratorDAOImpl extends BaseDAO implements AdministratorDAO{
                     return Optional.of(a);
                 }
             }
-        }catch(SQLException e){
+        } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to find administrator by ID.", e);
         }
         return Optional.empty();
@@ -48,10 +47,10 @@ public class AdministratorDAOImpl extends BaseDAO implements AdministratorDAO{
     @Override
     public boolean deactivateUserAccount(UUID userId) {
         String query = "UPDATE administrator SET isActive = false WHERE userId = ?";
-        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
             ps.setString(1, userId.toString());
 
-            if (ps.executeUpdate() > 0){
+            if (ps.executeUpdate() > 0) {
                 return true;
             }
         } catch (SQLException e) {

@@ -12,6 +12,7 @@ import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
+
 import java.net.URI;
 
 @ApplicationPath("/api")
@@ -21,25 +22,26 @@ import java.net.URI;
 public class UserResources {
     @Inject
     private RegisteredUserServices registeredUserServices;
+
     @POST
-    public Response registerUser (@Valid RegisteredUserRequest request , @Context UriInfo uriInfo) {
-        RegisteredUser newUser =  RegisteredUser.builder().email(request.getEmail()).username(request.getUsername()).passwordHash(request.getRawPassword()).role(UserRole.REGISTERED_USER).isActive(false).registrationStatus(RegistrationStatus.PENDING).build();
-        try{
+    public Response registerUser(@Valid RegisteredUserRequest request, @Context UriInfo uriInfo) {
+        RegisteredUser newUser = RegisteredUser.builder().email(request.getEmail()).username(request.getUsername()).passwordHash(request.getRawPassword()).role(UserRole.REGISTERED_USER).isActive(false).registrationStatus(RegistrationStatus.PENDING).build();
+        try {
             RegisteredUser created = registeredUserServices.registeredUser(newUser);
             RegisteredUserResponse body = toResponse(created);
             URI location = uriInfo.getAbsolutePathBuilder().path(created.getUsername()).build();
             return Response.created(location).entity(body).build();
-        }catch (ConflictException e){
+        } catch (ConflictException e) {
             return Response.status(Response.Status.CONFLICT).entity(new ErrorBody(e.getMessage())).build();
-        }catch (ValidationException e){
+        } catch (ValidationException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(new ErrorBody(e.getMessage())).build();
         }
 
     }
 
-    public static RegisteredUserResponse toResponse(RegisteredUser created){
+    public static RegisteredUserResponse toResponse(RegisteredUser created) {
         return new RegisteredUserResponse(
-                created.getUserId() ,
+                created.getUserId(),
                 created.getUsername(),
                 created.getRegistrationStatus()
         );
@@ -47,9 +49,11 @@ public class UserResources {
 
     public static class ErrorBody {
         private String message;
+
         public ErrorBody(String message) {
             this.message = message;
         }
+
         public String getMessage() {
             return message;
         }

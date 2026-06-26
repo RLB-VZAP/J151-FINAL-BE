@@ -37,17 +37,17 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
 
     //Get user by ID:
     @Override
-    public Optional<User> getUserById(UUID userId){
+    public Optional<User> getUserById(UUID userId) {
         String query = "SELECT * FROM user WHERE userId = ?";
-        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
             ps.setString(1, userId.toString());
 
-            try(ResultSet rs = ps.executeQuery()){
-                if(rs.next()){
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
                     return Optional.of(mapUser(rs));
                 }
             }
-        }catch(SQLException e){
+        } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to find user by ID.", e);
             throw new DataAccessException("Unable to find user by ID.", e);
         }
@@ -57,16 +57,16 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     //Get user by email:
     @Override
     public Optional<User> getUserByEmail(String email) {
-        String  query = "SELECT * FROM user WHERE email = ?";
-        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
+        String query = "SELECT * FROM user WHERE email = ?";
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
             ps.setString(1, email);
 
-            try(ResultSet rs = ps.executeQuery()){
-                if (rs.next()){
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
                     return Optional.of(mapUser(rs));
                 }
             }
-        }catch(SQLException e){
+        } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to find user by email.", e);
             throw new DataAccessException("Unable to find user by email.", e);
         }
@@ -77,15 +77,15 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     @Override
     public Optional<User> getUserByUsername(String username) {
         String query = "SELECT * FROM user WHERE username = ?";
-        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
             ps.setString(1, username);
 
-            try(ResultSet rs = ps.executeQuery()){
-                if (rs.next()){
-                   return Optional.of(mapUser(rs));
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapUser(rs));
                 }
             }
-        }catch(SQLException e){
+        } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to find user by username.", e);
             throw new DataAccessException("Unable to find user by username.", e);
         }
@@ -96,7 +96,7 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     @Override
     public Optional<User> registerUser(User newUser) {
         String query = "INSERT INTO user (userId, email, passwordHash, username, role, isActive, profilePic) " + "VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try(Connection con = getConnection();PreparedStatement ps = con.prepareStatement(query);) {
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query);) {
             ps.setString(1, newUser.getUserId().toString());
             ps.setString(2, newUser.getEmail());
             ps.setString(3, newUser.getPasswordHash());
@@ -104,10 +104,10 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
             ps.setString(5, newUser.getRole() != null ? newUser.getRole().toString() : UserRole.REGISTERED_USER.toString());
             ps.setBoolean(6, newUser.getIsActive() != null ? newUser.getIsActive() : true);
             ps.setString(7, newUser.getProfilePic());
-            if (ps.executeUpdate() > 0){
+            if (ps.executeUpdate() > 0) {
                 return Optional.of(newUser);
             }
-        }catch(SQLException e){
+        } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to register user.", e);
         }
         return Optional.empty();
@@ -117,15 +117,15 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     @Override
     public Optional<User> updateUser(User user) {
         String query = "UPDATE user SET email = ?, passwordHash = ? WHERE userId = ?";
-        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
             ps.setString(1, user.getEmail());
             ps.setString(2, user.getPasswordHash());
             ps.setString(3, user.getUserId().toString());
 
-            if (ps.executeUpdate() > 0){
+            if (ps.executeUpdate() > 0) {
                 return Optional.of(user);
             }
-        }catch(SQLException e){
+        } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to update user.", e);
         }
         return Optional.empty();
@@ -134,11 +134,11 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     @Override
     public boolean emailExists(String email) {
         String query = "SELECT COUNT(*) FROM user WHERE email = ?";
-        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
             ps.setString(1, email);
 
-            try(ResultSet rs = ps.executeQuery()){
-                if (rs.next()){
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
                     return rs.getInt(1) > 0;
                 }
             }

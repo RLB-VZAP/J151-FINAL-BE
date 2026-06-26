@@ -22,11 +22,11 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
     @Override
     public Optional<RegisteredUser> getRegisteredUserById(UUID userId) {
         String query = "SELECT u.*, ru.registrationStatus FROM user u JOIN registeredUser ru ON u.userId = ru.userId WHERE u.userId = ?";
-        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
             ps.setString(1, userId.toString());
 
-            try(ResultSet rs = ps.executeQuery()){
-                if(rs.next()){
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
                     RegisteredUser ru = RegisteredUser.builder()
                             .userId(userId)
                             .email(rs.getString("email"))
@@ -40,7 +40,7 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
                     return Optional.of(ru);
                 }
             }
-        }catch(SQLException e){
+        } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to find user by ID.", e);
         }
         return Optional.empty();
@@ -48,27 +48,27 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
 
     @Override
     public Optional<RegisteredUser> updateProfile(RegisteredUser registeredUser) {
-    String query = "UPDATE registeredUser SET profilePic = ? WHERE userId = ?";
-    try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
-        ps.setString(1, registeredUser.getProfilePic());
-        ps.setString(2, registeredUser.getUserId().toString());
+        String query = "UPDATE registeredUser SET profilePic = ? WHERE userId = ?";
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setString(1, registeredUser.getProfilePic());
+            ps.setString(2, registeredUser.getUserId().toString());
 
-        if (ps.executeUpdate() > 0){
-            return Optional.of(registeredUser);
+            if (ps.executeUpdate() > 0) {
+                return Optional.of(registeredUser);
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to update user profile.", e);
         }
-    }catch(SQLException e){
-        LOG.log(Level.SEVERE, "Unable to update user profile.", e);
-    }
         return Optional.empty();
     }
 
     @Override
     public boolean deactivateAccount(UUID userId) {
         String query = "UPDATE user SET isActive = false WHERE userId = ?";
-        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
             ps.setString(1, userId.toString());
 
-            if (ps.executeUpdate() > 0){
+            if (ps.executeUpdate() > 0) {
                 return true;
             }
         } catch (SQLException e) {
@@ -80,19 +80,19 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
     @Override
     public Optional<RegisteredUser> register(RegisteredUser newUser) {
 
-            String query = "INSERT INTO registeredUser (userId, registrationStatus) VALUES (?, ?)";
+        String query = "INSERT INTO registeredUser (userId, registrationStatus) VALUES (?, ?)";
 
-            try (Connection con = getConnection(); PreparedStatement registeredPs = con.prepareStatement(query)) {
-                registeredPs.setString(1, newUser.getUserId().toString());
-                registeredPs.setString(2, newUser.getRegistrationStatus().name());
+        try (Connection con = getConnection(); PreparedStatement registeredPs = con.prepareStatement(query)) {
+            registeredPs.setString(1, newUser.getUserId().toString());
+            registeredPs.setString(2, newUser.getRegistrationStatus().name());
 
-                if (registeredPs.executeUpdate() > 0) {
-                    return Optional.of(newUser);
-                }
-
-            } catch (SQLException e) {
-                LOG.log(Level.SEVERE, "Unable to register user.", e);
+            if (registeredPs.executeUpdate() > 0) {
+                return Optional.of(newUser);
             }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to register user.", e);
+        }
 
         return Optional.empty();
     }

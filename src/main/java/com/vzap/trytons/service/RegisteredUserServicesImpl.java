@@ -7,6 +7,7 @@ import com.vzap.trytons.enums.UserRole;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.RegisteredUser;
+import com.vzap.trytons.util.PasswordUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.mindrot.jbcrypt.BCrypt;
@@ -29,21 +30,19 @@ public class RegisteredUserServicesImpl implements RegisteredUserServices {
             throw new ConflictException("Email is already in use.");
         }
         if (userDAO.usernameExists(newUser.getUsername())) {
-            throw new ConflictException("Username is already bieng used.");
+            throw new ConflictException("Username is already being used.");
         }
         newUser.setUserId(UUID.randomUUID());
         newUser.setRegistrationDate(LocalDateTime.now());
         String rawPassword = newUser.getPasswordHash();
-        newUser.setPasswordHash(BCrypt.hashpw(rawPassword, BCrypt.gensalt(12)));
+        newUser.setPasswordHash(PasswordUtil.hashPassword(rawPassword));
         if (newUser.getRole() == null) {
             newUser.setRole(UserRole.REGISTERED_USER);
         }
         if (newUser.getRegistrationStatus() == null) {
             newUser.setRegistrationStatus(RegistrationStatus.PENDING);
         }
-
         userDAO.registerUser(newUser).orElseThrow(() -> new DataAccessException("Failed to create user account.", null));
         return registeredUserDAO.register(newUser).orElseThrow(() -> new DataAccessException("Failed to register user.", null));
-
     }
 }
