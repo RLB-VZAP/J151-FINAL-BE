@@ -1,4 +1,4 @@
-package com.vzap.trytons.servlet;
+package com.vzap.trytons.service;
 
 import com.vzap.trytons.dao.DatabaseTestDAO;
 
