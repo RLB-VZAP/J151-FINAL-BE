@@ -41,7 +41,7 @@ public class RegisteredUserServicesImpl implements RegisteredUserServices {
         if (newUser.getRegistrationStatus() == null) {
             newUser.setRegistrationStatus(RegistrationStatus.PENDING);
         }
-        return null;
-       // return registeredUserDAO.register(newUser).orElseThrow(() -> new DataAccessException("Failed to register user.", null));
+        return registeredUserDAO.register(newUser).orElseThrow(() -> new DataAccessException("Failed to register user.", null));
+
     }
 }

@@ -11,4 +11,5 @@ public interface RegisteredUserDAO {
     Optional<RegisteredUser> updateProfile(RegisteredUser registeredUser);
     boolean deactivateAccount(UUID userId);
 
+   Optional<RegisteredUser> register(RegisteredUser newUser);
 }
