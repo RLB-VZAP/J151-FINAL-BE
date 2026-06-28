@@ -1,6 +1,7 @@
 package com.vzap.trytons.dao;
 
 import com.vzap.trytons.model.RegisteredUser;
+import com.vzap.trytons.model.User;
 
 import java.util.Optional;
 import java.util.UUID;

@@ -2,13 +2,13 @@ package com.vzap.trytons.dao;
 
 import com.vzap.trytons.enums.RegistrationStatus;
 import com.vzap.trytons.enums.UserRole;
+import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.RegisteredUser;
+import com.vzap.trytons.model.User;
 import jakarta.inject.Singleton;
+import jakarta.persistence.RollbackException;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -79,21 +79,48 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
 
     @Override
     public Optional<RegisteredUser> register(RegisteredUser newUser) {
+        String persistUser = "INSERT INTO user (userId, email, passwordHash, username, role, isActive, profilePic) " + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String persistRegisteredUser = "INSERT INTO registeredUser (userId, registrationStatus) VALUES (?, ?)";
 
-        String query = "INSERT INTO registeredUser (userId, registrationStatus) VALUES (?, ?)";
+            try(Connection con = getConnection()){
+                con.setAutoCommit(false);
 
-        try (Connection con = getConnection(); PreparedStatement registeredPs = con.prepareStatement(query)) {
-            registeredPs.setString(1, newUser.getUserId().toString());
-            registeredPs.setString(2, newUser.getRegistrationStatus().name());
+                try (PreparedStatement userPs = con.prepareStatement(persistUser);
+                        PreparedStatement registeredPs = con.prepareStatement(persistRegisteredUser)) {
+                    userPs.setString(1, newUser.getUserId().toString());
+                    userPs.setString(2, newUser.getEmail());
+                    userPs.setString(3, newUser.getPasswordHash());
+                    userPs.setString(4, newUser.getUsername());
+                    userPs.setString(5, newUser.getRole().name());
+                    userPs.setBoolean(6, newUser.getIsActive() != null ? newUser.getIsActive() : true);
+                    userPs.setString(7, newUser.getProfilePic());
+                    if (userPs.executeUpdate() != 1) {
+                        throw new SQLException("User insert failed");
+                    }
 
-            if (registeredPs.executeUpdate() > 0) {
-                return Optional.of(newUser);
+                    registeredPs.setString(1, newUser.getUserId().toString());
+                    registeredPs.setString(2, newUser.getRegistrationStatus().name());
+                    if (registeredPs.executeUpdate() != 1) {
+                        throw  new SQLException("Registered user insert failed");
+                    }
+                    con.commit();
+                    return Optional.of(newUser);
+
+                }catch (SQLException e) {
+                    try {
+                        con.rollback();
+                    }catch (SQLException rollbackException) {
+                        e.addSuppressed(rollbackException);
+                    }
+                    throw new SQLException("Unable to register user safely.", e);
+                }
+                finally {
+                    con.setAutoCommit(true);
+                }
+
+            } catch (SQLException e) {
+                LOG.log(Level.SEVERE, "Unable to register user.", e);
+                throw new DataAccessException("Unable to register user.", e);
             }
-
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to register user.", e);
-        }
-
-        return Optional.empty();
     }
 }
