@@ -1,5 +1,6 @@
 package com.vzap.trytons.dao;
 
+import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.enums.RegistrationStatus;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.RegisteredUser;
@@ -109,7 +110,7 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
                     }catch (SQLException rollbackException) {
                         e.addSuppressed(rollbackException);
                     }
-                    throw new SQLException("Unable to register user safely.", e);
+                    throw e;
                 }
                 finally {
                     connection.setAutoCommit(true);
@@ -117,6 +118,17 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
 
             } catch (SQLException e) {
                 LOG.log(Level.SEVERE, "Unable to register user.", e);
+                if ("23000".equals(e.getSQLState()) && e.getErrorCode() == 1062) {
+                    String exceptionMessage = e.getMessage();
+
+                    if (exceptionMessage != null && exceptionMessage.contains("uk_user_email")) {
+                        throw new ConflictException("Email is already in use.");
+                    }
+                    if (exceptionMessage != null && exceptionMessage.contains("uk_user_username")) {
+                        throw new ConflictException("Username is already being used.");
+                    }
+                    throw new ConflictException("User already exists.");
+                }
                 throw new DataAccessException("Unable to register user.", e);
             }
     }
