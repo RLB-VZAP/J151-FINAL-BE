@@ -13,9 +13,6 @@ public interface UserDAO {
 
     Optional<User> getUserByUsername(String username);
 
-    //Register/create user:
-    Optional<User> registerUser(User newUser);
-
     Optional<User> updateUser(User newUser);
 
     boolean emailExists(String email);

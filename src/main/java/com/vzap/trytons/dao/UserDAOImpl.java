@@ -92,27 +92,6 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
         return Optional.empty();
     }
 
-    //Register/create user:
-    @Override
-    public Optional<User> registerUser(User newUser) {
-        String query = "INSERT INTO user (userId, email, passwordHash, username, role, isActive, profilePic) " + "VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query);) {
-            ps.setString(1, newUser.getUserId().toString());
-            ps.setString(2, newUser.getEmail());
-            ps.setString(3, newUser.getPasswordHash());
-            ps.setString(4, newUser.getUsername());
-            ps.setString(5, newUser.getRole() != null ? newUser.getRole().toString() : UserRole.REGISTERED_USER.toString());
-            ps.setBoolean(6, newUser.getIsActive() != null ? newUser.getIsActive() : true);
-            ps.setString(7, newUser.getProfilePic());
-            if (ps.executeUpdate() > 0) {
-                return Optional.of(newUser);
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to register user.", e);
-        }
-        return Optional.empty();
-    }
-
     //Update user:
     @Override
     public Optional<User> updateUser(User user) {
