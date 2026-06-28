@@ -1,13 +1,9 @@
 package com.vzap.trytons.dao;
 
 import com.vzap.trytons.enums.RegistrationStatus;
-import com.vzap.trytons.enums.UserRole;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.RegisteredUser;
-import com.vzap.trytons.model.User;
 import jakarta.inject.Singleton;
-import jakarta.persistence.RollbackException;
-
 import java.sql.*;
 import java.util.Optional;
 import java.util.UUID;
