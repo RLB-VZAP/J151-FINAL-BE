@@ -29,9 +29,9 @@ public class UserResources {
     @Inject
     private RegisteredUserServices registeredUserServices;
     @POST
-    public Response registerUser(@Valid RegisteredUserRequest request, @Context UriInfo uriInfo) {
+    public Response registerUser(@Valid RegisteredUserRequest userRequest, @Context UriInfo uriInfo) {
         try {
-            RegisteredUser created = registeredUserServices.registerUser(request);
+            RegisteredUser created = registeredUserServices.registerUser(userRequest);
             RegisteredUserResponse body = toResponse(created);
             URI location = uriInfo.getAbsolutePathBuilder().path(created.getUsername()).build();
             return Response.created(location)
