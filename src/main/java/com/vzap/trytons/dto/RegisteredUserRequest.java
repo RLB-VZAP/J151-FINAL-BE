@@ -16,7 +16,7 @@ public class RegisteredUserRequest {
 
     @NotBlank(message = "Username can not be blank")
     @Pattern(regexp = "\\S+", message = "Username cannot contain spaces")
-    @Size(min = 5, max = 100)
+    @Size(min = 5, max = 100, message = "Your username needs to be between 5 and 100 characters")
     private String username;
 
     @NotBlank(message = "Password cannot be blank")
