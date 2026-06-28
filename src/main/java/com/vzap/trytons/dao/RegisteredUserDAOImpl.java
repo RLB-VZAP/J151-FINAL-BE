@@ -2,6 +2,7 @@ package com.vzap.trytons.dao;
 
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.enums.RegistrationStatus;
+import com.vzap.trytons.enums.UserRole;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.RegisteredUser;
 import jakarta.inject.Singleton;
@@ -24,13 +25,17 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
+                    String roleValue = rs.getString("role");
                     RegisteredUser ru = RegisteredUser.builder()
                             .userId(userId)
                             .email(rs.getString("email"))
                             .passwordHash(rs.getString("passwordHash"))
                             .username(rs.getString("username"))
+                            .role(roleValue != null ? UserRole.valueOf(roleValue) : null)
                             .isActive(rs.getBoolean("isActive"))
                             .profilePic(rs.getString("profilePic"))
+                            .registrationDate(rs.getTimestamp("registrationDate") != null ? rs.getTimestamp("registrationDate").toLocalDateTime() : null)
+                            .lastLoginAt(rs.getTimestamp("last_login_at") != null ? rs.getTimestamp("last_login_at").toLocalDateTime() : null)
                             .registrationStatus(RegistrationStatus.valueOf(rs.getString("registrationStatus")))
                             .build();
 
