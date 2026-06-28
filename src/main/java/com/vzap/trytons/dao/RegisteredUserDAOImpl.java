@@ -44,7 +44,7 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
 
     @Override
     public Optional<RegisteredUser> updateProfile(RegisteredUser registeredUser) {
-        String query = "UPDATE registeredUser SET profilePic = ? WHERE userId = ?";
+        String query = "UPDATE user SET profilePic = ? WHERE userId = ?";
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
             ps.setString(1, registeredUser.getProfilePic());
             ps.setString(2, registeredUser.getUserId().toString());
@@ -78,17 +78,18 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
         String persistUser = "INSERT INTO user (userId, email, passwordHash, username, role, isActive, profilePic) " + "VALUES (?, ?, ?, ?, ?, ?, ?)";
         String persistRegisteredUser = "INSERT INTO registeredUser (userId, registrationStatus) VALUES (?, ?)";
 
-            try(Connection con = getConnection()){
-                con.setAutoCommit(false);
+            try(Connection connection = getConnection()){
+                connection.setAutoCommit(false);
 
-                try (PreparedStatement userPs = con.prepareStatement(persistUser);
-                        PreparedStatement registeredPs = con.prepareStatement(persistRegisteredUser)) {
+                try (PreparedStatement userPs = connection.prepareStatement(persistUser);
+                        PreparedStatement registeredPs = connection.prepareStatement(persistRegisteredUser)) {
+
                     userPs.setString(1, newUser.getUserId().toString());
                     userPs.setString(2, newUser.getEmail());
                     userPs.setString(3, newUser.getPasswordHash());
                     userPs.setString(4, newUser.getUsername());
                     userPs.setString(5, newUser.getRole().name());
-                    userPs.setBoolean(6, newUser.getIsActive() != null ? newUser.getIsActive() : true);
+                    userPs.setBoolean(6, newUser.getIsActive());
                     userPs.setString(7, newUser.getProfilePic());
                     if (userPs.executeUpdate() != 1) {
                         throw new SQLException("User insert failed");
@@ -99,19 +100,19 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
                     if (registeredPs.executeUpdate() != 1) {
                         throw  new SQLException("Registered user insert failed");
                     }
-                    con.commit();
+                    connection.commit();
                     return Optional.of(newUser);
 
                 }catch (SQLException e) {
                     try {
-                        con.rollback();
+                        connection.rollback();
                     }catch (SQLException rollbackException) {
                         e.addSuppressed(rollbackException);
                     }
                     throw new SQLException("Unable to register user safely.", e);
                 }
                 finally {
-                    con.setAutoCommit(true);
+                    connection.setAutoCommit(true);
                 }
 
             } catch (SQLException e) {
