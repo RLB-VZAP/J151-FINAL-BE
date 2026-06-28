@@ -1,5 +1,6 @@
 package com.vzap.trytons.dao;
 
+import com.vzap.trytons.enums.UserRole;
 import com.vzap.trytons.model.Administrator;
 import jakarta.inject.Singleton;
 
@@ -25,13 +26,17 @@ public class AdministratorDAOImpl extends BaseDAO implements AdministratorDAO {
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
+                    String roleValue = rs.getString("role");
                     Administrator a = Administrator.builder()
                             .userId(userId)
                             .email(rs.getString("email"))
                             .passwordHash(rs.getString("passwordHash"))
                             .username(rs.getString("username"))
+                            .role(roleValue != null ? UserRole.valueOf(roleValue) : null)
                             .isActive(rs.getBoolean("isActive"))
                             .profilePic(rs.getString("profilePic"))
+                            .registrationDate(rs.getTimestamp("registrationDate") != null ? rs.getTimestamp("registrationDate").toLocalDateTime() : null)
+                            .lastLoginAt(rs.getTimestamp("last_login_at") != null ? rs.getTimestamp("last_login_at").toLocalDateTime() : null)
                             .adminLevel(rs.getInt("adminLevel"))
                             .build();
 
