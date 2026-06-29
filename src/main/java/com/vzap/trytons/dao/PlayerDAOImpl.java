@@ -108,17 +108,13 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
         try {
             availability.setStatus(AvailabilityStatus.valueOf(statusValue));
         } catch (IllegalArgumentException e) {
-            throw new SQLException(
-                    "Invalid availability status stored in database: " + statusValue,
-                    e
-            );
+            throw new SQLException("Invalid availability status stored in database: " + statusValue, e);
         }
 
         Date effectiveDate = rs.getDate("effectiveDate");
         Date endDate = rs.getDate("endDate");
 
-        availability.setEffectiveDate(
-                effectiveDate != null ? effectiveDate.toLocalDate() : null);
+        availability.setEffectiveDate(effectiveDate != null ? effectiveDate.toLocalDate() : null);
 
         availability.setEndDate(endDate != null ? endDate.toLocalDate() : null);
         availability.setNotes(rs.getString("notes"));
@@ -131,23 +127,17 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
         String value = rs.getString(columnName);
 
         if (value == null) {
-            throw new SQLException(
-                    "Database column '" + columnName + "' contains a null UUID.");
+            throw new SQLException("Database column '" + columnName + "' contains a null UUID.");
         }
 
         try {
             return UUID.fromString(value);
         } catch (IllegalArgumentException e) {
-            throw new SQLException(
-                    "Invalid UUID in database column '" + columnName + "': " + value, e);
+            throw new SQLException("Invalid UUID in database column '" + columnName + "': " + value, e);
         }
     }
 
-    private List<Player> executePlayerList(
-            String query,
-            List<Object> parameters,
-            String errorMessage
-    ) {
+    private List<Player> executePlayerList(String query, List<Object> parameters, String errorMessage) {
         List<Player> players = new ArrayList<>();
 
         try (Connection con = getConnection();
@@ -165,14 +155,10 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
             LOG.log(Level.SEVERE, errorMessage, e);
             throw new DataAccessException(errorMessage, e);
         }
-
         return players;
     }
 
-    private void bindParameters(
-            PreparedStatement ps,
-            List<Object> parameters
-    ) throws SQLException {
+    private void bindParameters(PreparedStatement ps, List<Object> parameters) throws SQLException {
 
         for (int index = 0; index < parameters.size(); index++) {
             Object parameter = parameters.get(index);
@@ -211,8 +197,7 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
 
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to retrieve player by ID.", e);
-            throw new DataAccessException(
-                    "Unable to retrieve player by ID.", e);
+            throw new DataAccessException("Unable to retrieve player by ID.", e);
         }
 
         return Optional.empty();
@@ -312,9 +297,7 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
 
     @Override
     public Optional<Player> createPlayer(Player player) {
-        UUID playerId = player.getPlayerId() != null
-                ? player.getPlayerId()
-                : UUID.randomUUID();
+        UUID playerId = player.getPlayerId() != null ? player.getPlayerId(): UUID.randomUUID();
 
         String query =
                 "INSERT INTO player ("
