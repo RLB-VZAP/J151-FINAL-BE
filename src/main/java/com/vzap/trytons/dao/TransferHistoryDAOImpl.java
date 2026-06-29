@@ -60,7 +60,7 @@ public class TransferHistoryDAOImpl extends BaseDAO implements TransferHistoryDA
 
             try(ResultSet rs = ps.executeQuery()){
                 while(rs.next()){
-                    historyList.add(mapHistory.rs);
+                    historyList.add(mapHistory(rs));
                 }
             }
         } catch (SQLException e) {
@@ -70,7 +70,7 @@ public class TransferHistoryDAOImpl extends BaseDAO implements TransferHistoryDA
         return historyList;
     }
 
-    private TransferHistory mapHistory (ResultSet rs) throws SQLException {
+    public static TransferHistory mapHistory (ResultSet rs) throws SQLException {
         TransferHistory history = new TransferHistory();
         history.setTransferHistoryId(UUID.fromString(rs.getString("transferHistoryId")));
         history.setOldTeamValue(rs.getBigDecimal("old_team_value"));
