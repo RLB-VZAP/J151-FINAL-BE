@@ -2,6 +2,8 @@ package com.vzap.trytons.dao;
 
 import com.vzap.trytons.enums.TransferWindowStatus;
 import com.vzap.trytons.exceptions.DataAccessException;
+import com.vzap.trytons.model.FantasyTeam;
+import com.vzap.trytons.model.Player;
 import com.vzap.trytons.model.Transfer;
 import jakarta.inject.Singleton;
 
@@ -104,5 +106,25 @@ public class TransferDAOImpl extends BaseDAO implements TransferDAO {
         transfer.setPenaltyPoints(rs.getInt("penaltyPoints"));
         transfer.setTransferWindowStatus(TransferWindowStatus.valueOf(rs.getString("transfer_window_status")));
         transfer.setRoundNumber(rs.getInt("roundNumber"));
+        transfer.setConfirmed(rs.getBoolean("confirmed"));
+
+        FantasyTeam team = new FantasyTeam();
+        team.setTeamId(UUID.fromString(rs.getString("teamId")));
+        transfer.setFantasyTeam(team);
+
+        String removeId = rs.getString("removed_player_id");
+        if (removeId != null){
+            Player removed = new Player();
+            removed.setPlayerId(UUID.fromString(removeId));
+            transfer.setRemovedPlayer(removed);
+        }
+
+        String addedId =  rs.getString("added_player_id");
+        if (addedId != null){
+            Player added = new Player();
+            added.setPlayerId(UUID.fromString(addedId));
+            transfer.setAddedPlayer(added);
+        }
+        return transfer;
     }
 }
