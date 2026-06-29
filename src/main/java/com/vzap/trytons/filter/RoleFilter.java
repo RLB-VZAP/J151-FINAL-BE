@@ -1,5 +1,6 @@
 package com.vzap.trytons.filter;
 
+import com.vzap.trytons.dto.ErrorResponse;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.model.User;
 import com.vzap.trytons.util.RoleUtil;
@@ -15,7 +16,6 @@ import java.io.IOException;
 
 @WebFilter(urlPatterns = "/api/admin/*")
 public class RoleFilter {
-
     private static final String CURRENT_USER_ATTR = "currentUser";
 
     public void doFilter (ServletRequest request, ServletResponse response, FilterChain chain)
@@ -42,7 +42,7 @@ public class RoleFilter {
         ErrorResponse body = ErrorResponse.builder()
                 .success(false)
                 .message(error.getMessage())
-                .status(error.getStatusCode())
+                .errorCode("")
                 .build();
 
         response.setContentType("application/json");
