@@ -14,8 +14,4 @@ public interface PositionDAO {
     public boolean updatePosition(Position position);
     public boolean deletePosition(Position position);
     public boolean existsByName(String positionName);
-
-
-
-
 }
