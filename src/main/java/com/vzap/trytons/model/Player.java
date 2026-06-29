@@ -11,7 +11,6 @@ import java.util.UUID;
 @Getter
 @Setter
 public class Player {
-
     private UUID playerId;
     private String playerName;
     private BigDecimal value;
