@@ -37,7 +37,7 @@ public class ClubDAOImpl extends BaseDAO implements ClubDAO {
     }
 
     @Override
-    public Optional<Club> findAll() {
+    public Optional<Club> findAllClubs() {
         return Optional.empty();
     }
 
