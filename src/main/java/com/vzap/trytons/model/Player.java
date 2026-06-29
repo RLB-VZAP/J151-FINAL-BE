@@ -27,4 +27,16 @@ public class Player {
 
     private Club club;
     private Position position;
+
+    public void setPlayerId(boolean isCaptain) {
+    }
+
+    public void setViceCaptain(boolean isViceCaptain) {
+    }
+
+    public void setBench(boolean isBench) {
+    }
+
+    public void setPlayer(Player playerStub) {
+    }
 }
