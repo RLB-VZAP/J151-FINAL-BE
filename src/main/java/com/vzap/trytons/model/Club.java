@@ -16,5 +16,5 @@ public class Club {
     private String location;
     private String homeVenue;
     private int strengthRating;
-    private Boolean isActive;
+    private boolean isActive;
 }
