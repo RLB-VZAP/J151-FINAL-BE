@@ -1,17 +1,12 @@
-package com.vzap.trytons.model;
+package com.vzap.trytons.dto;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.vzap.trytons.model.Club;
+import com.vzap.trytons.model.Position;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
-@NoArgsConstructor
-@Getter
-@Setter
-public class Player {
-
+public class PlayerResponseDTO {
     private UUID playerId;
     private String playerName;
     private BigDecimal value;
