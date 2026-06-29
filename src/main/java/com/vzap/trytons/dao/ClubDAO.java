@@ -8,7 +8,7 @@ public interface ClubDAO {
     Optional<Club> findByClubId(UUID clubId);
     Optional<Club> findByClubName(String clubName);
     Optional<Club>findByStrengthRating(int strengthRating);
-    Optional<Club>findAll();
+    Optional<Club>findAllClubs();
     Optional<Club> findByLocation(String location);
     public boolean createClub(Club club);
     public boolean updateClub(Club club);
