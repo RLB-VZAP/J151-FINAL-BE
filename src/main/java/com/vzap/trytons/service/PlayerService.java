@@ -2,6 +2,7 @@ package com.vzap.trytons.service;
 
 import com.vzap.trytons.dto.PlayerRequestDTO;
 import com.vzap.trytons.dto.PlayerResponseDTO;
+import com.vzap.trytons.model.Player;
 
 import java.util.List;
 import java.util.UUID;
