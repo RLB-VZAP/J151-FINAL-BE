@@ -5,7 +5,6 @@ import com.vzap.trytons.dto.RegisteredUserRequest;
 import com.vzap.trytons.dto.RegisteredUserResponse;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
-import com.vzap.trytons.exceptions.ValidationException;
 import com.vzap.trytons.model.RegisteredUser;
 import com.vzap.trytons.service.RegisteredUserServices;
 import jakarta.inject.Inject;
@@ -40,11 +39,6 @@ public class UserResources {
         } catch (ConflictException e) {
             ErrorResponse error = ErrorResponse.of(e.getMessage(), e.getErrorCode());
             return Response.status(Response.Status.CONFLICT)
-                    .entity(error)
-                    .build();
-        } catch (ValidationException e) {
-            ErrorResponse error = ErrorResponse.of(e.getMessage(), e.getErrorCode());
-            return Response.status(Response.Status.BAD_REQUEST)
                     .entity(error)
                     .build();
         } catch (DataAccessException e) {
