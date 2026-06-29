@@ -2,15 +2,15 @@ package com.vzap.trytons.service;
 
 import com.vzap.trytons.dao.RegisteredUserDAO;
 import com.vzap.trytons.dao.UserDAO;
+import com.vzap.trytons.dto.RegisteredUserRequest;
 import com.vzap.trytons.enums.RegistrationStatus;
 import com.vzap.trytons.enums.UserRole;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.RegisteredUser;
+import com.vzap.trytons.util.PasswordUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.mindrot.jbcrypt.BCrypt;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -23,27 +23,27 @@ public class RegisteredUserServicesImpl implements RegisteredUserServices {
     private RegisteredUserDAO registeredUserDAO;
 
     @Override
-    public RegisteredUser registeredUser(RegisteredUser newUser) {
+    public RegisteredUser registerUser(RegisteredUserRequest userRequest) {
+        String email = userRequest.getEmail();
+        String username = userRequest.getUsername();
+        String rawPassword = userRequest.getRawPassword();
 
-        if (userDAO.emailExists(newUser.getEmail())) {
+        if (userDAO.emailExists(email)){
             throw new ConflictException("Email is already in use.");
         }
-        if (userDAO.usernameExists(newUser.getUsername())) {
-            throw new ConflictException("Username is already bieng used.");
+        if (userDAO.usernameExists(username)) {
+            throw new ConflictException("Username is already being used.");
         }
+        RegisteredUser newUser= new RegisteredUser();
+
         newUser.setUserId(UUID.randomUUID());
+        newUser.setEmail(email);
+        newUser.setUsername(username);
         newUser.setRegistrationDate(LocalDateTime.now());
-        String rawPassword = newUser.getPasswordHash();
-        newUser.setPasswordHash(BCrypt.hashpw(rawPassword, BCrypt.gensalt(12)));
-        if (newUser.getRole() == null) {
-            newUser.setRole(UserRole.REGISTERED_USER);
-        }
-        if (newUser.getRegistrationStatus() == null) {
-            newUser.setRegistrationStatus(RegistrationStatus.PENDING);
-        }
-
-        userDAO.registerUser(newUser).orElseThrow(() -> new DataAccessException("Failed to create user account.", null));
+        newUser.setPasswordHash(PasswordUtil.hashPassword(rawPassword));
+        newUser.setRole(UserRole.REGISTERED_USER);
+        newUser.setRegistrationStatus(RegistrationStatus.PENDING);
+        newUser.setIsActive(true);
         return registeredUserDAO.register(newUser).orElseThrow(() -> new DataAccessException("Failed to register user.", null));
-
     }
 }
