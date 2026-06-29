@@ -25,4 +25,5 @@ public class Player {
     private boolean isActive;
     private Club club;
     private Position position;
+
 }
