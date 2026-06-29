@@ -1,0 +1,14 @@
+package com.vzap.trytons.service;
+
+import com.vzap.trytons.dto.ClubRequestDTO;
+import com.vzap.trytons.dto.ClubResponseDTO;
+
+import java.util.List;
+import java.util.UUID;
+
+public interface ClubService {
+    ClubResponseDTO createClub(ClubRequestDTO request);
+    ClubResponseDTO getClub(UUID clubId);
+    List<ClubResponseDTO> getAllClubs();
+    ClubResponseDTO updatePlayer(UUID playerId, ClubRequestDTO request);
+}
