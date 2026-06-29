@@ -1,1 +1,1 @@
-DROP DATABASE IF EXISTS `tritan_fantasy_rugby`;
+DROP DATABASE IF EXISTS `tryton_fantasy_rugby`;

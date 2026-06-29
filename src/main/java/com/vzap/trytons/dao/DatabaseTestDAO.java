@@ -13,18 +13,18 @@ public class DatabaseTestDAO extends BaseDAO {
         List<String> tables = new ArrayList<>();
 
         Connection con = null;
-        Statement  stmt = null;
-        ResultSet  rs   = null;
+        Statement stmt = null;
+        ResultSet rs = null;
 
-       try{
-           con = getConnection();
-           stmt = con.createStatement();
-           rs = stmt.executeQuery("SHOW TABLES ");
-           while (rs.next()) {
-               tables.add(rs.getString(1));
-           }
+        try {
+            con = getConnection();
+            stmt = con.createStatement();
+            rs = stmt.executeQuery("SHOW TABLES ");
+            while (rs.next()) {
+                tables.add(rs.getString(1));
+            }
 
-        }finally {
+        } finally {
             closeResources(con, stmt, rs);
         }
 
