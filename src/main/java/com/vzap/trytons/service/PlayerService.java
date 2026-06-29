@@ -9,6 +9,7 @@ import java.util.UUID;
 
 public interface PlayerService {
     PlayerResponseDTO createPlayer(PlayerRequestDTO request);
+    List<Player> search(String search, UUID clubId, UUID positionId);
     PlayerResponseDTO getPlayer(UUID playerId);
     List<PlayerResponseDTO> getAllPlayers();
     PlayerResponseDTO updatePlayer(UUID playerId, PlayerRequestDTO request);

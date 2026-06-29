@@ -28,7 +28,6 @@ public interface PlayerDAO {
 
     Optional<Player> createPlayer(Player player);
     Optional<Player> updatePlayer(Player player);
-    List<Player> search(String search, UUID clubId, UUID positionId);
     boolean deactivatePlayer(UUID playerId);
     List<Player> getPlayersByClubId(UUID clubId);
     List<Player> getPlayersByPositionId(UUID positionId);
