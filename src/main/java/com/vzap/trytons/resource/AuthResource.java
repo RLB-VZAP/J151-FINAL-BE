@@ -1,7 +1,7 @@
 package com.vzap.trytons.resource;
 
 import com.vzap.trytons.dto.AuthApiResponse;
-import com.vzap.trytons.dto.AuthErrorResponse;
+import com.vzap.trytons.dto.ErrorResponse;
 import com.vzap.trytons.dto.LoginRequest;
 import com.vzap.trytons.dto.LoginResponse;
 import com.vzap.trytons.exceptions.ApplicationException;
@@ -46,7 +46,7 @@ public class AuthResource {
             return Response.ok(successPayload).build();
 
         } catch (ApplicationException e) {
-            AuthErrorResponse handledError = AuthErrorResponse.of(e.getMessage(), e.getErrorCode());
+            ErrorResponse handledError = ErrorResponse.of(e.getMessage(), e.getErrorCode());
 
             return Response.status(e.getStatusCode())
                     .entity(handledError)
@@ -55,7 +55,7 @@ public class AuthResource {
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Unexpected error during user login execution", e);
 
-            AuthErrorResponse fallbackError = AuthErrorResponse.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR");
+            ErrorResponse fallbackError = ErrorResponse.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR");
 
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(fallbackError)

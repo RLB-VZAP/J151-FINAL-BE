@@ -32,13 +32,13 @@ public class DatabaseHealthResource {
                 result.put("message", "connection established. " + tables.size() + " tables found in tryton_fantasy_rugby.");
             }
 
-           result.put("tables", tables);
+            result.put("tables", tables);
             return Response.ok(result).build();
 
         } catch (SQLException e) {
             result.put("status", "ERROR");
-            result.put("message","database connection failed:"+e.getMessage());
-            result.put("tables",e.getMessage());
+            result.put("message", "database connection failed:" + e.getMessage());
+            result.put("tables", e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(result).build();
         }
     }
