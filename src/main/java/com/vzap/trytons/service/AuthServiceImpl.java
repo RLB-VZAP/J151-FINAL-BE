@@ -1,6 +1,7 @@
 package com.vzap.trytons.service;
 
 import com.vzap.trytons.dao.UserDAO;
+import com.vzap.trytons.dto.AuthStatusResponse;
 import com.vzap.trytons.dto.LoginResponse;
 import com.vzap.trytons.exceptions.AuthenticationException;
 import com.vzap.trytons.exceptions.AuthorisationException;
@@ -49,6 +50,16 @@ public class AuthServiceImpl implements AuthService {
         }
 
         return new LoginResponse(user.getUserId(), user.getUsername(), user.getEmail(), user.getRole());
+    }
+
+    @Override
+    public String logout() {
+        return "";
+    }
+
+    @Override
+    public AuthStatusResponse getAuthStatus(String requestingUserId) {
+        return null;
     }
 
     private void validateCredentials(String identifier, String password) {
