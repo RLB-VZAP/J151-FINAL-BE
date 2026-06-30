@@ -24,5 +24,13 @@ import java.util.logging.Logger;
 public class PositionResource {
     private Logger LOGGER = Logger.getLogger(PositionResource.class.getName());
 
+    private Response serverError(String message, DataAccessException e) {
+        LOGGER.log(Level.SEVERE, message, e);
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponse.of(message, e.getErrorCode())).build();
+    }
 
+    private Response unexpected(Exception e) {
+        LOGGER.log(Level.SEVERE, "Unexpected error in PositionResource.", e);
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponse.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR")).build();
+    }
 }
