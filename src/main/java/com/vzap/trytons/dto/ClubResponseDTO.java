@@ -1,7 +1,12 @@
 package com.vzap.trytons.dto;
 
-import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.util.UUID;
+@Getter
+@AllArgsConstructor
 public class ClubResponseDTO {
     private UUID clubId;
     private String clubName;
