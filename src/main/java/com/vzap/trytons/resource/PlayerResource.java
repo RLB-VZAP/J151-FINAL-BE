@@ -47,25 +47,36 @@ public class PlayerResource {
         }
     }
 
-    private PlayerResponseDTO toResponse(Player p) {
+    @GET
+    @Path("/{id}")
+    public Response getPlayer(@PathParam("id") UUID id) {
+        try {
+            return Response.ok(playerService.getPlayer(id)).build();
+        } catch (ResourceNotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponse.of(e.getMessage(), e.getErrorCode())).build();
+        } catch (DataAccessException e) {
+            return serverError("Failed to load player.", e);
+        } catch (Exception e) {
+            return unexpected(e);
+        }
+    }
+
+    private PlayerResponseDTO toResponse(Player player) {
         return new PlayerResponseDTO(
-                p.getPlayerId(), p.getPlayerName(), p.getValue(),
-                p.getAttackingAbility(), p.getDefensiveAbility(), p.getKickingAbility(),
-                p.getDiscipline(), p.getConsistency(), p.getFitness(),
-                p.getCurrentForm(), p.getTotalFantasyPoints(), p.isActive(),
-                p.getClub(), p.getPosition());
+                player.getPlayerId(), player.getPlayerName(), player.getValue(), player.getAttackingAbility(),
+                player.getDefensiveAbility(), player.getKickingAbility(), player.getDiscipline(), player.getConsistency(),
+                player.getFitness(), player.getCurrentForm(), player.getTotalFantasyPoints(), player.isActive(),
+                player.getClub(), player.getPosition());
     }
 
     private Response serverError(String message, DataAccessException e) {
         LOGGER.log(Level.SEVERE, message, e);
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(ErrorResponse.of(message, e.getErrorCode())).build();
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponse.of(message, e.getErrorCode())).build();
     }
 
     private Response unexpected(Exception e) {
         LOGGER.log(Level.SEVERE, "Unexpected error in PlayerResource.", e);
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(ErrorResponse.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR")).build();
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponse.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR")).build();
     }
 
 }
