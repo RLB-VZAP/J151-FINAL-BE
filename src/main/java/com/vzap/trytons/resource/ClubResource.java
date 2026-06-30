@@ -1,7 +1,9 @@
 package com.vzap.trytons.resource;
 
+import com.vzap.trytons.dto.ClubRequestDTO;
 import com.vzap.trytons.dto.ErrorResponse;
 import com.vzap.trytons.exceptions.DataAccessException;
+import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.model.Club;
 import com.vzap.trytons.service.ClubService;
 import jakarta.inject.Inject;
@@ -9,6 +11,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -31,7 +34,19 @@ public class ClubResource {
             return unexpected(e);
         }
     }
-
+    @GET
+    @Path("/{id}")
+    public Response getClubById(@PathParam("id") UUID id) {
+        try{
+            return Response.ok(clubService.getClub(id)).build();
+        }catch(ResourceNotFoundException e){
+            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
+        }catch(DataAccessException e){
+            return serverError("Failed to load club", e);
+        }catch(Exception e){
+            return unexpected(e);
+        }
+    }
 
 
     private Response serverError(String message, DataAccessException e) {
