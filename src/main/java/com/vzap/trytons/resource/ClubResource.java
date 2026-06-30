@@ -69,6 +69,22 @@ public class ClubResource {
         }
     }
 
+    @PUT
+    @Path("/{id}")
+    public Response updateClub(@PathParam("id") UUID id, @Valid ClubRequestDTO request) {
+        try{
+            return Response.ok(clubService.updatePlayer(id, request)).build();
+        }catch(ResourceNotFoundException e){
+            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
+        }catch(ConflictException e){
+            return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
+        }catch(DataAccessException e){
+            return serverError("Failed to update club", e);
+        }catch(Exception e){
+            return unexpected(e);
+        }
+    }
+
     private Response serverError(String message, DataAccessException e) {
         LOGGER.log(Level.SEVERE, message, e);
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
