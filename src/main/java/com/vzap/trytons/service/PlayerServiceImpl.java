@@ -38,16 +38,7 @@ public class PlayerServiceImpl implements PlayerService {
         Player player = mapRequestToPlayer(request);
         player.setPlayerId(UUID.randomUUID());
 
-        /*
-         * Fantasy points are calculated by match-processing logic,
-         * not supplied by an admin player request.
-         */
         player.setTotalFantasyPoints(0);
-
-        /*
-         * A new player is active by default.
-         * Deactivation is handled through the player deactivation workflow.
-         */
         player.setActive(true);
 
         Player createdPlayer = playerDAO.createPlayer(player).orElseThrow(() -> new DataAccessException("Failed to create player.", null));
@@ -107,11 +98,7 @@ public class PlayerServiceImpl implements PlayerService {
         Player player = mapRequestToPlayer(request);
         player.setPlayerId(playerId);
 
-        /*
-         * These fields are not edited through ordinary player maintenance.
-         * Fantasy points are calculated elsewhere and status changes use
-         * the dedicated activation/deactivation workflow.
-         */
+
         player.setTotalFantasyPoints(existingPlayer.getTotalFantasyPoints());
         player.setActive(existingPlayer.isActive());
 
