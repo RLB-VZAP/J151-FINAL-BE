@@ -4,6 +4,8 @@ import com.vzap.trytons.model.Club;
 import com.vzap.trytons.model.Position;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public class PlayerResponseDTO {
@@ -21,4 +23,9 @@ public class PlayerResponseDTO {
     private boolean isActive;
     private Club club;
     private Position position;
+    private PlayerResponseDTO player;
+    private boolean isCaptain;
+    private boolean isViceCaptain;
+    private boolean isBench;
+
 }
