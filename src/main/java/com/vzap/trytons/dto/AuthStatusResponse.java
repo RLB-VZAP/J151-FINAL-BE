@@ -3,11 +3,12 @@ package com.vzap.trytons.dto;
 import com.vzap.trytons.enums.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
-@Data
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuthStatusResponse {
