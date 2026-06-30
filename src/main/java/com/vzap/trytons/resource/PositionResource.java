@@ -6,6 +6,7 @@ import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.Player;
 import com.vzap.trytons.service.PlayerService;
+import com.vzap.trytons.service.PositionService;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -24,6 +25,18 @@ import java.util.logging.Logger;
 public class PositionResource {
     private Logger LOGGER = Logger.getLogger(PositionResource.class.getName());
 
+    @Inject
+    private PositionService positionService;
+    @GET
+    public Response listPositions(){
+        try{
+            return  Response.ok(positionService.getAllPositons()).build();
+        }catch(DataAccessException e){
+            return serverError("Failed to load positions",e);
+        }catch(Exception e){
+            return unexpected(e);
+        }
+    }
     private Response serverError(String message, DataAccessException e) {
         LOGGER.log(Level.SEVERE, message, e);
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponse.of(message, e.getErrorCode())).build();
