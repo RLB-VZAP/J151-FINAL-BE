@@ -1,16 +1,22 @@
 package com.vzap.trytons.resource;
 
 import com.vzap.trytons.dto.ClubRequestDTO;
+import com.vzap.trytons.dto.ClubResponseDTO;
 import com.vzap.trytons.dto.ErrorResponse;
+import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.model.Club;
 import com.vzap.trytons.service.ClubService;
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 
+import java.net.URI;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -48,6 +54,20 @@ public class ClubResource {
         }
     }
 
+    @POST
+    public Response createClub(@Valid ClubRequestDTO request, @Context UriInfo uriInfo) {
+        try {
+            ClubResponseDTO created = clubService.createClub(request);
+            URI location = uriInfo.getAbsolutePathBuilder().path(created.getClubId().toString()).build();
+            return Response.created(location).entity(created).build();
+        }catch(ConflictException e){
+            return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
+        }catch(DataAccessException e){
+            return serverError("Failed to create club", e);
+        }catch(Exception e){
+            return unexpected(e);
+        }
+    }
 
     private Response serverError(String message, DataAccessException e) {
         LOGGER.log(Level.SEVERE, message, e);
