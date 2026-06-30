@@ -17,6 +17,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
 import java.net.URI;
+import java.security.spec.ECField;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -73,6 +74,22 @@ public class PlayerResource {
         }catch(DataAccessException e){
             return serverError("Failed to create player.", e);
         }catch (Exception e) {
+            return unexpected(e);
+        }
+    }
+
+    @PUT
+    @Path("{/id}")
+    public Response updatePlayer(@PathParam("id") UUID id, @Valid PlayerRequestDTO request){
+        try{
+            return Response.ok(playerService.updatePlayer(id, request)).build();
+        }catch (ResourceNotFoundException e){
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponse.of(e.getMessage(), e.getErrorCode())).build();
+    }catch (ConflictException e){
+            return Response.status(Response.Status.CONFLICT).entity(ErrorResponse.of(e.getMessage(), e.getErrorCode())).build();
+        }catch (DataAccessException e){
+            return serverError("Failed to update player.", e);
+        }catch (Exception e){
             return unexpected(e);
         }
     }
