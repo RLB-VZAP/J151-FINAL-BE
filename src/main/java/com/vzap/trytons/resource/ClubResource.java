@@ -21,6 +21,19 @@ public class ClubResource {
     @Inject
     private ClubService clubService;
 
+    @GET
+    public Response listClubs() {
+        try{
+            return Response.ok(clubService.getAllClubs()).build();
+        }catch(DataAccessException e) {
+            return serverError("Failed to load clubs", e);
+        }catch(Exception e){
+            return unexpected(e);
+        }
+    }
+
+
+
     private Response serverError(String message, DataAccessException e) {
         LOGGER.log(Level.SEVERE, message, e);
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
