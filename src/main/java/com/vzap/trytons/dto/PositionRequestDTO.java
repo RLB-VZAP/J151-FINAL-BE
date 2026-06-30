@@ -1,5 +1,9 @@
 package com.vzap.trytons.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
 public class PositionRequestDTO {
     private String positionName;
     private String positionCategory;

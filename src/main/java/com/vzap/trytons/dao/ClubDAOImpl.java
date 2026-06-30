@@ -1,4 +1,8 @@
 package com.vzap.trytons.dao;
+
+import com.vzap.trytons.exceptions.DataAccessException;
+import com.vzap.trytons.model.Club;
+
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.Club;
 import java.sql.Connection;
@@ -28,6 +32,7 @@ public class ClubDAOImpl extends BaseDAO implements ClubDAO {
     public Optional<Club> findByClubId(UUID clubId) {
         String query = "SELECT * FROM club WHERE clubId = ?";
         try(Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query);){
             PreparedStatement ps = con.prepareStatement(query)){
             ps.setString(1, clubId.toString());
             try (ResultSet rs = ps.executeQuery()){
