@@ -22,6 +22,5 @@ public class FantasyTeam {
     private int weeklyPoints;
     private Boolean isValid;
     private Boolean isLocked;
-
     private RegisteredUser owner;
 }
