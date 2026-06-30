@@ -2,17 +2,10 @@ package com.vzap.trytons.dto;
 
 import com.vzap.trytons.model.Club;
 import com.vzap.trytons.model.Position;
+import lombok.Getter;
 
 import java.math.BigDecimal;
-
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
-
 @Getter
-@Setter
-@NoArgsConstructor
-
 public class PlayerRequestDTO {
     private String playerName;
     private BigDecimal value;
