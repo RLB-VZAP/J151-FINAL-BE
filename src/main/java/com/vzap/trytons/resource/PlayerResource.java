@@ -38,7 +38,7 @@ public class PlayerResource {
     public Response listPlayers(@QueryParam("search") String search, @QueryParam("clubId") UUID clubId, @QueryParam("positionId") UUID positionId ) {
         try {
             if (search != null || clubId != null || positionId != null) {
-                List<PlayerResponseDTO> body = playerService.search(search, clubId, positionId).stream().map(this::toResponse).toList();
+                List<PlayerResponseDTO> body = playerService.searchPlayers(search, clubId, positionId);
                 return Response.ok(body).build();
             }
             return Response.ok(playerService.getAllPlayers()).build();

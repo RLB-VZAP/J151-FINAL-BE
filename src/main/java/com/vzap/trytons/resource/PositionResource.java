@@ -35,7 +35,7 @@ public class PositionResource {
     @GET
     public Response listPositions(){
         try{
-            return  Response.ok(positionService.getAllPositons()).build();
+            return  Response.ok(positionService.getAllPositions()).build();
         }catch(DataAccessException e){
             return serverError("Failed to load positions",e);
         }catch(Exception e){
@@ -59,7 +59,7 @@ public class PositionResource {
     @POST
     public Response createPosition(@Valid PositionRequestDTO request, @Context UriInfo uriInfo){
         try{
-            PositionResponseDTO created = positionService.createPostion(request);
+            PositionResponseDTO created = positionService.createPosition(request);
             URI location = uriInfo.getAbsolutePathBuilder().path(created.getPositionId().toString()).build();
             return Response.created(location).entity(created).build();
         }catch(ConflictException e){
@@ -75,7 +75,7 @@ public class PositionResource {
     @Path("/{id}")
     public Response updatePosition(@PathParam("id") UUID id, @Valid PositionRequestDTO request){
         try{
-            return Response.ok(positionService.updatePlayer(id, request)).build();
+            return Response.ok(positionService.updatePosition(id, request)).build();
         }catch(ResourceNotFoundException e){
             return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponse.of(e.getMessage(), e.getErrorCode())).build();
         }catch(ConflictException e){
