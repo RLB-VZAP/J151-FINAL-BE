@@ -94,6 +94,8 @@ public class PlayerResource {
         }
     }
 
+
+
     private PlayerResponseDTO toResponse(Player player) {
         return new PlayerResponseDTO(
                 player.getPlayerId(), player.getPlayerName(), player.getValue(), player.getAttackingAbility(),
