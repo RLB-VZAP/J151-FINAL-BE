@@ -3,6 +3,7 @@ package com.vzap.trytons.dto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -16,6 +17,6 @@ public class TransferResponse {
     private final LocalDateTime transferDate;
     private final boolean penaltyApplied;
     private final int penaltyPointAmount;
-    private final double newRemainingBudget;
-    private final double newTotalTeamValue;
+    private final BigDecimal newRemainingBudget;
+    private final BigDecimal newTotalTeamValue;
 }
