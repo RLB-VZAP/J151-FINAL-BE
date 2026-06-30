@@ -16,6 +16,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
+import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -57,6 +58,21 @@ public class PlayerResource {
         } catch (DataAccessException e) {
             return serverError("Failed to load player.", e);
         } catch (Exception e) {
+            return unexpected(e);
+        }
+    }
+
+    @POST
+    public Response createPlayer(@Valid PlayerRequestDTO playerRequestDTO, @Context UriInfo uriInfo) {
+        try{
+            PlayerResponseDTO created = playerService.createPlayer(playerRequestDTO);
+            URI location = uriInfo.getAbsolutePathBuilder().path(created.getPlayerId().toString()).build();
+            return Response.created(location).entity(created).build();
+        }catch(ConflictException e){
+            return Response.status(Response.Status.CONFLICT).build();
+        }catch(DataAccessException e){
+            return serverError("Failed to create player.", e);
+        }catch (Exception e) {
             return unexpected(e);
         }
     }
