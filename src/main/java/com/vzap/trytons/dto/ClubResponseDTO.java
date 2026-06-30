@@ -1,20 +1,13 @@
-package com.vzap.trytons.model;
-
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+package com.vzap.trytons.dto;
 
 import java.util.UUID;
 
-@NoArgsConstructor
-@Getter
-@Setter
-public class Club {
-
+public class ClubResponseDTO {
     private UUID clubId;
     private String clubName;
     private String location;
     private String homeVenue;
     private int strengthRating;
     private boolean isActive;
+
 }
