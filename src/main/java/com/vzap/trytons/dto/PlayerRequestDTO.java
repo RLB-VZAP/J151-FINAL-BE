@@ -2,10 +2,10 @@ package com.vzap.trytons.dto;
 
 import com.vzap.trytons.model.Club;
 import com.vzap.trytons.model.Position;
+import lombok.Getter;
 
 import java.math.BigDecimal;
-import java.util.UUID;
-
+@Getter
 public class PlayerRequestDTO {
     private String playerName;
     private BigDecimal value;
@@ -20,10 +20,4 @@ public class PlayerRequestDTO {
     private boolean isActive;
     private Club club;
     private Position position;
-    private UUID playerId;
-    private boolean isCaptain;
-    private boolean isViceCaptain;
-    private boolean isBench;
-
-
 }
