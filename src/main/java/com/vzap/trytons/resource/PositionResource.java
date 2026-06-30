@@ -4,6 +4,7 @@ import com.vzap.trytons.dto.ErrorResponse;
 import com.vzap.trytons.dto.PlayerRequestDTO;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
+import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.model.Player;
 import com.vzap.trytons.service.PlayerService;
 import com.vzap.trytons.service.PositionService;
@@ -15,6 +16,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,6 +39,20 @@ public class PositionResource {
             return unexpected(e);
         }
     }
+    @GET
+    @Path("/{id}")
+    public Response getPosition(@PathParam("id") UUID id){
+        try{
+            return  Response.ok(positionService.getPosition(id)).build();
+        }catch(ResourceNotFoundException e){
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponse.of(e.getMessage(), e.getErrorCode())).build();
+        }catch(DataAccessException e){
+            return serverError("Failed to load position",e);
+        }catch(Exception e){
+            return unexpected(e);
+        }
+    }
+
     private Response serverError(String message, DataAccessException e) {
         LOGGER.log(Level.SEVERE, message, e);
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponse.of(message, e.getErrorCode())).build();
