@@ -121,6 +121,16 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
     }
 
     @Override
+    public List<LeagueMembershipResponse> findResponsesByLeague(UUID leagueId) throws SQLException {
+        return List.of();
+    }
+
+    @Override
+    public List<LeagueMembershipResponse> findResponsesByUser(UUID userId) throws SQLException {
+        return List.of();
+    }
+
+    @Override
     public boolean existsActiveByLeagueAndUser(UUID leagueId, UUID userId) throws SQLException {
         String sql = "SELECT COUNT(*) FROM leagueMembership WHERE leagueId = ? AND registered_user_id = ? AND isActive = TRUE";
 
