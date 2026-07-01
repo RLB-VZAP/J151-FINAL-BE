@@ -1,23 +1,22 @@
 package com.vzap.trytons.model;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDate;
 import java.util.UUID;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Getter
 @Setter
 @NoArgsConstructor
+@SuperBuilder
 
 public class Leaderboard {
     private UUID leaderboardId;
-    private LocalDateTime lastUpdated;
+    private UUID leagueId;
+    private LocalDate lastUpdated;
     private String season;
-    private Boolean isMasterLeaderboard;
-
-    private League league;
-    private List<Ranking> rankings = new ArrayList<>();
+    private boolean is_master_leaderboard;
 }
