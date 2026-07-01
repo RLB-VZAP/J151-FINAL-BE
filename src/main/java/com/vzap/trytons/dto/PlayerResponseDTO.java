@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 @Getter
 @AllArgsConstructor
@@ -24,4 +26,9 @@ public class PlayerResponseDTO {
     private boolean isActive;
     private Club club;
     private Position position;
+    private PlayerResponseDTO player;
+    private boolean isCaptain;
+    private boolean isViceCaptain;
+    private boolean isBench;
+
 }
