@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Setter
@@ -30,4 +32,9 @@ public class PlayerResponseDTO {
     private boolean isActive;
     private Club club;
     private Position position;
+    private PlayerResponseDTO player;
+    private boolean isCaptain;
+    private boolean isViceCaptain;
+    private boolean isBench;
+
 }
