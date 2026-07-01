@@ -42,15 +42,30 @@ public class FantasyTeamResource {
         }
 
     }
-@GET
-@Path("/{teamId}")
-public Response viewOwnTeam(@PathParam("teamId") UUID teamId, @Context SecurityContext securityContext) {
+    @GET
+    @Path("/{teamId}")
+    public Response viewOwnTeam(@PathParam("teamId") UUID teamId, @Context SecurityContext securityContext) {
+            try{
+                UUID userId = currentUserId(securityContext);
+                ViewOwnTeamDTO team = fantasyTeamService.viewOwnTeam(userId, teamId);
+                return Response.ok(team).build();
+            }catch(AuthenticationException e){
+                return Response.status(Response.Status.UNAUTHORIZED).build();
+            }catch(ResourceNotFoundException e){
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }catch(DataAccessException e){
+                return serverError("Failed to view team",e);
+            }catch(Exception e){
+                return unexpected(e);
+            }
+    }
+
+    @GET
+    @Path("/{teamId}")
+    public Response viewOpponentTeam(@PathParam("teamId") UUID teamId){
         try{
-            UUID userId = currentUserId(securityContext);
-            ViewOwnTeamDTO team = fantasyTeamService.viewOwnTeam(userId, teamId);
+            ViewOpponentTeamDTO team = fantasyTeamService.viewOpponentTeam(teamId);
             return Response.ok(team).build();
-        }catch(AuthenticationException e){
-            return Response.status(Response.Status.UNAUTHORIZED).build();
         }catch(ResourceNotFoundException e){
             return Response.status(Response.Status.NOT_FOUND).build();
         }catch(DataAccessException e){
@@ -58,7 +73,7 @@ public Response viewOwnTeam(@PathParam("teamId") UUID teamId, @Context SecurityC
         }catch(Exception e){
             return unexpected(e);
         }
-}
+    }
 
 
 
