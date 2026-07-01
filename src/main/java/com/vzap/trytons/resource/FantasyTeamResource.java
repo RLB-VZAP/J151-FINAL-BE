@@ -22,6 +22,7 @@ public class FantasyTeamResource {
     private static final Logger LOGGER = Logger.getLogger(UserResources.class.getName());
     @Inject
     private FantasyTeamService fantasyTeamService;
+
     public Response createTeam(@Valid FantasyTeamRequestDTO request, @Context SecurityContext securityContext, @Context UriInfo uriInfo) {
         try{
         UUID userId = currentUserId(securityContext);
@@ -40,8 +41,8 @@ public class FantasyTeamResource {
         catch(Exception e){
             return unexpected(e);
         }
-
     }
+
     @GET
     @Path("/{teamId}")
     public Response viewOwnTeam(@PathParam("teamId") UUID teamId, @Context SecurityContext securityContext) {
@@ -74,6 +75,24 @@ public class FantasyTeamResource {
             return unexpected(e);
         }
     }
+
+   @PUT
+   @Path("/{teamId}")
+   public Response updateTeam(@PathParam("teamId") UUID teamId, @Valid FantasyTeamRequestDTO request, @Context SecurityContext securityContext) {
+        try{
+            UUID userId = currentUserId(securityContext);
+            FantasyTeamResponseDTO updated = fantasyTeamService.updateTeam(userId, teamId, request);
+            return Response.ok(updated).build();
+        }catch (ResourceNotFoundException e){
+            return Response.status(Response.Status.NOT_FOUND).build();
+        } catch(AuthenticationException e){
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }catch(DataAccessException e){
+            return serverError("Failed to update team",e);
+        }catch(Exception e){
+            return unexpected(e);
+        }
+   }
 
 
 
