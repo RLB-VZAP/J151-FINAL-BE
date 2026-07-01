@@ -1,7 +1,6 @@
 package com.vzap.trytons.dao;
-
 import com.vzap.trytons.model.Position;
-
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,8 +13,4 @@ public interface PositionDAO {
     public boolean updatePosition(Position position);
     public boolean deletePosition(Position position);
     public boolean existsByName(String positionName);
-
-
-
-
 }

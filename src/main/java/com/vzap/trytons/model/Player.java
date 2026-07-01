@@ -11,7 +11,6 @@ import java.util.UUID;
 @Getter
 @Setter
 public class Player {
-
     private UUID playerId;
     private String playerName;
     private BigDecimal value;
@@ -27,15 +26,4 @@ public class Player {
     private Club club;
     private Position position;
 
-    public void setPlayerId(boolean isCaptain) {
-    }
-
-    public void setViceCaptain(boolean isViceCaptain) {
-    }
-
-    public void setBench(boolean isBench) {
-    }
-
-    public void setPlayer(Player playerStub) {
-    }
 }
