@@ -1,5 +1,6 @@
 package com.vzap.trytons.dao;
 
+import com.vzap.trytons.dto.LeagueMembershipResponse;
 import com.vzap.trytons.enums.LeagueMemberRole;
 import com.vzap.trytons.model.LeagueMembership;
 
@@ -17,6 +18,10 @@ public interface LeagueMembershipDAO {
     List<LeagueMembership> findActiveByLeague(UUID leagueId) throws SQLException;
 
     List<LeagueMembership> findActiveByUser(UUID userId) throws SQLException;
+
+    List<LeagueMembershipResponse> findResponsesByLeague(UUID leagueId) throws SQLException;
+
+    List<LeagueMembershipResponse> findResponsesByUser(UUID userId) throws SQLException;
 
     boolean existsActiveByLeagueAndUser(UUID leagueId, UUID userId) throws SQLException;
 
