@@ -1,18 +1,19 @@
-package com.vzap.trytons.model;
+package com.vzap.trytons.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
-@NoArgsConstructor
 @Getter
 @Setter
-public class FantasyTeam {
-
+@NoArgsConstructor
+@AllArgsConstructor
+public class ViewOwnTeamDTO {
     private UUID teamId;
     private String teamName;
     private BigDecimal totalTeamValue;
@@ -22,5 +23,6 @@ public class FantasyTeam {
     private int weeklyPoints;
     private Boolean isValid;
     private Boolean isLocked;
-    private RegisteredUser owner;
+    private String ownerUsername;
+    private List<PlayerResponseDTO> players;
 }
