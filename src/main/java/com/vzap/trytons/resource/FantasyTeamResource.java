@@ -1,13 +1,7 @@
 package com.vzap.trytons.resource;
 
-import com.vzap.trytons.dto.ErrorResponse;
-import com.vzap.trytons.dto.FantasyTeamPlayerSelectionRequestDTO;
-import com.vzap.trytons.dto.FantasyTeamRequestDTO;
-import com.vzap.trytons.dto.FantasyTeamResponseDTO;
-import com.vzap.trytons.exceptions.AuthenticationException;
-import com.vzap.trytons.exceptions.ConflictException;
-import com.vzap.trytons.exceptions.DataAccessException;
-import com.vzap.trytons.exceptions.ValidationException;
+import com.vzap.trytons.dto.*;
+import com.vzap.trytons.exceptions.*;
 import com.vzap.trytons.service.FantasyTeamService;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -48,6 +42,24 @@ public class FantasyTeamResource {
         }
 
     }
+@GET
+@Path("/{teamId}")
+public Response viewOwnTeam(@PathParam("teamId") UUID teamId, @Context SecurityContext securityContext) {
+        try{
+            UUID userId = currentUserId(securityContext);
+            ViewOwnTeamDTO team = fantasyTeamService.viewOwnTeam(userId, teamId);
+            return Response.ok(team).build();
+        }catch(AuthenticationException e){
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }catch(ResourceNotFoundException e){
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }catch(DataAccessException e){
+            return serverError("Failed to view team",e);
+        }catch(Exception e){
+            return unexpected(e);
+        }
+}
+
 
 
     private UUID currentUserId(SecurityContext securityContext) {
