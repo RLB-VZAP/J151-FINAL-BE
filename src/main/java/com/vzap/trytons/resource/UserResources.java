@@ -33,26 +33,18 @@ public class UserResources {
             RegisteredUser created = registeredUserServices.registerUser(userRequest);
             RegisteredUserResponse body = toResponse(created);
             URI location = uriInfo.getAbsolutePathBuilder().path(created.getUsername()).build();
-            return Response.created(location)
-                    .entity(body)
-                    .build();
+            return Response.created(location).entity(body).build();
         } catch (ConflictException e) {
             ErrorResponse error = ErrorResponse.of(e.getMessage(), e.getErrorCode());
-            return Response.status(Response.Status.CONFLICT)
-                    .entity(error)
-                    .build();
+            return Response.status(Response.Status.CONFLICT).entity(error).build();
         } catch (DataAccessException e) {
             LOGGER.log(Level.SEVERE, "Registration failed to save.", e);
             ErrorResponse error = ErrorResponse.of("Registration failed.", e.getErrorCode());
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(error)
-                    .build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(error).build();
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Unexpected error during user registration.", e);
             ErrorResponse error = ErrorResponse.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR");
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(error)
-                    .build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(error).build();
         }
     }
 
