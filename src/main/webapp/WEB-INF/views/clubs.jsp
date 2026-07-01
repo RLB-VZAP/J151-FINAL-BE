@@ -1,0 +1,66 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%--
+  clubs.jsp — Club browsing page (W2-T02B)
+  Populated by the future ClubServlet (W2-T02A).
+  Expected request attributes: clubs, searchTerm, errorMessage
+--%>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Clubs - Fantasy TryTons</title>
+</head>
+<body>
+<%@ include file="/WEB-INF/views/common/navigation.jspf" %>
+
+<h1>Clubs</h1>
+
+<c:if test="${not empty errorMessage}">
+    <p class="error-message">${errorMessage}</p>
+</c:if>
+
+<form action="${pageContext.request.contextPath}/clubs" method="get">
+    <input type="text" name="search" placeholder="Search club name"
+           value="${searchTerm}" id="clubSearchInput" />
+    <button type="submit">Search</button>
+</form>
+
+<c:choose>
+    <c:when test="${empty clubs}">
+        <p id="clubsEmptyState">No clubs found matching your search.</p>
+    </c:when>
+    <c:otherwise>
+        <table id="clubsTable">
+            <thead>
+            <tr>
+                <th>Club Name</th>
+                <th>Location</th>
+                <th>Home Venue</th>
+                <th>Strength Rating</th>
+                <th>Status</th>
+            </tr>
+            </thead>
+            <tbody>
+            <c:forEach var="club" items="${clubs}">
+                <tr>
+                    <td>${club.clubName}</td>
+                    <td>${club.location}</td>
+                    <td>${club.homeVenue}</td>
+                    <td>${club.strengthRating}</td>
+                    <td>
+                        <c:choose>
+                            <c:when test="${club.active}">Active</c:when>
+                            <c:otherwise>Inactive</c:otherwise>
+                        </c:choose>
+                    </td>
+                </tr>
+            </c:forEach>
+            </tbody>
+        </table>
+    </c:otherwise>
+</c:choose>
+
+<script src="${pageContext.request.contextPath}/assets/js/search-filter.js"></script>
+</body>
+</html>

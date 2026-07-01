@@ -1,0 +1,7 @@
+<%-- src/main/webapp/WEB-INF/views/common/navigation.jspf --%>
+<%-- Shared site navigation include. Created on W2-T02B by James. --%>
+<nav class="site-nav">
+    <a href="${pageContext.request.contextPath}/">Home</a>
+    <a href="${pageContext.request.contextPath}/players">Players</a>
+    <a href="${pageContext.request.contextPath}/clubs">Clubs</a>
+</nav>

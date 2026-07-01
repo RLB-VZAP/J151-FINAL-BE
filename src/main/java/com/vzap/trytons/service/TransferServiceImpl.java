@@ -1,7 +1,5 @@
 package com.vzap.trytons.service;
 
-import com.vzap.trytons.dao.TempFantasyTeamDAO;
-import com.vzap.trytons.dao.TempPlayerDAO;
 import com.vzap.trytons.dao.TransferDAO;
 import com.vzap.trytons.dao.TransferHistoryDAO;
 import com.vzap.trytons.dto.TransferRequest;
