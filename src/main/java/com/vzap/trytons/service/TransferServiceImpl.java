@@ -1,9 +1,6 @@
 package com.vzap.trytons.service;
 
-import com.vzap.trytons.dao.TempFantasyTeamDAO;
-import com.vzap.trytons.dao.TempPlayerDAO;
-import com.vzap.trytons.dao.TransferDAO;
-import com.vzap.trytons.dao.TransferHistoryDAO;
+import com.vzap.trytons.dao.*;
 import com.vzap.trytons.dto.TransferRequest;
 import com.vzap.trytons.dto.TransferResponse;
 import com.vzap.trytons.enums.TransferWindowStatus;
@@ -32,9 +29,9 @@ public class TransferServiceImpl implements TransferService {
     @Inject
     private TransferHistoryDAO transferHistoryDAO;
     @Inject
-    private TempFantasyTeamDAO fantasyTeamDAO;
+    private FantasyTeamDAO fantasyTeamDAO;
     @Inject
-    private TempPlayerDAO playerDAO;
+    private PlayerDAO playerDAO;
     @Inject
     private TempSquadValidationService squadValidationService;
 
@@ -44,8 +41,11 @@ public class TransferServiceImpl implements TransferService {
             throw new ValidationException("A transfer must include a player to remove and/or add");
         }
 
-        FantasyTeam team = fantasyTeamDAO.getTeamById(request.getTeamId())
-                .orElseThrow(() -> new ResourceNotFoundException("Fantasy team not found"));
+        FantasyTeam team = fantasyTeamDAO.findTeamById(request.getTeamId());
+        if (team == null) {
+            throw new ResourceNotFoundException("Team with id " + request.getTeamId() + " not found");
+        }
+
 
         if (!team.getOwner().getUserId().equals(requestingUserId)) {
             throw new AuthorisationException("You do not own this fantasy team");
@@ -95,7 +95,7 @@ public class TransferServiceImpl implements TransferService {
         transferDAO.saveTransfer(transfer)
                 .orElseThrow(() -> new DataAccessException("Unable to save transfer", null));
 
-        boolean budgetUpdated = fantasyTeamDAO.updateBudgetAndValue(team.getTeamId(), newRemainingBudget, newTeamValue);
+        boolean budgetUpdated = fantasyTeamDAO.updateBudget(team.getTeamId(), newRemainingBudget, newTeamValue);
         if(!budgetUpdated){
             throw new DataAccessException("Unable to update budget after transfer", null);
         }
@@ -131,8 +131,10 @@ public class TransferServiceImpl implements TransferService {
 
     @Override
     public List<TransferResponse> getTransferHistoryForTeam(UUID requestingUserId, UUID teamId) {
-        FantasyTeam team = fantasyTeamDAO.getTeamById(teamId)
-                .orElseThrow(() -> new ResourceNotFoundException("Fantasy team not found."));
+        FantasyTeam team = fantasyTeamDAO.findTeamById(teamId);
+        if (team == null) {
+            throw new ResourceNotFoundException("Team with id " + teamId + " not found");
+        }
 
         if(!team.getOwner().equals(requestingUserId)){
             throw new AuthorisationException("You do not own this fantasy team.");

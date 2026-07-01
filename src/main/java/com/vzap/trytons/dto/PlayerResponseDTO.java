@@ -37,4 +37,6 @@ public class PlayerResponseDTO {
     private boolean isViceCaptain;
     private boolean isBench;
 
+    public PlayerResponseDTO(UUID playerId, String playerName, BigDecimal value, int attackingAbility, int defensiveAbility, int kickingAbility, int discipline, int consistency, int fitness, int currentForm, int totalFantasyPoints, boolean active, Club club, Position position) {
+    }
 }
