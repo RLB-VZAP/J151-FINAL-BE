@@ -1,24 +1,85 @@
 package com.vzap.trytons.service;
 
+import com.vzap.trytons.dao.FantasyTeamDAO;
 import com.vzap.trytons.dao.LeaderboardDAO;
+import com.vzap.trytons.dao.LeagueMembershipDAO;
+import com.vzap.trytons.dto.LeaderboardEntryResponseDTO;
+import com.vzap.trytons.model.FantasyTeam;
 import com.vzap.trytons.model.Leaderboard;
 import com.vzap.trytons.model.Ranking;
 import jakarta.inject.Inject;
 
-import java.util.Optional;
-import java.util.UUID;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class LeaderboardServiceImpl implements LeaderboardService{
     @Inject
     private LeaderboardDAO leaderboardDAO;
+    @Inject
+    private LeagueMembershipDAO leagueMembershipDAO;
+    @Inject
+    private FantasyTeamDAO  fantasyTeamDAO;
+
+    private static final Logger LOG = Logger.getLogger(LeaderboardServiceImpl.class.getName());
 
     @Override
-    public Optional<Leaderboard> getLeaderboardForLeague(UUID leagueId, UUID requestingUserId) {
-        return Optional.empty();
+    public List<LeaderboardEntryResponseDTO> getLeaderboardForLeague(UUID leagueId, UUID requestingUserId) {
+        try {
+            if (leagueMembershipDAO.existsActiveByLeagueAndUser(leagueId, requestingUserId)) {
+                Optional<Leaderboard> leaderboard = leaderboardDAO.getLeaderboardByLeagueId(leagueId);
+                if (leaderboard.isEmpty()) {
+                    return Collections.emptyList();
+                }
+                List<Ranking> rankingList = leaderboardDAO.getRankingsByLeaderboardId(leaderboard.get().getLeaderboardId());
+                List<LeaderboardEntryResponseDTO> leaderboardEntryResponseDTOList = new ArrayList<>();
+                for (Ranking ranking : rankingList) {
+                    FantasyTeam team = fantasyTeamDAO.findTeamById(ranking.getTeamId());
+                    if (team == null) {
+                        continue;
+                    }
+                    LeaderboardEntryResponseDTO dto = LeaderboardEntryResponseDTO.builder()
+                            .teamId(ranking.getTeamId())
+                            .teamName(team.getTeamName())
+                            .owner(team.getOwner().getUsername())
+                            .rank(ranking.getCurrentRanking())
+                            .weeklyPoints(team.getWeeklyPoints())
+                            .totalPoints(team.getTotalPoints())
+                            .rankMovement(ranking.getRankMovement())
+                            .build();
+
+                    leaderboardEntryResponseDTOList.add(dto);
+                }
+                return leaderboardEntryResponseDTOList;
+            }
+            return Collections.emptyList();
+        }catch (SQLException e){
+            LOG.log(Level.SEVERE, "Error checking league membership", e);
+            return Collections.emptyList();
+        }
     }
 
     @Override
-    public Optional<Ranking> getRankingForTeam(UUID teamId, UUID leaderboardId) {
+    public Optional<LeaderboardEntryResponseDTO> getRankingForTeam(UUID teamId, UUID leaderboardId) {
+        Optional<Ranking> r = leaderboardDAO.getRankingByTeamId(teamId, leaderboardId);
+        if (r.isPresent()){
+            FantasyTeam team = fantasyTeamDAO.findTeamById(r.get().getTeamId());
+            if (team == null) {
+                return Optional.empty();
+            }
+            LeaderboardEntryResponseDTO dto = LeaderboardEntryResponseDTO.builder()
+                    .teamId(team.getTeamId())
+                    .teamName(team.getTeamName())
+                    .owner(team.getOwner().getUsername())
+                    .rank(r.get().getCurrentRanking())
+                    .weeklyPoints(team.getWeeklyPoints())
+                    .totalPoints(team.getTotalPoints())
+                    .rankMovement(r.get().getRankMovement())
+                    .build();
+
+            return Optional.of(dto);
+        }
         return Optional.empty();
     }
 }
