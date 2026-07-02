@@ -1,6 +1,6 @@
 package com.vzap.trytons.dao;
 
-import com.vzap.trytons.dto.LeagueMembershipResponse;
+import com.vzap.trytons.dto.LeagueResponseDTO;
 import com.vzap.trytons.enums.LeagueMemberRole;
 import com.vzap.trytons.model.LeagueMembership;
 
@@ -11,23 +11,23 @@ import java.util.UUID;
 
 public interface LeagueMembershipDAO {
 
-    UUID createMembership(UUID leagueId, UUID userId, UUID teamId, LeagueMemberRole role) throws SQLException;
+    UUID createMembership(UUID leagueId, UUID userId, UUID teamId, LeagueMemberRole role);
 
-    Optional<LeagueMembership> findById(UUID membershipId) throws SQLException;
+    Optional<LeagueMembership> findById(UUID membershipId);
 
-    List<LeagueMembership> findActiveByLeague(UUID leagueId) throws SQLException;
+    List<LeagueMembership> findActiveByLeague(UUID leagueId);
 
-    List<LeagueMembership> findActiveByUser(UUID userId) throws SQLException;
+    List<LeagueMembership> findActiveByUser(UUID userId);
 
-    List<LeagueMembershipResponse> findResponsesByLeague(UUID leagueId) throws SQLException;
+    List<LeagueResponseDTO> findResponsesByLeague(UUID leagueId);
 
-    List<LeagueMembershipResponse> findResponsesByUser(UUID userId) throws SQLException;
+    List<LeagueResponseDTO> findResponsesByUser(UUID userId);
 
-    boolean existsActiveByLeagueAndUser(UUID leagueId, UUID userId) throws SQLException;
+    boolean existsActiveByLeagueAndUser(UUID leagueId, UUID userId);
 
-    int countActiveMembers(UUID leagueId) throws SQLException;
+    int countActiveMembers(UUID leagueId);
 
-    boolean deactivateMembership(UUID membershipId) throws SQLException;
+    boolean deactivateMembership(UUID membershipId);
 
-    boolean updateRole(UUID membershipId, LeagueMemberRole newRole) throws SQLException;
+    boolean updateRole(UUID membershipId, LeagueMemberRole newRole);
 }
