@@ -26,7 +26,19 @@
             <version>${jakartaee}</version>
             <scope>provided</scope>
         </dependency>
+        <!--.env File Management-->
+        <dependency>
+            <groupId>io.github.cdimascio</groupId>
+            <artifactId>dotenv-java</artifactId>
+            <version>3.2.0</version>
+        </dependency>
 
+        <!--Token Auth0 library-->
+        <dependency>
+            <groupId>com.auth0</groupId>
+            <artifactId>java-jwt</artifactId>
+            <version>4.5.2</version>
+        </dependency>
         <!-- MySQL JDBC Driver for DAO/JDBC database access -->
         <dependency>
             <groupId>com.mysql</groupId>
