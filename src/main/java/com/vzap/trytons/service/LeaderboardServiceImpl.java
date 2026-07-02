@@ -4,6 +4,7 @@ import com.vzap.trytons.dao.FantasyTeamDAO;
 import com.vzap.trytons.dao.LeaderboardDAO;
 import com.vzap.trytons.dao.LeagueMembershipDAO;
 import com.vzap.trytons.dto.LeaderboardEntryResponseDTO;
+import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.model.FantasyTeam;
 import com.vzap.trytons.model.Leaderboard;
 import com.vzap.trytons.model.Ranking;
@@ -25,13 +26,16 @@ public class LeaderboardServiceImpl implements LeaderboardService{
     private static final Logger LOG = Logger.getLogger(LeaderboardServiceImpl.class.getName());
 
     @Override
-    public List<LeaderboardEntryResponseDTO> getLeaderboardForLeague(UUID leagueId, UUID requestingUserId) {
+    public List<LeaderboardEntryResponseDTO> getLeaderboardForLeague(UUID leagueId, UUID requestingUserId) throws AuthorisationException {
         try {
-            if (leagueMembershipDAO.existsActiveByLeagueAndUser(leagueId, requestingUserId)) {
+            if (!leagueMembershipDAO.existsActiveByLeagueAndUser(leagueId, requestingUserId)){
+                throw new AuthorisationException("FORBIDDEN");
+            }
                 Optional<Leaderboard> leaderboard = leaderboardDAO.getLeaderboardByLeagueId(leagueId);
                 if (leaderboard.isEmpty()) {
                     return Collections.emptyList();
                 }
+
                 List<Ranking> rankingList = leaderboardDAO.getRankingsByLeaderboardId(leaderboard.get().getLeaderboardId());
                 List<LeaderboardEntryResponseDTO> leaderboardEntryResponseDTOList = new ArrayList<>();
                 for (Ranking ranking : rankingList) {
@@ -52,8 +56,6 @@ public class LeaderboardServiceImpl implements LeaderboardService{
                     leaderboardEntryResponseDTOList.add(dto);
                 }
                 return leaderboardEntryResponseDTOList;
-            }
-            return Collections.emptyList();
         }catch (SQLException e){
             LOG.log(Level.SEVERE, "Error checking league membership", e);
             return Collections.emptyList();
