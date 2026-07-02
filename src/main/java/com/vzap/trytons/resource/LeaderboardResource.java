@@ -48,6 +48,7 @@ public class LeaderboardResource {
     @GET
     @Path("/team/{teamId}")
     public Response getRankingForTeam(@PathParam("teamId") UUID teamId, @QueryParam("leaderboardId") UUID leaderboardId) {
+        //Needs Auth check.
         try{
             Optional<LeaderboardEntryResponseDTO> result = leaderboardService.getRankingForTeam(teamId, leaderboardId);
             if (result.isEmpty()) {
