@@ -1,8 +1,8 @@
 package com.vzap.trytons.filter;
 
+import com.vzap.trytons.Annotations.AdminOnly;
 import com.vzap.trytons.exceptions.AuthenticationException;
 import com.vzap.trytons.exceptions.AuthorisationException;
-import com.vzap.trytons.security.AdminOnly;
 import com.vzap.trytons.security.AuthPrincipal;
 import com.vzap.trytons.util.RoleUtil;
 import jakarta.annotation.Priority;

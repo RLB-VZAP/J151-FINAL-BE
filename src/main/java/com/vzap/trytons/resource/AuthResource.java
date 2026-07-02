@@ -1,5 +1,6 @@
 package com.vzap.trytons.resource;
 
+import com.vzap.trytons.Annotations.Authenticated;
 import com.vzap.trytons.dto.*;
 import com.vzap.trytons.exceptions.ApplicationException;
 import com.vzap.trytons.exceptions.ValidationException;
@@ -58,6 +59,7 @@ public class AuthResource {
     }
     @POST
     @Path("/logout")
+    @Authenticated
     public Response logout() {
         try {
             String acknowledgement = authService.logout();
@@ -109,3 +111,4 @@ public class AuthResource {
         }
     }
 }
+
