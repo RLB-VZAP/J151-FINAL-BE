@@ -1,198 +1,210 @@
 package com.vzap.trytons.dao;
-
-import com.vzap.trytons.dto.CreateLeagueRequest;
-import com.vzap.trytons.dto.LeagueCodeResponse;
-import com.vzap.trytons.dto.LeagueResponse;
 import com.vzap.trytons.enums.LeagueType;
+import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.League;
-
+import com.vzap.trytons.model.LeagueManager;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
+   private static final Logger LOG = Logger.getLogger((LeagueDAOImpl.class.getName()));
 
     @Override
-    public UUID createLeague(CreateLeagueRequest request, UUID managerId, String leagueCode) throws SQLException {
-        UUID newId = UUID.randomUUID();
-
-        String sql = "INSERT INTO league (leagueId, manager_user_id, leagueName, description, leagueType, leagueCode, creationDate, isActive, maxMembers)"
-                + " VALUES (?, ?, ?, ?, ?, ?, ?, TRUE, ?)";
-
-        try (Connection con = getConnection();
-             PreparedStatement stmt = con.prepareStatement(sql)) {
-            stmt.setString(1, newId.toString());
-            stmt.setString(2, managerId.toString());
-            stmt.setString(3, request.getLeagueName());
-            stmt.setString(4, request.getDescription());
-            stmt.setString(5, request.getLeagueType().name());
-            stmt.setString(6, leagueCode);
-            stmt.setTimestamp(7, Timestamp.valueOf(LocalDateTime.now()));
-            stmt.setInt(8, request.getMaxMembers());
-            stmt.executeUpdate();
-        }
-
-        return newId;
-    }
-
-    @Override
-    public Optional<League> findById(UUID leagueId) throws SQLException {
-        String sql = "SELECT leagueId, manager_user_id, leagueName, description, leagueType, leagueCode, creationDate, isActive, maxMembers"
-                + " FROM league WHERE leagueId = ?";
-
-        try (Connection con = getConnection();
-             PreparedStatement stmt = con.prepareStatement(sql)) {
-            stmt.setString(1, leagueId.toString());
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (!rs.next()) {
-                    return Optional.empty();
-                }
-                return Optional.of(rowToLeague(rs));
+    public League createLeague(League league) {
+        String query = "INSERT INTO league(leagueId,manager_user_id,leagueName,description,leagueType,leagueCode,maxMembers) VALUES (?,?,?,?,?,?,?)";
+        try(Connection con = getConnection();
+        PreparedStatement ps = con.prepareStatement(query);){
+            ps.setString(1,league.getLeagueId().toString());
+            ps.setString(2,league.getManager().getUserId().toString());
+            ps.setString(3,league.getLeagueName());
+            ps.setString(4,league.getDescription());
+            ps.setString(5,league.getLeagueType().toString());
+            ps.setString(6,league.getLeagueCode());
+            ps.setInt(7,league.getMaxMembers());
+            if (ps.executeUpdate() > 0){
+                return league;
             }
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE, "Unable to create League", e);
+            throw new DataAccessException("Unable to create League", e);
         }
+        return null;
     }
 
     @Override
-    public List<League> findAllActive() throws SQLException {
-        String sql = "SELECT leagueId, manager_user_id, leagueName, description, leagueType, leagueCode, creationDate, isActive, maxMembers"
-                + " FROM league WHERE isActive = TRUE ORDER BY creationDate DESC";
+    public Optional<League> findLeagueById(UUID leagueId) {
+        String query = "SELECT * FROM league WHERE leagueId = ?";
+        try(Connection con = getConnection();
+        PreparedStatement ps = con.prepareStatement(query);){
+            ps.setString(1, leagueId.toString());
+            ResultSet rs = ps.executeQuery();
+            if(rs.next()){
+                return Optional.of(this.rowToLeague(rs));
+            }
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE, "Unable to find League", e);
+            throw new DataAccessException("Unable to find League", e);
+        }
+        return Optional.empty();
+    }
 
+    @Override
+    public Optional<League> findLeagueByName(String leagueName) {
+        String query = "SELECT * FROM league WHERE leagueName = ?";
+        try(Connection con = getConnection();
+        PreparedStatement ps = con.prepareStatement(query);){
+            ps.setString(1, leagueName);
+            ResultSet rs = ps.executeQuery();
+            if(rs.next()){
+                return Optional.of(this.rowToLeague(rs));
+            }
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE, "Unable to find League by name", e);
+            throw new DataAccessException("Unable to find League by name", e);
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public List<League> findAllLeagues() {
         List<League> leagues = new ArrayList<>();
-
-        try (Connection con = getConnection();
-             PreparedStatement stmt = con.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                leagues.add(rowToLeague(rs));
+        String query = "SELECT * FROM league";
+        try(Connection con = getConnection();
+        PreparedStatement ps = con.prepareStatement(query);){
+            ResultSet rs = ps.executeQuery();
+            while(rs.next()){
+                leagues.add(this.rowToLeague(rs));
             }
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE, "Unable to find Leagues", e);
+            throw new DataAccessException("Unable to find Leagues", e);
         }
-
         return leagues;
     }
 
     @Override
-    public Optional<LeagueResponse> findResponseById(UUID leagueId) throws SQLException {
-        // joins manager username and counts active members in one query
-        String sql = "SELECT l.leagueId, l.leagueName, l.description, l.leagueType, l.creationDate, l.isActive, l.maxMembers,"
-                + " l.manager_user_id, u.username AS managerUsername, COUNT(lm.membershipId) AS currentMemberCount"
-                + " FROM league l"
-                + " LEFT JOIN registeredUser ru ON ru.userId = l.manager_user_id"
-                + " LEFT JOIN user u ON u.userId = ru.userId"
-                + " LEFT JOIN leagueMembership lm ON lm.leagueId = l.leagueId AND lm.isActive = TRUE"
-                + " WHERE l.leagueId = ?"
-                + " GROUP BY l.leagueId, u.username";
+    public List<League> findLeaguesByLeagueManager(UUID manager_user_id) {
+        List<League> leagues = new ArrayList<>();
+        String query = "SELECT * FROM league WHERE manager_user_id = ?";
+        try(Connection con = getConnection();
+        PreparedStatement ps = con.prepareStatement(query);){
+            ps.setString(1,manager_user_id.toString());
+            ResultSet rs = ps.executeQuery();
+            while(rs.next()){
+                leagues.add(this.rowToLeague(rs));
+            }
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE, "Unable to find League by manager ID", e);
+            throw new DataAccessException("Unable to find League by manager ID", e);
+        }
+        return leagues;
+    }
 
-        try (Connection con = getConnection();
-             PreparedStatement stmt = con.prepareStatement(sql)) {
-            stmt.setString(1, leagueId.toString());
+    @Override
+    public List<League> findLeaguesByManagerName(String username) {
+        List<League> leagues = new ArrayList<>();
+        String query = "SELECT l.* " +
+                "FROM league l " +
+                "INNER JOIN registeredUser ru ON l.manager_user_id = ru.userId " +
+                "INNER JOIN user u ON ru.userId = u.userId " +
+                "WHERE u.username = ?";
+        try(Connection con = getConnection();
+        PreparedStatement ps = con.prepareStatement(query);){
+            ps.setString(1,username);
+            ResultSet rs = ps.executeQuery();
+            while(rs.next()){
+                leagues.add(this.rowToLeague(rs));
+            }
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE, "Unable to find League by manager name", e);
+            throw new DataAccessException("Unable to find League by manager name", e);
+        }
+        return leagues;
+    }
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (!rs.next()) {
-                    return Optional.empty();
+    @Override
+    public Optional<League> findLeagueByLeagueCode(String leagueCode) {
+        String query = "SELECT * FROM league WHERE leagueCode = ?";
+        try(Connection con = getConnection();
+        PreparedStatement ps = con.prepareStatement(query);){
+            ps.setString(1, leagueCode);
+            ResultSet rs = ps.executeQuery();
+            if(rs.next()){
+                return Optional.of(this.rowToLeague(rs));
+            }
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE, "Unable to find League by league code", e);
+            throw new DataAccessException("Unable to find League by league code", e);
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public boolean existsByLeagueCode(String leagueCode) {
+        String query = "SELECT COUNT (*) FROM league WHERE leagueCode = ?";
+        try(Connection con = getConnection();
+        PreparedStatement ps = con.prepareStatement(query);){
+            ps.setString(1,leagueCode);
+            try(ResultSet rs = ps.executeQuery();){
+                if(rs.next()){
+                    return true;
                 }
-                return Optional.of(rowToLeagueResponse(rs));
             }
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE, "Unable to find League by league code", e);
+            throw new DataAccessException("Unable to find League by league code", e);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean deactivateLeague(UUID leagueId) {
+        String query = "UPDATE league SET isActive = FALSE WHERE leagueId = ?";
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setString(1, leagueId.toString());
+            return ps.executeUpdate() > 0;
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE,"League cannot be deactivated",e);
+            throw new DataAccessException("League cannot be deactivated", e);
         }
     }
 
     @Override
-    public List<LeagueResponse> findResponsesByManager(UUID managerId) throws SQLException {
-        String sql = "SELECT l.leagueId, l.leagueName, l.description, l.leagueType, l.creationDate, l.isActive, l.maxMembers,"
-                + " l.manager_user_id, u.username AS managerUsername, COUNT(lm.membershipId) AS currentMemberCount"
-                + " FROM league l"
-                + " LEFT JOIN registeredUser ru ON ru.userId = l.manager_user_id"
-                + " LEFT JOIN user u ON u.userId = ru.userId"
-                + " LEFT JOIN leagueMembership lm ON lm.leagueId = l.leagueId AND lm.isActive = TRUE"
-                + " WHERE l.manager_user_id = ?"
-                + " GROUP BY l.leagueId, u.username"
-                + " ORDER BY l.creationDate DESC";
-
-        List<LeagueResponse> list = new ArrayList<>();
-
-        try (Connection con = getConnection();
-             PreparedStatement stmt = con.prepareStatement(sql)) {
-            stmt.setString(1, managerId.toString());
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    list.add(rowToLeagueResponse(rs));
-                }
-            }
-        }
-
-        return list;
-    }
-
-    @Override
-    public boolean existsByLeagueCode(String leagueCode) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM league WHERE leagueCode = ? AND isActive = TRUE";
-
-        try (Connection con = getConnection();
-             PreparedStatement stmt = con.prepareStatement(sql)) {
-            stmt.setString(1, leagueCode);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                rs.next();
-                return rs.getInt(1) > 0;
-            }
+    public boolean updateLeague(League league) {
+        String query = "UPDATE league SET leagueName = ?, description = ?, isActive = ?, maxMembers = ? WHERE leagueId = ?";
+        try(Connection con = getConnection();
+        PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setString(1,league.getLeagueName());
+            ps.setString(2,league.getDescription());
+            ps.setBoolean(3,league.getIsActive());
+            ps.setInt(4,league.getMaxMembers());
+            ps.setString(5,league.getLeagueId().toString());
+            return ps.executeUpdate() > 0;
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE,"League cannot be updated",e);
+            throw new DataAccessException("League cannot be updated", e);
         }
     }
 
     @Override
-    public Optional<UUID> findLeagueIdByCode(String leagueCode) throws SQLException {
-        String sql = "SELECT leagueId FROM league WHERE leagueCode = ? AND isActive = TRUE";
-
-        try (Connection con = getConnection();
-             PreparedStatement stmt = con.prepareStatement(sql)) {
-            stmt.setString(1, leagueCode);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (!rs.next()) {
-                    return Optional.empty();
-                }
-                return Optional.of(UUID.fromString(rs.getString("leagueId")));
-            }
-        }
-    }
-
-    @Override
-    // only call this after confirming the requester is the league manager
-    public Optional<LeagueCodeResponse> findLeagueCode(UUID leagueId) throws SQLException {
-        String sql = "SELECT leagueId, leagueCode FROM league WHERE leagueId = ?";
-
-        try (Connection con = getConnection();
-             PreparedStatement stmt = con.prepareStatement(sql)) {
-            stmt.setString(1, leagueId.toString());
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (!rs.next()) {
-                    return Optional.empty();
-                }
-                LeagueCodeResponse response = new LeagueCodeResponse(
-                        UUID.fromString(rs.getString("leagueId")),
-                        rs.getString("leagueCode")
-                );
-                return Optional.of(response);
-            }
-        }
-    }
-
-    @Override
-    public boolean deactivateLeague(UUID leagueId) throws SQLException {
-        String sql = "UPDATE league SET isActive = FALSE WHERE leagueId = ?";
-
-        try (Connection con = getConnection();
-             PreparedStatement stmt = con.prepareStatement(sql)) {
-            stmt.setString(1, leagueId.toString());
-            return stmt.executeUpdate() > 0;
+    public boolean deleteLeague(UUID leagueId) {
+        String query = "DELETE FROM league WHERE leagueId = ?";
+        try(Connection con = getConnection();
+        PreparedStatement pr = con.prepareStatement(query);){
+            pr.setString(1,leagueId.toString());
+            return pr.executeUpdate() > 0;
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE,"League cannot be deleted",e);
+            throw new DataAccessException("League cannot be deleted", e);
         }
     }
 
@@ -206,26 +218,12 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
         league.setCreationDate(rs.getTimestamp("creationDate").toLocalDateTime());
         league.setIsActive(rs.getBoolean("isActive"));
         league.setMaxMembers(rs.getInt("maxMembers"));
+        String manager_user_id = rs.getString("manager_user_id");
+        if(manager_user_id!=null){
+            LeagueManager manager = new LeagueManager();
+            manager.setUserId(UUID.fromString(manager_user_id));
+            league.setManager(manager);
+        }
         return league;
     }
-
-    private LeagueResponse rowToLeagueResponse(ResultSet rs) throws SQLException {
-        LeagueResponse dto = new LeagueResponse();
-        dto.setLeagueId(UUID.fromString(rs.getString("leagueId")));
-        dto.setLeagueName(rs.getString("leagueName"));
-        dto.setDescription(rs.getString("description"));
-        dto.setLeagueType(LeagueType.valueOf(rs.getString("leagueType")));
-        dto.setCreationDate(rs.getTimestamp("creationDate").toLocalDateTime());
-        dto.setIsActive(rs.getBoolean("isActive"));
-        dto.setMaxMembers(rs.getInt("maxMembers"));
-        dto.setCurrentMemberCount(rs.getInt("currentMemberCount"));
-
-        String rawId = rs.getString("manager_user_id");
-        if (rawId != null) {
-            dto.setManagerId(UUID.fromString(rawId));
-            dto.setManagerUsername(rs.getString("managerUsername"));
-        }
-
-        return dto;
     }
-}
