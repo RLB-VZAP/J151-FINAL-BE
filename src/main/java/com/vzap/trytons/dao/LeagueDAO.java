@@ -5,13 +5,15 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface LeagueDAO {
-   League saveLeague(League league);
+   League createLeague(League league);
     Optional<League> findLeagueById(UUID leagueId);
+    Optional<League> findLeagueByName(String leagueName);
     List<League> findAllLeagues();
-    List<League> findLeaguesByLeagueManager(UUID userId);//could also be with their name
-    Optional<League> findLeagueByLeagueCode(UUID leagueCode);
+    List<League> findLeaguesByLeagueManager(UUID manager_user_Id);
+    List<League> findLeaguesByManagerName(String username);
+    Optional<League> findLeagueByLeagueCode(String leagueCode);
     boolean existsByLeagueCode(String leagueCode);
     boolean deactivateLeague(UUID leagueId);
-    League updateLeague(League league);
+    boolean updateLeague(League league);
     boolean deleteLeague(UUID leagueId);
 }
