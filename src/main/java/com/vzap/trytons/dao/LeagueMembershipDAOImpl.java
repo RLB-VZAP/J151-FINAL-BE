@@ -3,6 +3,7 @@ import com.vzap.trytons.dto.LeagueResponseDTO;
 import com.vzap.trytons.enums.LeagueMemberRole;
 import com.vzap.trytons.enums.LeagueType;
 import com.vzap.trytons.exceptions.DataAccessException;
+import com.vzap.trytons.model.League;
 import com.vzap.trytons.model.LeagueMembership;
 
 import java.sql.Timestamp;
@@ -29,27 +30,40 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
             "l.leagueId, l.leagueName, l.description, l.leagueType, l.creationDate";
 
     @Override
-    public UUID createMembership(UUID leagueId, UUID userId, UUID teamId, LeagueMemberRole role){
-        UUID newid = UUID.randomUUID();
+    public LeagueMembership createMembership(UUID leagueId, UUID userId, UUID teamId, LeagueMemberRole role) {
+        UUID newId = UUID.randomUUID();
+        LocalDateTime joinDate = LocalDateTime.now();
 
-        String sql = "INSERT INTO leagueMembership (membershipId, leagueId, registered_user_id, teamId, isActive, joinDate, memberRole)" + " VALUES (?, ?, ?, ?, TRUE, ?, ?)";
+        String sql = "INSERT INTO leagueMembership (membershipId, leagueId, registered_user_id, teamId, isActive, " +
+                "joinDate, memberRole)" + " VALUES (?, ?, ?, ?, TRUE, ?, ?)";
 
         try (Connection con = getConnection();
-             PreparedStatement stmt = con.prepareStatement(sql)) {
-            stmt.setString(1, newid.toString());
+             PreparedStatement stmt = con.prepareStatement(sql)){
+            stmt.setString(1, newId.toString());
             stmt.setString(2, leagueId.toString());
             stmt.setString(3, userId.toString());
             stmt.setString(4, teamId.toString());
-            stmt.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
+            stmt.setTimestamp(5, Timestamp.valueOf(joinDate));
             stmt.setString(6, role.name());
             stmt.executeUpdate();
-        } catch (SQLException e) {
+        } catch (SQLException e){
             LOGGER.log(Level.SEVERE, "Failed to create membership for league" + leagueId + " user" + userId
                     + " team" + teamId, e);
             throw new DataAccessException("Failed to create membership for league" + leagueId + " user" + userId
                     + " team" + teamId, e);
         }
-        return newid;
+
+        League league = new League();
+        league.setLeagueId(leagueId);
+
+        LeagueMembership membership = new LeagueMembership();
+        membership.setMembershipId(newId);
+        membership.setIsActive(true);
+        membership.setJoinDate(joinDate);
+        membership.setMemberRole(role);
+        membership.setLeague(league);
+
+        return membership;
     }
 
     @Override
@@ -113,29 +127,29 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
         return list;
     }
 
-    private LeagueResponseDTO rowtoResponseDTO(ResultSet rs) throws SQLException {
-        LeagueResponseDTO dto = new LeagueResponseDTO();
-        dto.setLeagueId(parseUuid(rs.getString("leagueId"), "leagueId"));
-        dto.setLeagueName(rs.getString("leagueName"));
-        dto.setDescription(rs.getString("description"));
-        dto.setLeagueType(LeagueType.valueOf(rs.getString("leagueType")));
-        dto.setCreationDate(parseTimestamp(rs.getTimestamp("creationDate"), "creationDate"));
-        return dto;
+    private League rowToLeague(ResultSet rs) throws SQLException {
+        League league = new League();
+        league.setLeagueId(parseUuid(rs.getString("leagueId"), "leagueId"));
+        league.setLeagueName(rs.getString("leagueName"));
+        league.setDescription(rs.getString("description"));
+        league.setLeagueType(LeagueType.valueOf(rs.getString("leagueType")));
+        league.setCreationDate(parseTimestamp(rs.getTimestamp("creationDate"), "creationDate"));
+        return league;
     }
 
     @Override
-    public List<LeagueResponseDTO> findResponsesByUser(UUID userId) {
+    public List<League> findLeaguesByUser(UUID userId) {
         String sql = "SELECT " + RESPONSE_FIELDS + RESPONSE_JOIN
                 + " WHERE lm.registered_user_id = ? AND lm.isActive = TRUE ORDER BY lm.joinDate DESC";
 
-        List<LeagueResponseDTO> list = new ArrayList<>();
+        List<League> list = new ArrayList<>();
 
         try (Connection con = getConnection();
              PreparedStatement stmt = con.prepareStatement(sql)) {
             stmt.setString(1, userId.toString());
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    list.add(rowtoResponseDTO(rs));
+                    list.add(rowToLeague(rs));
                 }
             }
         } catch (SQLException e) {
@@ -146,18 +160,18 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
     }
 
     @Override
-    public List<LeagueResponseDTO> findResponsesByLeague(UUID leagueId) {
+    public List<League> findLeaguesByLeague(UUID leagueId) {
         String sql = "SELECT " + RESPONSE_FIELDS + RESPONSE_JOIN
                 + " WHERE lm.leagueId = ? AND lm.isActive = TRUE ORDER BY lm.joinDate DESC";
 
-        List<LeagueResponseDTO> list = new ArrayList<>();
+        List<League> list = new ArrayList<>();
 
         try (Connection con = getConnection();
              PreparedStatement stmt = con.prepareStatement(sql)) {
             stmt.setString(1, leagueId.toString());
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    list.add(rowtoResponseDTO(rs));
+                    list.add(rowToLeague(rs));
                 }
             }
         } catch (SQLException e) {
