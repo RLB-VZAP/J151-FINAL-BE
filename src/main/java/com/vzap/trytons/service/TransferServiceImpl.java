@@ -6,8 +6,8 @@ import com.vzap.trytons.dao.TempFantasyTeamDAO;
 import com.vzap.trytons.dao.TempPlayerDAO;
 import com.vzap.trytons.dao.TransferDAO;
 import com.vzap.trytons.dao.TransferHistoryDAO;
-import com.vzap.trytons.dto.TransferRequest;
-import com.vzap.trytons.dto.TransferResponse;
+import com.vzap.trytons.dto.TransferRequestDTO;
+import com.vzap.trytons.dto.TransferResponseDTO;
 import com.vzap.trytons.enums.TransferWindowStatus;
 import com.vzap.trytons.exceptions.*;
 import com.vzap.trytons.model.FantasyTeam;
@@ -41,7 +41,7 @@ public class TransferServiceImpl implements TransferService {
     private SquadValidationService squadValidationService;
 
     @Override
-    public TransferResponse executeTransfer(UUID requestingUserId, TransferRequest request) {
+    public TransferResponseDTO executeTransfer(UUID requestingUserId, TransferRequestDTO request) {
         if(request.getRemovedPlayerId() == null && request.getAddedPlayerId() == null) {
             throw new ValidationException("A transfer must include a player to remove and/or add");
         }
@@ -118,7 +118,7 @@ public class TransferServiceImpl implements TransferService {
         transferHistoryDAO.saveTransferHistory(history)
                 .orElseThrow(() -> new DataAccessException("Unable to save transfer history", null));
 
-        return new TransferResponse(
+        return new TransferResponseDTO(
                 transfer.getTransferId(),
                 team.getTeamId(),
                 removedPlayer != null ? removedPlayer.getPlayerId() : null,
@@ -132,7 +132,7 @@ public class TransferServiceImpl implements TransferService {
     }
 
     @Override
-    public List<TransferResponse> getTransferHistoryForTeam(UUID requestingUserId, UUID teamId) {
+    public List<TransferResponseDTO> getTransferHistoryForTeam(UUID requestingUserId, UUID teamId) {
         FantasyTeam team = fantasyTeamDAO.getTeamById(teamId)
                 .orElseThrow(() -> new ResourceNotFoundException("Fantasy team not found."));
 
@@ -142,7 +142,7 @@ public class TransferServiceImpl implements TransferService {
 
         List<Transfer> transfers = transferDAO.getTransfersByTeamId(teamId);
         return transfers.stream()
-                .map(t -> new TransferResponse(
+                .map(t -> new TransferResponseDTO(
                 t.getTransferId(),
                 teamId,
                 t.getRemovedPlayer() != null ? t.getRemovedPlayer().getPlayerId() : null,
