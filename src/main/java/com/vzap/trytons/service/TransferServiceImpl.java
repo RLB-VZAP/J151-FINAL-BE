@@ -37,7 +37,7 @@ public class TransferServiceImpl implements TransferService {
 
     @Override
     public TransferResponseDTO executeTransfer(UUID requestingUserId, TransferRequestDTO request) {
-        if(request.getRemovedPlayerId() == null && request.getAddedPlayerId() == null) {
+        if (request.getRemovedPlayerId() == null && request.getAddedPlayerId() == null) {
             throw new ValidationException("A transfer must include a player to remove and/or add");
         }
 
@@ -45,6 +45,7 @@ public class TransferServiceImpl implements TransferService {
                 && request.getAddedPlayerId() != null
                 && request.getRemovedPlayerId().equals(request.getAddedPlayerId())) {
             throw new ValidationException("The same player cannot be both added and removed in one transfer.");
+        }
 
         FantasyTeam team = fantasyTeamDAO.getTeamById(request.getTeamId())
                 .orElseThrow(() -> new ResourceNotFoundException("Fantasy team not found"));
@@ -53,77 +54,77 @@ public class TransferServiceImpl implements TransferService {
             throw new AuthorisationException("You do not own this fantasy team");
         }
 
-        if (Boolean.TRUE.equals(team.getIsLocked())){
+        if (Boolean.TRUE.equals(team.getIsLocked())) {
             throw new BusinessRuleException("This team cannot be transferred while locked");
         }
 
-            List<TeamPlayerSelection> currentSquad = fantasyTeamPlayerDAO.getSquadByTeamId(request.getTeamId());
+        List<TeamPlayerSelection> currentSquad = fantasyTeamPlayerDAO.getSquadByTeamId(request.getTeamId());
 
-            if (request.getRemovedPlayerId() != null) {
-                boolean inSquad = currentSquad.stream()
-                        .anyMatch(s -> s.getPlayer().getPlayerId().equals(request.getRemovedPlayerId()));
-                if (!inSquad) {
-                    throw new BusinessRuleException("The player you are trying to remove is not in your squad.");
-                }
+        if (request.getRemovedPlayerId() != null) {
+            boolean inSquad = currentSquad.stream()
+                    .anyMatch(s -> s.getPlayer().getPlayerId().equals(request.getRemovedPlayerId()));
+            if (!inSquad) {
+                throw new BusinessRuleException("The player you are trying to remove is not in your squad.");
             }
+        }
 
-            if (request.getAddedPlayerId() != null) {
-                boolean alreadyInSquad = currentSquad.stream()
-                        .anyMatch(s -> s.getPlayer().getPlayerId().equals(request.getAddedPlayerId()));
-                if (alreadyInSquad) {
-                    throw new BusinessRuleException("The player you are trying to add is already in your squad.");
-                }
+        if (request.getAddedPlayerId() != null) {
+            boolean alreadyInSquad = currentSquad.stream()
+                    .anyMatch(s -> s.getPlayer().getPlayerId().equals(request.getAddedPlayerId()));
+            if (alreadyInSquad) {
+                throw new BusinessRuleException("The player you are trying to add is already in your squad.");
             }
+        }
 
-            Player addedPlayer = null;
-        if(request.getAddedPlayerId() != null) {
+        Player addedPlayer = null;
+        if (request.getAddedPlayerId() != null) {
             addedPlayer = playerDAO.getPlayerById(request.getAddedPlayerId())
                     .orElseThrow(() -> new ResourceNotFoundException("Player not found"));
         }
 
         Player removedPlayer = null;
-        if(request.getRemovedPlayerId() != null) {
+        if (request.getRemovedPlayerId() != null) {
             removedPlayer = playerDAO.getPlayerById(request.getRemovedPlayerId())
-                    .orElseThrow(() ->  new ResourceNotFoundException("Player not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Player not found"));
         }
 
         BigDecimal removedValue = removedPlayer != null ? removedPlayer.getValue() : BigDecimal.ZERO;
         BigDecimal addedValue = addedPlayer != null ? addedPlayer.getValue() : BigDecimal.ZERO;
 
-            if (removedValue == null) {
-                throw new BusinessRuleException("Removed player has no value set — cannot process transfer.");
-            }
-            if (addedPlayer != null && addedValue == null) {
-                throw new BusinessRuleException("Added player has no value set — cannot process transfer.");
-            }
+        if (removedValue == null) {
+            throw new BusinessRuleException("Removed player has no value set — cannot process transfer.");
+        }
+        if (addedPlayer != null && addedValue == null) {
+            throw new BusinessRuleException("Added player has no value set — cannot process transfer.");
+        }
 
         BigDecimal oldRemainingBudget = team.getRemainingBudget();
         BigDecimal oldTeamValue = team.getTotalTeamValue();
         BigDecimal newRemainingBudget = oldRemainingBudget.add(removedValue).subtract(addedValue);
         BigDecimal newTeamValue = oldTeamValue.subtract(removedValue).add(addedValue);
 
-            if (newRemainingBudget.compareTo(BigDecimal.ZERO) < 0) {
-                throw new BusinessRuleException("You cannot afford this transfer. Insufficient remaining budget.");
-            }
+        if (newRemainingBudget.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessRuleException("You cannot afford this transfer. Insufficient remaining budget.");
+        }
 
-            List<UUID> proposedPlayerIds = currentSquad.stream()
-                    .map(s -> s.getPlayer().getPlayerId())
-                    .collect(Collectors.toList());
+        List<UUID> proposedPlayerIds = currentSquad.stream()
+                .map(s -> s.getPlayer().getPlayerId())
+                .collect(Collectors.toList());
 
-            if (request.getRemovedPlayerId() != null) {
-                proposedPlayerIds.remove(request.getRemovedPlayerId());
-            }
-            if (request.getAddedPlayerId() != null) {
-                proposedPlayerIds.add(request.getAddedPlayerId());
-            }
+        if (request.getRemovedPlayerId() != null) {
+            proposedPlayerIds.remove(request.getRemovedPlayerId());
+        }
+        if (request.getAddedPlayerId() != null) {
+            proposedPlayerIds.add(request.getAddedPlayerId());
+        }
 
-            SquadValidationResultDTO validationResult = squadValidationService.validateSquad(
-                    proposedPlayerIds, newTeamValue);
+        SquadValidationResultDTO validationResult = squadValidationService.validateSquad(
+                proposedPlayerIds, newTeamValue);
 
-            if(validationResult.isValid()){
+        if (validationResult.isValid()) {
             String firstError = validationResult.getErrors().get(0).getMessage();
             throw new BusinessRuleException("Squad validation failed: " + firstError);
-            }
+        }
 
         int transfersAlreadyThisRound = transferDAO.getTransfersByTeamId(team.getTeamId()).size();
         boolean penaltyApplied = transfersAlreadyThisRound >= FREE_TRANSFERS_PER_ROUND;
@@ -131,10 +132,10 @@ public class TransferServiceImpl implements TransferService {
 
         fantasyTeamPlayerDAO.replaceSquad(request.getTeamId(), proposedPlayerIds);
 
-            boolean budgetUpdated = fantasyTeamDAO.updateBudgetAndValue(team.getTeamId(), newRemainingBudget, newTeamValue);
-            if(!budgetUpdated){
-                throw new DataAccessException("Unable to update budget after transfer", null);
-            }
+        boolean budgetUpdated = fantasyTeamDAO.updateBudgetAndValue(team.getTeamId(), newRemainingBudget, newTeamValue);
+        if (!budgetUpdated) {
+            throw new DataAccessException("Unable to update budget after transfer", null);
+        }
 
         Transfer transfer = new Transfer();
         transfer.setTransferId(UUID.randomUUID());
@@ -184,22 +185,24 @@ public class TransferServiceImpl implements TransferService {
         FantasyTeam team = fantasyTeamDAO.getTeamById(teamId)
                 .orElseThrow(() -> new ResourceNotFoundException("Fantasy team not found."));
 
-        if(!team.getOwner().equals(requestingUserId)){
+        if (!team.getOwner().getUserId().equals(requestingUserId)) {
             throw new AuthorisationException("You do not own this fantasy team.");
         }
 
         List<Transfer> transfers = transferDAO.getTransfersByTeamId(teamId);
+
         return transfers.stream()
                 .map(t -> new TransferResponseDTO(
-                t.getTransferId(),
-                teamId,
-                t.getRemovedPlayer() != null ? t.getRemovedPlayer().getPlayerId() : null,
-                t.getAddedPlayer() != null ? t.getAddedPlayer().getPlayerId() : null,
-                t.getTransferDate(),
-                Boolean.TRUE.equals(t.getPenaltyApplied()),
-                t.getPenaltyPoints(),
-                null,
-                null
-        )).collect(Collectors.toList());
+                        t.getTransferId(),
+                        teamId,
+                        t.getRemovedPlayer() != null ? t.getRemovedPlayer().getPlayerId() : null,
+                        t.getAddedPlayer() != null ? t.getAddedPlayer().getPlayerId() : null,
+                        t.getTransferDate(),
+                        Boolean.TRUE.equals(t.getPenaltyApplied()),
+                        t.getPenaltyPoints(),
+                        null,
+                        null
+                )).collect(Collectors.toList());
     }
 }
+
