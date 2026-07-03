@@ -1,5 +1,7 @@
 package com.vzap.trytons.service;
 
+import com.vzap.trytons.dao.FantasyTeamDAO;
+import com.vzap.trytons.dao.PlayerDAO;
 import com.vzap.trytons.dao.TempFantasyTeamDAO;
 import com.vzap.trytons.dao.TempPlayerDAO;
 import com.vzap.trytons.dao.TransferDAO;
@@ -31,9 +33,9 @@ public class TransferServiceImpl implements TransferService {
     @Inject
     private TransferHistoryDAO transferHistoryDAO;
     @Inject
-    private TempFantasyTeamDAO fantasyTeamDAO;
+    private FantasyTeamDAO fantasyTeamDAO;
     @Inject
-    private TempPlayerDAO playerDAO;
+    private PlayerDAO playerDAO;
     @Inject
     private SquadValidationService squadValidationService;
 
