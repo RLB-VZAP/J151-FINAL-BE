@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 
 @Getter
-public class RegisteredUserRequest {
+public class RegisteredUserRequestDTO {
     @NotBlank(message = "Email can not be blank")
     @Pattern(regexp = "\\S+", message = "Email cannot contain spaces")
     @Email(message = "Must be a valid Email")
