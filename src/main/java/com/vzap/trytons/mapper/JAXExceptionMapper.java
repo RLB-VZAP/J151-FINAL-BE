@@ -1,6 +1,6 @@
 package com.vzap.trytons.mapper;
 
-import com.vzap.trytons.dto.ErrorResponse;
+import com.vzap.trytons.dto.ErrorResponseDTO;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.core.Response;
@@ -20,7 +20,7 @@ public class JAXExceptionMapper implements ExceptionMapper<ConstraintViolationEx
     if (message.isBlank()) {
         message = "Invalid request structure";
     }
-    ErrorResponse error = ErrorResponse.of(message, "VALIDATION_ERROR");
+    ErrorResponseDTO error = ErrorResponseDTO.of(message, "VALIDATION_ERROR");
     return Response.status(Response.Status.BAD_REQUEST)
             .entity(error)
             .build();

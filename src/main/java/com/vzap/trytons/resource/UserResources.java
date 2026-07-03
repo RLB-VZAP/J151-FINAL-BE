@@ -1,8 +1,8 @@
 package com.vzap.trytons.resource;
 
-import com.vzap.trytons.dto.ErrorResponse;
-import com.vzap.trytons.dto.RegisteredUserRequest;
-import com.vzap.trytons.dto.RegisteredUserResponse;
+import com.vzap.trytons.dto.ErrorResponseDTO;
+import com.vzap.trytons.dto.RegisteredUserRequestDTO;
+import com.vzap.trytons.dto.RegisteredUserResponseDTO;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.RegisteredUser;
@@ -27,28 +27,28 @@ public class UserResources {
     @Inject
     private RegisteredUserServices registeredUserServices;
     @POST
-    public Response registerUser(@Valid RegisteredUserRequest userRequest, @Context UriInfo uriInfo) {
+    public Response registerUser(@Valid RegisteredUserRequestDTO userRequest, @Context UriInfo uriInfo) {
         try {
             RegisteredUser created = registeredUserServices.registerUser(userRequest);
-            RegisteredUserResponse body = toResponse(created);
+            RegisteredUserResponseDTO body = toResponse(created);
             URI location = uriInfo.getAbsolutePathBuilder().path(created.getUsername()).build();
             return Response.created(location).entity(body).build();
         } catch (ConflictException e) {
-            ErrorResponse error = ErrorResponse.of(e.getMessage(), e.getErrorCode());
+            ErrorResponseDTO error = ErrorResponseDTO.of(e.getMessage(), e.getErrorCode());
             return Response.status(Response.Status.CONFLICT).entity(error).build();
         } catch (DataAccessException e) {
             LOGGER.log(Level.SEVERE, "Registration failed to save.", e);
-            ErrorResponse error = ErrorResponse.of("Registration failed.", e.getErrorCode());
+            ErrorResponseDTO error = ErrorResponseDTO.of("Registration failed.", e.getErrorCode());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(error).build();
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Unexpected error during user registration.", e);
-            ErrorResponse error = ErrorResponse.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR");
+            ErrorResponseDTO error = ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR");
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(error).build();
         }
     }
 
-    public RegisteredUserResponse toResponse(RegisteredUser created) {
-        return new RegisteredUserResponse(created.getUserId(), created.getUsername(), created.getRegistrationStatus()
+    public RegisteredUserResponseDTO toResponse(RegisteredUser created) {
+        return new RegisteredUserResponseDTO(created.getUserId(), created.getUsername(), created.getRegistrationStatus()
         );
     }
 }

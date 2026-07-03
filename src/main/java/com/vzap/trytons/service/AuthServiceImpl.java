@@ -1,8 +1,8 @@
 package com.vzap.trytons.service;
 
 import com.vzap.trytons.dao.UserDAO;
-import com.vzap.trytons.dto.AuthStatusResponse;
-import com.vzap.trytons.dto.LoginResponse;
+import com.vzap.trytons.dto.AuthStatusResponseDTO;
+import com.vzap.trytons.dto.LoginResponseDTO;
 import com.vzap.trytons.exceptions.AuthenticationException;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.DataAccessException;
@@ -22,7 +22,7 @@ public class AuthServiceImpl implements AuthService {
     private UserDAO userDAO;
 
     @Override
-    public LoginResponse authenticate(String identifier, String password) {
+    public LoginResponseDTO authenticate(String identifier, String password) {
 
         validateCredentials(identifier, password);
         String cleanedIdentifier = identifier.trim();
@@ -49,7 +49,7 @@ public class AuthServiceImpl implements AuthService {
             throw new DataAccessException("Unable to update the user's last login time.", null);
         }
 
-        return new LoginResponse(user.getUserId(), user.getUsername(), user.getEmail(), user.getRole());
+        return new LoginResponseDTO(user.getUserId(), user.getUsername(), user.getEmail(), user.getRole());
     }
 
     @Override
@@ -58,7 +58,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthStatusResponse getAuthStatus(String requestingUserId) {
+    public AuthStatusResponseDTO getAuthStatus(String requestingUserId) {
         return null;
     }
 
