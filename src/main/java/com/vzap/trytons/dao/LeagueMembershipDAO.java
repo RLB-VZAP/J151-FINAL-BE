@@ -1,17 +1,16 @@
 package com.vzap.trytons.dao;
 
-import com.vzap.trytons.dto.LeagueResponseDTO;
 import com.vzap.trytons.enums.LeagueMemberRole;
+import com.vzap.trytons.model.League;
 import com.vzap.trytons.model.LeagueMembership;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface LeagueMembershipDAO {
 
-    UUID createMembership(UUID leagueId, UUID userId, UUID teamId, LeagueMemberRole role);
+    LeagueMembership createMembership(UUID leagueId, UUID userId, UUID teamId, LeagueMemberRole role);
 
     Optional<LeagueMembership> findById(UUID membershipId);
 
@@ -19,9 +18,9 @@ public interface LeagueMembershipDAO {
 
     List<LeagueMembership> findActiveByUser(UUID userId);
 
-    List<LeagueResponseDTO> findResponsesByLeague(UUID leagueId);
+    List<League> findLeaguesByLeague(UUID leagueId); //
 
-    List<LeagueResponseDTO> findResponsesByUser(UUID userId);
+    List<League> findLeaguesByUser(UUID userId); //
 
     boolean existsActiveByLeagueAndUser(UUID leagueId, UUID userId);
 
@@ -30,4 +29,6 @@ public interface LeagueMembershipDAO {
     boolean deactivateMembership(UUID membershipId);
 
     boolean updateRole(UUID membershipId, LeagueMemberRole newRole);
+
+
 }
