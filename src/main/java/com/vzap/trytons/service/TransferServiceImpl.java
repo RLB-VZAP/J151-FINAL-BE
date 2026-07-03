@@ -4,6 +4,7 @@ import com.vzap.trytons.dao.TempFantasyTeamDAO;
 import com.vzap.trytons.dao.TempPlayerDAO;
 import com.vzap.trytons.dao.TransferDAO;
 import com.vzap.trytons.dao.TransferHistoryDAO;
+import com.vzap.trytons.dto.SquadValidationResult;
 import com.vzap.trytons.dto.TransferRequest;
 import com.vzap.trytons.dto.TransferResponse;
 import com.vzap.trytons.enums.TransferWindowStatus;
@@ -22,8 +23,6 @@ import java.util.stream.Collectors;
 
 public class TransferServiceImpl implements TransferService {
 
-    //It's stored in only one place in the class at the very top
-    //to make it easy for admins to change, since only they have such permissions.
     private static final int FREE_TRANSFERS_PER_ROUND = 1;
     private static final int PENALTY_POINTS_PER_EXTRA_TRANSFER = 4;
 
@@ -36,7 +35,7 @@ public class TransferServiceImpl implements TransferService {
     @Inject
     private TempPlayerDAO playerDAO;
     @Inject
-    private TempSquadValidationService squadValidationService;
+    private SquadValidationService squadValidationService;
 
     @Override
     public TransferResponse executeTransfer(UUID requestingUserId, TransferRequest request) {
@@ -59,19 +58,25 @@ public class TransferServiceImpl implements TransferService {
         if(request.getAddedPlayerId() != null) {
             addedPlayer = playerDAO.getPlayerById(request.getAddedPlayerId())
                     .orElseThrow(() -> new ResourceNotFoundException("Player not found"));
-            squadValidationService.validatePlayerIsAvailable(addedPlayer);
         }
 
         Player removedPlayer = null;
         if(request.getRemovedPlayerId() != null) {
             removedPlayer = playerDAO.getPlayerById(request.getRemovedPlayerId())
                     .orElseThrow(() ->  new ResourceNotFoundException("Player not found"));
-            squadValidationService.validatePlayerIsAvailable(removedPlayer);
         }
+
+        SquadValidationResult validationResult = squadValidationService.validateTransfer(
+                request.getTeamId(),
+                request.getRemovedPlayerId(),
+                request.getAddedPlayerId()
+        );
+        if (!validationResult.isValid()) {
+            throw new ValidationException(validationResult.getErrors().get(0).getMessage());
+        }
+
         BigDecimal removedValue = removedPlayer != null ? removedPlayer.getValue() : BigDecimal.ZERO;
         BigDecimal addedValue = addedPlayer != null ? addedPlayer.getValue() : BigDecimal.ZERO;
-        squadValidationService.validateBudget(team, addedValue, removedValue);
-
         BigDecimal oldRemainingBudget = team.getRemainingBudget();
         BigDecimal oldTeamValue = team.getTotalTeamValue();
         BigDecimal newRemainingBudget = oldRemainingBudget.add(removedValue).subtract(addedValue);
