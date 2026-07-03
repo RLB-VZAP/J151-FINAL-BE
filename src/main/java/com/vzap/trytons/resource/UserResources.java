@@ -17,7 +17,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 // TODO move @ApplicationPath("/api") to RestApplication in BE07; resource classes should only define endpoint paths
-@ApplicationPath("/api")
 @Path("/users")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
