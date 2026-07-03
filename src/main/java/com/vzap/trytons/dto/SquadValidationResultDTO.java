@@ -5,16 +5,16 @@ import lombok.Getter;
 import java.util.ArrayList;
 import java.util.List;
 @Getter
-public class SquadValidationResult {
+public class SquadValidationResultDTO{
 
-    private final List<SquadValidationError> errors = new ArrayList<>();
+    private final List<SquadValidationErrorDTO> errors = new ArrayList<>();
 
     public boolean isValid(){
         return errors.isEmpty();
     }
 
     public void addError(String code, String message, String field){
-        SquadValidationError newError = SquadValidationError.builder()
+        SquadValidationErrorDTO newError = SquadValidationErrorDTO.builder()
                 .code(code)
                 .message(message)
                 .field(field)

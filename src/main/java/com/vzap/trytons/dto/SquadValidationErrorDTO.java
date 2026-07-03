@@ -7,7 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Builder
-public class SquadValidationError {
+public class SquadValidationErrorDTO {
     private String code;
     private String message;
     private String field;
