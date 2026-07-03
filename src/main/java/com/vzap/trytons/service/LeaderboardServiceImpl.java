@@ -74,24 +74,37 @@ public class LeaderboardServiceImpl implements LeaderboardService{
     }
 
     @Override
-    public Optional<LeaderboardEntryResponseDTO> getRankingForTeam(UUID teamId, UUID leaderboardId) {
-        Optional<Ranking> r = leaderboardDAO.getRankingByTeamId(teamId, leaderboardId);
-        if (r.isPresent()){
-            FantasyTeam team = fantasyTeamDAO.findTeamById(r.get().getTeamId());
-            if (team == null) {
+    public Optional<LeaderboardEntryResponseDTO> getRankingForTeam(UUID teamId, UUID leaderboardId, UUID requestingUserId) throws AuthorisationException {
+        try {
+            Optional<Leaderboard> l = leaderboardDAO.getLeaderboardById(leaderboardId);
+            if (l.isEmpty()) {
                 return Optional.empty();
             }
-            LeaderboardEntryResponseDTO dto = LeaderboardEntryResponseDTO.builder()
-                    .teamId(team.getTeamId())
-                    .teamName(team.getTeamName())
-                    .owner(team.getOwner().getUsername())
-                    .rank(r.get().getCurrentRanking())
-                    .weeklyPoints(team.getWeeklyPoints())
-                    .totalPoints(team.getTotalPoints())
-                    .rankMovement(r.get().getRankMovement())
-                    .build();
+            if (!leagueMembershipDAO.existsActiveByLeagueAndUser(l.get().getLeagueId(), requestingUserId)){
+                throw new AuthorisationException("FORBIDDEN");
+            }
 
-            return Optional.of(dto);
+            Optional<Ranking> r = leaderboardDAO.getRankingByTeamId(teamId, leaderboardId);
+            if (r.isPresent()) {
+                FantasyTeam team = fantasyTeamDAO.findTeamById(r.get().getTeamId());
+                if (team == null) {
+                    return Optional.empty();
+                }
+                LeaderboardEntryResponseDTO dto = LeaderboardEntryResponseDTO.builder()
+                        .teamId(team.getTeamId())
+                        .teamName(team.getTeamName())
+                        .owner(team.getOwner().getUsername())
+                        .rank(r.get().getCurrentRanking())
+                        .weeklyPoints(team.getWeeklyPoints())
+                        .totalPoints(team.getTotalPoints())
+                        .rankMovement(r.get().getRankMovement())
+                        .build();
+
+                return Optional.of(dto);
+            }
+        }catch (SQLException e){
+            LOG.log(Level.SEVERE, "Error checking league membership", e);
+            return Optional.empty();
         }
         return Optional.empty();
     }
