@@ -8,5 +8,5 @@ import java.util.UUID;
 
 public interface LeaderboardService {
     List<LeaderboardEntryResponseDTO> getLeaderboardForLeague(UUID leagueId, UUID requestingUserId);
-    Optional<LeaderboardEntryResponseDTO>  getRankingForTeam(UUID teamId, UUID leaderboardId);
+    Optional<LeaderboardEntryResponseDTO>  getRankingForTeam(UUID teamId, UUID leaderboardId, UUID requestingUserId);
 }

@@ -11,4 +11,5 @@ public interface LeaderboardDAO {
     Optional<Leaderboard> getLeaderboardByLeagueId(UUID leagueId);
     List<Ranking> getRankingsByLeaderboardId(UUID leaderboardId);
     Optional<Ranking> getRankingByTeamId(UUID teamId, UUID leaderboardId);
+    Optional<Leaderboard> getLeaderboardById(UUID leaderboardId);
 }
