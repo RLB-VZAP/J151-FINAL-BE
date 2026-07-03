@@ -2,6 +2,7 @@ package com.vzap.trytons.service;
 
 import com.vzap.trytons.dao.PlayerDAO;
 import com.vzap.trytons.dto.SquadValidationResultDTO;
+import com.vzap.trytons.exceptions.ValidationException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -15,11 +16,16 @@ public class SquadValidationServiceImpl implements SquadValidationService {
     PlayerDAO playerDAO;
 
     @Override
-    public <SquadValidationResult> SquadValidationResult validateSquad(List<UUID> proposedPlayerIds, BigDecimal maximumSquadValue) {
+    public SquadValidationResultDTO validateSquad(List<UUID> proposedPlayerIds, BigDecimal maximumSquadValue) {
+
         return null;
     }
 
-    private void validateSquadSize() {
+    private void validateSquadSize(List<UUID> proposedPlayerIds) {
+        int size = proposedPlayerIds.size();
+        if (size == 20){
+            throw new ValidationException("Squad size is not valid. Squad size must be 20.");
+        }
     }
 
     private void validateDuplicatePlayers() {
