@@ -63,6 +63,7 @@ public class PlayerResource {
         }
     }
 
+
     @POST
     public Response createPlayer(@Valid PlayerRequestDTO playerRequestDTO, @Context UriInfo uriInfo) {
         try{
@@ -79,7 +80,7 @@ public class PlayerResource {
     }
 
     @PUT
-    @Path("{/id}")
+    @Path("/{id}")
     public Response updatePlayer(@PathParam("id") UUID id, @Valid PlayerRequestDTO request){
         try{
             return Response.ok(playerService.updatePlayer(id, request)).build();
@@ -97,8 +98,7 @@ public class PlayerResource {
 
 
     private PlayerResponseDTO toResponse(Player player) {
-        return new PlayerResponseDTO(
-                player.getPlayerId(), player.getPlayerName(), player.getValue(), player.getAttackingAbility(),
+        return new PlayerResponseDTO(player.getPlayerId(), player.getPlayerName(), player.getValue(), player.getAttackingAbility(),
                 player.getDefensiveAbility(), player.getKickingAbility(), player.getDiscipline(), player.getConsistency(),
                 player.getFitness(), player.getCurrentForm(), player.getTotalFantasyPoints(), player.isActive(),
                 player.getClub(), player.getPosition());
