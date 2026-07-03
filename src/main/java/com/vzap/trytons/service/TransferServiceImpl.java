@@ -1,19 +1,11 @@
 package com.vzap.trytons.service;
 
-import com.vzap.trytons.dao.FantasyTeamDAO;
-import com.vzap.trytons.dao.PlayerDAO;
-import com.vzap.trytons.dao.TempFantasyTeamDAO;
-import com.vzap.trytons.dao.TempPlayerDAO;
-import com.vzap.trytons.dao.TransferDAO;
-import com.vzap.trytons.dao.TransferHistoryDAO;
+import com.vzap.trytons.dao.*;
 import com.vzap.trytons.dto.TransferRequestDTO;
 import com.vzap.trytons.dto.TransferResponseDTO;
 import com.vzap.trytons.enums.TransferWindowStatus;
 import com.vzap.trytons.exceptions.*;
-import com.vzap.trytons.model.FantasyTeam;
-import com.vzap.trytons.model.Player;
-import com.vzap.trytons.model.Transfer;
-import com.vzap.trytons.model.TransferHistory;
+import com.vzap.trytons.model.*;
 import jakarta.inject.Inject;
 
 import java.math.BigDecimal;
@@ -36,6 +28,8 @@ public class TransferServiceImpl implements TransferService {
     @Inject
     private FantasyTeamDAO fantasyTeamDAO;
     @Inject
+    private FantasyTeamPlayerDAO fantasyTeamPlayerDAO;
+    @Inject
     private PlayerDAO playerDAO;
     @Inject
     private SquadValidationService squadValidationService;
@@ -45,6 +39,11 @@ public class TransferServiceImpl implements TransferService {
         if(request.getRemovedPlayerId() == null && request.getAddedPlayerId() == null) {
             throw new ValidationException("A transfer must include a player to remove and/or add");
         }
+
+        if (request.getRemovedPlayerId() != null
+                && request.getAddedPlayerId() != null
+                && request.getRemovedPlayerId().equals(request.getAddedPlayerId())) {
+            throw new ValidationException("The same player cannot be both added and removed in one transfer.");
 
         FantasyTeam team = fantasyTeamDAO.getTeamById(request.getTeamId())
                 .orElseThrow(() -> new ResourceNotFoundException("Fantasy team not found"));
@@ -57,27 +56,67 @@ public class TransferServiceImpl implements TransferService {
             throw new BusinessRuleException("This team cannot be transferred while locked");
         }
 
-        Player addedPlayer = null;
+            List<TeamPlayerSelection> currentSquad = fantasyTeamPlayerDAO.getSquadByTeamId(request.getTeamId());
+
+            if (request.getRemovedPlayerId() != null) {
+                boolean inSquad = currentSquad.stream()
+                        .anyMatch(s -> s.getPlayer().getPlayerId().equals(request.getRemovedPlayerId()));
+                if (!inSquad) {
+                    throw new BusinessRuleException("The player you are trying to remove is not in your squad.");
+                }
+            }
+
+            if (request.getAddedPlayerId() != null) {
+                boolean alreadyInSquad = currentSquad.stream()
+                        .anyMatch(s -> s.getPlayer().getPlayerId().equals(request.getAddedPlayerId()));
+                if (alreadyInSquad) {
+                    throw new BusinessRuleException("The player you are trying to add is already in your squad.");
+                }
+            }
+
+            Player addedPlayer = null;
         if(request.getAddedPlayerId() != null) {
             addedPlayer = playerDAO.getPlayerById(request.getAddedPlayerId())
                     .orElseThrow(() -> new ResourceNotFoundException("Player not found"));
-            squadValidationService.validatePlayerIsAvailable(addedPlayer);
         }
 
         Player removedPlayer = null;
         if(request.getRemovedPlayerId() != null) {
             removedPlayer = playerDAO.getPlayerById(request.getRemovedPlayerId())
                     .orElseThrow(() ->  new ResourceNotFoundException("Player not found"));
-            squadValidationService.validatePlayerIsAvailable(removedPlayer);
         }
+
         BigDecimal removedValue = removedPlayer != null ? removedPlayer.getValue() : BigDecimal.ZERO;
         BigDecimal addedValue = addedPlayer != null ? addedPlayer.getValue() : BigDecimal.ZERO;
-        squadValidationService.validateBudget(team, addedValue, removedValue);
+
+            if (removedValue == null) {
+                throw new BusinessRuleException("Removed player has no value set — cannot process transfer.");
+            }
+            if (addedPlayer != null && addedValue == null) {
+                throw new BusinessRuleException("Added player has no value set — cannot process transfer.");
+            }
 
         BigDecimal oldRemainingBudget = team.getRemainingBudget();
         BigDecimal oldTeamValue = team.getTotalTeamValue();
         BigDecimal newRemainingBudget = oldRemainingBudget.add(removedValue).subtract(addedValue);
         BigDecimal newTeamValue = oldTeamValue.subtract(removedValue).add(addedValue);
+
+            if (newRemainingBudget.compareTo(BigDecimal.ZERO) < 0) {
+                throw new BusinessRuleException("You cannot afford this transfer. Insufficient remaining budget.");
+            }
+
+            List<UUID> proposedPlayerIds = currentSquad.stream()
+                    .map(s -> s.getPlayer().getPlayerId())
+                    .collect(Collectors.toList());
+
+            if (request.getRemovedPlayerId() != null) {
+                proposedPlayerIds.remove(request.getRemovedPlayerId());
+            }
+            if (request.getAddedPlayerId() != null) {
+                proposedPlayerIds.add(request.getAddedPlayerId());
+            }
+
+
 
         int transfersAlreadyThisRound = transferDAO.getTransfersByTeamId(team.getTeamId()).size();
         boolean penaltyApplied = transfersAlreadyThisRound >= FREE_TRANSFERS_PER_ROUND;
