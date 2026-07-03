@@ -1,10 +1,10 @@
 package com.vzap.trytons.service;
 
-import com.vzap.trytons.dto.SquadValidationResultDTO;
-
+import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 public interface SquadValidationService {
 
-    SquadValidationResultDTO validateTransfer(UUID teamId, UUID removedPlayerId, UUID addedPlayerId);
+    <SquadValidationResult> SquadValidationResult validateSquad(List<UUID> proposedPlayerIds, BigDecimal maximumSquadValue);
 }
