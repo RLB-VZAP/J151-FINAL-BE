@@ -49,20 +49,22 @@ public class LeaderboardResource {
         }catch(Exception e){
             return unexpected(e);
         }
-
     }
 
     @GET
     @Path("/team/{teamId}")
     public Response getRankingForTeam(@PathParam("teamId") UUID teamId, @QueryParam("leaderboardId") UUID leaderboardId) {
+        UUID requestingUserId = ((AuthPrincipal) requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY)).getUserId();
         try{
-            Optional<LeaderboardEntryResponseDTO> result = leaderboardService.getRankingForTeam(teamId, leaderboardId);
+            Optional<LeaderboardEntryResponseDTO> result = leaderboardService.getRankingForTeam(teamId, leaderboardId, requestingUserId);
             if (result.isEmpty()) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
             return Response.ok(result.get()).build();
-        }catch(ResourceNotFoundException e){
-            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
+        }catch(ResourceNotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponse.of(e.getMessage(), "NOT_FOUND")).build();
+        }catch(AuthorisationException e) {
+            return Response.status(Response.Status.FORBIDDEN).entity(ErrorResponse.of(e.getMessage(), "FORBIDDEN")).build();
         }catch(DataAccessException e){
             return serverError("Failed to load ranking for team " + teamId, e);
         }catch(Exception e){
