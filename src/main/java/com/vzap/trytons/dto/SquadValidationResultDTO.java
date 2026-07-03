@@ -1,10 +1,12 @@
 package com.vzap.trytons.dto;
 
+import lombok.Builder;
 import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
 @Getter
+@Builder
 public class SquadValidationResultDTO{
 
     private final List<SquadValidationErrorDTO> errors = new ArrayList<>();
