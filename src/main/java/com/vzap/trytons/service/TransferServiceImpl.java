@@ -2,8 +2,6 @@ package com.vzap.trytons.service;
 
 import com.vzap.trytons.dao.FantasyTeamDAO;
 import com.vzap.trytons.dao.PlayerDAO;
-import com.vzap.trytons.dao.TempFantasyTeamDAO;
-import com.vzap.trytons.dao.TempPlayerDAO;
 import com.vzap.trytons.dao.TransferDAO;
 import com.vzap.trytons.dao.TransferHistoryDAO;
 import com.vzap.trytons.dto.TransferRequest;
@@ -61,18 +59,18 @@ public class TransferServiceImpl implements TransferService {
         if(request.getAddedPlayerId() != null) {
             addedPlayer = playerDAO.getPlayerById(request.getAddedPlayerId())
                     .orElseThrow(() -> new ResourceNotFoundException("Player not found"));
-            squadValidationService.validatePlayerIsAvailable(addedPlayer);
+            validatePlayerIsAvailable(addedPlayer);
         }
 
         Player removedPlayer = null;
         if(request.getRemovedPlayerId() != null) {
             removedPlayer = playerDAO.getPlayerById(request.getRemovedPlayerId())
                     .orElseThrow(() ->  new ResourceNotFoundException("Player not found"));
-            squadValidationService.validatePlayerIsAvailable(removedPlayer);
+            validatePlayerIsAvailable(removedPlayer);
         }
         BigDecimal removedValue = removedPlayer != null ? removedPlayer.getValue() : BigDecimal.ZERO;
         BigDecimal addedValue = addedPlayer != null ? addedPlayer.getValue() : BigDecimal.ZERO;
-        squadValidationService.validateBudget(team, addedValue, removedValue);
+        validateBudget(team, addedValue, removedValue);
 
         BigDecimal oldRemainingBudget = team.getRemainingBudget();
         BigDecimal oldTeamValue = team.getTotalTeamValue();
@@ -153,5 +151,24 @@ public class TransferServiceImpl implements TransferService {
                 null,
                 null
         )).collect(Collectors.toList());
+    }
+
+    //Helper methods that I used :)
+    private void validatePlayerIsAvailable(Player player) {
+        if (!player.isActive()) {
+            throw new BusinessRuleException(
+                    "Player " + player.getPlayerName() + " is not available for selection.");
+        }
+    }
+
+    private void validateBudget(FantasyTeam team, BigDecimal addedPlayerValue, BigDecimal removedPlayerValue) {
+        BigDecimal added = addedPlayerValue != null ? addedPlayerValue : BigDecimal.ZERO;
+        BigDecimal removed = removedPlayerValue != null ? removedPlayerValue : BigDecimal.ZERO;
+
+        BigDecimal projectedBudget = team.getRemainingBudget().add(removed).subtract(added);
+
+        if (projectedBudget.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessRuleException("This transfer would exceed your remaining budget.");
+        }
     }
 }
