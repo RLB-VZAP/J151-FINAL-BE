@@ -8,6 +8,7 @@ import com.vzap.trytons.enums.TransferWindowStatus;
 import com.vzap.trytons.exceptions.*;
 import com.vzap.trytons.model.*;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -36,6 +37,7 @@ public class TransferServiceImpl implements TransferService {
     private SquadValidationService squadValidationService;
 
     @Override
+    @Transactional
     public TransferResponseDTO executeTransfer(UUID requestingUserId, TransferRequestDTO request) {
         if (request.getRemovedPlayerId() == null && request.getAddedPlayerId() == null) {
             throw new ValidationException("A transfer must include a player to remove and/or add");
