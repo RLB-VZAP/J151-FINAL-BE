@@ -1,14 +1,17 @@
 package com.vzap.trytons.resource;
 
+import com.vzap.trytons.Annotations.Authenticated;
 import com.vzap.trytons.dto.ErrorResponse;
 import com.vzap.trytons.dto.LeaderboardEntryResponseDTO;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
+import com.vzap.trytons.filter.AuthFilter;
+import com.vzap.trytons.security.AuthPrincipal;
 import com.vzap.trytons.service.LeaderboardService;
 import jakarta.inject.Inject;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -20,6 +23,7 @@ import java.util.logging.Logger;
 
 @Path("/leaderboard")
 @Produces(MediaType.APPLICATION_JSON)
+@Authenticated
 
 public class LeaderboardResource {
     private static final Logger LOGGER = Logger.getLogger(LeaderboardResource.class.getName());
@@ -27,10 +31,13 @@ public class LeaderboardResource {
     @Inject
     private LeaderboardService leaderboardService;
 
+    @Context
+    private ContainerRequestContext requestContext;
+
     @GET
     @Path("/{leagueId}/rankings")
-    public Response getLeaderboardForLeague(@PathParam("leagueId") UUID leagueId, @Context HttpServletRequest request) {
-        UUID requestingUserId = (UUID) request.getAttribute("userId"); //Waiting for AuthFilter.
+    public Response getLeaderboardForLeague(@PathParam("leagueId") UUID leagueId) {
+        UUID requestingUserId = ((AuthPrincipal) requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY)).getUserId();
         try{
             return Response.ok(leaderboardService.getLeaderboardForLeague(leagueId, requestingUserId)).build();
         }catch(ResourceNotFoundException e) {
@@ -48,7 +55,6 @@ public class LeaderboardResource {
     @GET
     @Path("/team/{teamId}")
     public Response getRankingForTeam(@PathParam("teamId") UUID teamId, @QueryParam("leaderboardId") UUID leaderboardId) {
-        //Needs Auth check.
         try{
             Optional<LeaderboardEntryResponseDTO> result = leaderboardService.getRankingForTeam(teamId, leaderboardId);
             if (result.isEmpty()) {
