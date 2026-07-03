@@ -114,6 +114,6 @@ public class FantasyTeamResource {
 
     private Response unexpected(Exception e) {
         LOGGER.log(Level.SEVERE, "Unexpected error in PositionResource.", e);
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponse.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR")).build();
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR")).build();
     }
 }

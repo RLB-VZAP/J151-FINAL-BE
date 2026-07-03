@@ -2,11 +2,10 @@ package com.vzap.trytons.resource;
 
 import com.vzap.trytons.dto.ClubRequestDTO;
 import com.vzap.trytons.dto.ClubResponseDTO;
-import com.vzap.trytons.dto.ErrorResponse;
+import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
-import com.vzap.trytons.model.Club;
 import com.vzap.trytons.service.ClubService;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -88,12 +87,12 @@ public class ClubResource {
     private Response serverError(String message, DataAccessException e) {
         LOGGER.log(Level.SEVERE, message, e);
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(ErrorResponse.of(message, e.getErrorCode())).build();
+                .entity(ErrorResponseDTO.of(message, e.getErrorCode())).build();
     }
 
     private Response unexpected(Exception e) {
         LOGGER.log(Level.SEVERE, "Unexpected error in ClubResource.", e);
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(ErrorResponse.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR")).build();
+                .entity(ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR")).build();
     }
 }

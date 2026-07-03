@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-public class TransferResponse {
+public class TransferResponseDTO {
     private final UUID transferId;
     private final UUID teamId;
     private final UUID removedPlayerId;
