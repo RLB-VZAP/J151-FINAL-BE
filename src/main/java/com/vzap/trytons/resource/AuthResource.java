@@ -1,5 +1,6 @@
 package com.vzap.trytons.resource;
 
+import com.vzap.trytons.Annotations.Authenticated;
 import com.vzap.trytons.dto.*;
 import com.vzap.trytons.exceptions.ApplicationException;
 import com.vzap.trytons.exceptions.ValidationException;
@@ -35,7 +36,7 @@ public class AuthResource {
                     request.getPassword()
             );
 
-            AuthApiResponse<LoginResponse> successPayload = AuthApiResponse.success("Login successful.", loginResponse);
+            ApiResponse<LoginResponse> successPayload = ApiResponse.success("Login successful.", loginResponse);
 
             return Response.ok(successPayload).build();
 
@@ -58,12 +59,13 @@ public class AuthResource {
     }
     @POST
     @Path("/logout")
+    @Authenticated
     public Response logout() {
         try {
             String acknowledgement = authService.logout();
 
-            AuthApiResponse<Void> successPayload =
-                    AuthApiResponse.success(acknowledgement, null);
+            ApiResponse<Void> successPayload =
+                    ApiResponse.success(acknowledgement, null);
 
             return Response.ok(successPayload).build();
 
@@ -89,8 +91,8 @@ public class AuthResource {
         try {
             AuthStatusResponse statusResponse = authService.getAuthStatus(requestingUserId);
 
-            AuthApiResponse<AuthStatusResponse> successPayload =
-                    AuthApiResponse.success("Auth status retrieved.", statusResponse);
+            ApiResponse<AuthStatusResponse> successPayload =
+                    ApiResponse.success("Auth status retrieved.", statusResponse);
 
             return Response.ok(successPayload).build();
 
@@ -109,3 +111,4 @@ public class AuthResource {
         }
     }
 }
+

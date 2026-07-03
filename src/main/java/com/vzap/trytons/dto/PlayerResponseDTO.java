@@ -31,4 +31,5 @@ public class PlayerResponseDTO {
     private boolean isViceCaptain;
     private boolean isBench;
 
+
 }
