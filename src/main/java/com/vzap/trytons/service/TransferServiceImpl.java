@@ -1,6 +1,7 @@
 package com.vzap.trytons.service;
 
 import com.vzap.trytons.dao.*;
+import com.vzap.trytons.dto.SquadValidationResultDTO;
 import com.vzap.trytons.dto.TransferRequestDTO;
 import com.vzap.trytons.dto.TransferResponseDTO;
 import com.vzap.trytons.enums.TransferWindowStatus;
@@ -116,11 +117,24 @@ public class TransferServiceImpl implements TransferService {
                 proposedPlayerIds.add(request.getAddedPlayerId());
             }
 
+            SquadValidationResultDTO validationResult = squadValidationService.validateSquad(
+                    proposedPlayerIds, newTeamValue);
 
+            if(validationResult.isValid()){
+            String firstError = validationResult.getErrors().get(0).getMessage();
+            throw new BusinessRuleException("Squad validation failed: " + firstError);
+            }
 
         int transfersAlreadyThisRound = transferDAO.getTransfersByTeamId(team.getTeamId()).size();
         boolean penaltyApplied = transfersAlreadyThisRound >= FREE_TRANSFERS_PER_ROUND;
         int penaltyPoints = penaltyApplied ? PENALTY_POINTS_PER_EXTRA_TRANSFER : 0;
+
+        fantasyTeamPlayerDAO.replaceSquad(request.getTeamId(), proposedPlayerIds);
+
+            boolean budgetUpdated = fantasyTeamDAO.updateBudgetAndValue(team.getTeamId(), newRemainingBudget, newTeamValue);
+            if(!budgetUpdated){
+                throw new DataAccessException("Unable to update budget after transfer", null);
+            }
 
         Transfer transfer = new Transfer();
         transfer.setTransferId(UUID.randomUUID());
@@ -135,11 +149,6 @@ public class TransferServiceImpl implements TransferService {
 
         transferDAO.saveTransfer(transfer)
                 .orElseThrow(() -> new DataAccessException("Unable to save transfer", null));
-
-        boolean budgetUpdated = fantasyTeamDAO.updateBudgetAndValue(team.getTeamId(), newRemainingBudget, newTeamValue);
-        if(!budgetUpdated){
-            throw new DataAccessException("Unable to update budget after transfer", null);
-        }
 
         TransferHistory history = new TransferHistory();
         history.setTransferHistoryId(UUID.randomUUID());
