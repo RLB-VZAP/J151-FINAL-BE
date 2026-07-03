@@ -105,4 +105,30 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
         }
         return Optional.empty();
     }
+
+    @Override
+    public Optional<Leaderboard> getLeaderboardById(UUID leaderboardId) {
+        String query = "SELECT * FROM leaderboard WHERE leaderboardId = ?";
+        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1, leaderboardId.toString());
+
+            try(ResultSet rs = ps.executeQuery()){
+                if (rs.next()){
+                    Leaderboard lb = Leaderboard.builder()
+                            .leaderboardId(UUID.fromString(rs.getString("leaderboardId")))
+                            .leagueId(UUID.fromString(rs.getString("leagueId")))
+                            .lastUpdated(rs.getObject("lastUpdated", LocalDate.class))
+                            .season(rs.getString("season"))
+                            .is_master_leaderboard(rs.getBoolean("is_master_leaderboard"))
+                            .build();
+
+                    return Optional.of(lb);
+                }
+            }
+        }catch (SQLException e){
+            LOG.log(Level.SEVERE, "Unable to get leaderboard by leaderboard id " + leaderboardId, e);
+            throw new DataAccessException("Unable to get leaderboard by leaderboard id " + leaderboardId, e);
+        }
+        return Optional.empty();
+    }
 }
