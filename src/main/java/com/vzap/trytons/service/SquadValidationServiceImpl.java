@@ -17,13 +17,14 @@ public class SquadValidationServiceImpl implements SquadValidationService {
 
     @Override
     public SquadValidationResultDTO validateSquad(List<UUID> proposedPlayerIds, BigDecimal maximumSquadValue) {
+        SquadValidationResultDTO results;
 
         return null;
     }
 
-    private void validateSquadSize(List<UUID> proposedPlayerIds) {
+    private void validateSquadSize(List<UUID> proposedPlayerIds, SquadValidationResultDTO results) {
         int size = proposedPlayerIds.size();
-        if (size == 20){
+        if (size != 20){
             throw new ValidationException("Squad size is not valid. Squad size must be 20.");
         }
     }
@@ -51,6 +52,4 @@ public class SquadValidationServiceImpl implements SquadValidationService {
 
     private void safeValue() {
     }
-
-
 }
