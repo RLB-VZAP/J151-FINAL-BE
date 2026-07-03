@@ -2,7 +2,7 @@ package com.vzap.trytons.service;
 
 import com.vzap.trytons.dao.RegisteredUserDAO;
 import com.vzap.trytons.dao.UserDAO;
-import com.vzap.trytons.dto.RegisteredUserRequest;
+import com.vzap.trytons.dto.RegisteredUserRequestDTO;
 import com.vzap.trytons.enums.RegistrationStatus;
 import com.vzap.trytons.enums.UserRole;
 import com.vzap.trytons.exceptions.ConflictException;
@@ -23,7 +23,7 @@ public class RegisteredUserServicesImpl implements RegisteredUserServices {
     private RegisteredUserDAO registeredUserDAO;
 
     @Override
-    public RegisteredUser registerUser(RegisteredUserRequest userRequest) {
+    public RegisteredUser registerUser(RegisteredUserRequestDTO userRequest) {
         String email = userRequest.getEmail();
         String username = userRequest.getUsername();
         String rawPassword = userRequest.getRawPassword();
