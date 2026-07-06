@@ -1,5 +1,6 @@
 package com.vzap.trytons.resource;
 
+import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.dto.TransferRequestDTO;
 import com.vzap.trytons.dto.TransferResponseDTO;
 import com.vzap.trytons.exceptions.AuthenticationException;
@@ -18,6 +19,7 @@ import jakarta.ws.rs.core.SecurityContext;
 import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static jakarta.ws.rs.core.Response.serverError;
@@ -50,8 +52,8 @@ public class TransferResource {
             return Response.status(Response.Status.NOT_FOUND).build();
         }catch (DataAccessException e){
             return serverError("Failed to execute transfer", e);
-        }catch (Exception e)
-            return unexpected(e);
+        }catch (Exception e){
+            return unexpected(e);}
     }
 
     @GET
@@ -80,6 +82,31 @@ public class TransferResource {
 
     private UUID currentUserId(SecurityContext securityContext){
         Principal principal = securityContext.getUserPrincipal();
+
+        if(principal == null || principal.getName() == null){
+            throw new AuthenticationException("Authentication required");
+        }
+
+        try{
+            return UUID.fromString(principal.getName());
+        }catch (IllegalArgumentException e){
+            throw new AuthenticationException("Invalid authentication");
+        }
+    }
+
+    private Response serverError(String message, DataAccessException e){
+        LOGGER.log(Level.SEVERE, message, e);
+
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
+    }
+
+    private Response unexpected(Exception e){
+        LOGGER.log(Level.SEVERE, "Unexpected error found in Transfer Resource", e);
+
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(ErrorResponseDTO.of(
+                        "An unexpected error has occured", "INTERNAL_SERVER_ERROR"))
+                .build();
     }
 
 }
