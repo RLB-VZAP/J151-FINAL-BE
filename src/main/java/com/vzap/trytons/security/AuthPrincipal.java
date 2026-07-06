@@ -1,20 +1,18 @@
-package com.vzap.trytons.dto;
+package com.vzap.trytons.security;
 
 import com.vzap.trytons.enums.UserRole;
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
 
 import java.util.UUID;
-
-@Data
-@NoArgsConstructor
+@Getter
 @AllArgsConstructor
-public class AuthStatusResponse {
-
-    private boolean authenticated;
+@Builder
+public class AuthPrincipal {
     private UUID userId;
     private String username;
     private String email;
     private UserRole role;
+
 }

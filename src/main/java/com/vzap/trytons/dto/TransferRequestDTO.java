@@ -6,7 +6,7 @@ import lombok.Getter;
 import java.util.UUID;
 
 @Getter
-public class TransferRequest {
+public class TransferRequestDTO {
     @NotNull(message = "Team ID is required")
     private UUID teamId;
     private UUID removedPlayerId;

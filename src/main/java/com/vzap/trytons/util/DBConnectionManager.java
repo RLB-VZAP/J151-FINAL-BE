@@ -1,5 +1,7 @@
 package com.vzap.trytons.util;
 
+import com.vzap.trytons.config.DotEnvConfig;
+import io.github.cdimascio.dotenv.Dotenv;
 import org.apache.commons.dbcp2.BasicDataSource;
 
 import java.sql.Connection;
@@ -11,12 +13,12 @@ public class DBConnectionManager {
     static {
         dataSource = new BasicDataSource();
         dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
-        dataSource.setUsername("root");
-        dataSource.setPassword("root");
-        dataSource.setUrl("jdbc:mysql://localhost:3306/tryton_fantasy_rugby");
-        dataSource.setMinIdle(10);
-        dataSource.setMaxIdle(20);
-        dataSource.setMaxOpenPreparedStatements(100);
+        dataSource.setUsername(DotEnvConfig.getRequired("DB_USERNAME"));
+        dataSource.setPassword(DotEnvConfig.getRequired("DB_PASSWORD"));
+        dataSource.setUrl(DotEnvConfig.getRequired("DB_URL"));
+        dataSource.setMinIdle(DotEnvConfig.getRequiredInt("DB_MIN_IDLE"));
+        dataSource.setMaxIdle(DotEnvConfig.getRequiredInt("DB_MAX_IDLE"));
+        dataSource.setMaxOpenPreparedStatements(DotEnvConfig.getRequiredInt("DB_MAX_OPEN_PREPARED_STATEMENTS"));
     }
 
     public static Connection getConnection() throws SQLException {
