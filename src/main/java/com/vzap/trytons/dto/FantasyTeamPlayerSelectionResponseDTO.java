@@ -9,7 +9,6 @@ import java.util.UUID;
 @Getter
 @AllArgsConstructor
 public class FantasyTeamPlayerSelectionResponseDTO {
-
     private UUID playerId;
     private String playerName;
     private UUID positionId;
