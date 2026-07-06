@@ -6,6 +6,7 @@ import com.vzap.trytons.dto.SimulationSettingResponseDTO;
 import java.util.UUID;
 
 public class SimulationSettingServiceImpl implements SimulationSettingService {
+    //STUB
 
     @Override
     public SimulationSettingResponseDTO getSettings(UUID userId, UUID leagueId) {
