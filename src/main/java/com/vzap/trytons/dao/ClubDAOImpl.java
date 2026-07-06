@@ -1,5 +1,4 @@
 package com.vzap.trytons.dao;
-
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.Club;
 import java.sql.Connection;
@@ -13,6 +12,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@Singleton
 public class ClubDAOImpl extends BaseDAO implements ClubDAO {
     private static final Logger LOG = Logger.getLogger(ClubDAOImpl.class.getName());
     public static Club mapRow(ResultSet rs) throws SQLException {
@@ -152,7 +152,7 @@ public class ClubDAOImpl extends BaseDAO implements ClubDAO {
     }
     @Override
     public boolean existsByClubName(String clubName) {
-        String query = "SELECT COUNT(*) club WHERE clubName = ?";
+        String query = "SELECT COUNT(*) FROM club WHERE clubName = ?";
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query)){
             ps.setString(1, clubName);
