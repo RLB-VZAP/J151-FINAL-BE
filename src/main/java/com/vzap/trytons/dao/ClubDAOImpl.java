@@ -1,8 +1,6 @@
 package com.vzap.trytons.dao;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.Club;
-import jakarta.inject.Singleton;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

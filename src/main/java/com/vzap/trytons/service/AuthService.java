@@ -1,10 +1,10 @@
 package com.vzap.trytons.service;
 
-import com.vzap.trytons.dto.AuthStatusResponse;
-import com.vzap.trytons.dto.LoginResponse;
+import com.vzap.trytons.dto.AuthStatusResponseDTO;
+import com.vzap.trytons.dto.LoginResponseDTO;
 
 public interface AuthService {
-    LoginResponse authenticate(String identifier, String password);
+    LoginResponseDTO authenticate(String identifier, String password);
     String logout();
-    AuthStatusResponse getAuthStatus(String requestingUserId);
+    AuthStatusResponseDTO getAuthStatus(String requestingUserId);
 }
