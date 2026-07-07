@@ -5,7 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface PositionDAO {
-    Optional<Position> findById(UUID PositionId);
+    Optional<Position> findById(UUID positionId);
     Optional<Position> findByName(String positionName);
     Optional<Position> findByPositionCategory(String positionCategory);
     List<Position> findAllPositions();

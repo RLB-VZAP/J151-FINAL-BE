@@ -1,6 +1,6 @@
 package com.vzap.trytons.resource;
 
-import com.vzap.trytons.dto.ErrorResponse;
+import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.dto.PlayerRequestDTO;
 import com.vzap.trytons.dto.PlayerResponseDTO;
 import com.vzap.trytons.exceptions.ConflictException;
@@ -17,13 +17,10 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
 import java.net.URI;
-import java.security.spec.ECField;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static jakarta.ws.rs.core.Response.serverError;
 
 @ApplicationPath("/api")
 @Path("/player")
@@ -38,7 +35,7 @@ public class PlayerResource {
     public Response listPlayers(@QueryParam("search") String search, @QueryParam("clubId") UUID clubId, @QueryParam("positionId") UUID positionId ) {
         try {
             if (search != null || clubId != null || positionId != null) {
-                List<PlayerResponseDTO> body = playerService.search(search, clubId, positionId).stream().map(this::toResponse).toList();
+                List<PlayerResponseDTO> body = playerService.searchPlayers(search, clubId, positionId);
                 return Response.ok(body).build();
             }
             return Response.ok(playerService.getAllPlayers()).build();
@@ -55,7 +52,7 @@ public class PlayerResource {
         try {
             return Response.ok(playerService.getPlayer(id)).build();
         } catch (ResourceNotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponse.of(e.getMessage(), e.getErrorCode())).build();
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
         } catch (DataAccessException e) {
             return serverError("Failed to load player.", e);
         } catch (Exception e) {
@@ -84,9 +81,9 @@ public class PlayerResource {
         try{
             return Response.ok(playerService.updatePlayer(id, request)).build();
         }catch (ResourceNotFoundException e){
-            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponse.of(e.getMessage(), e.getErrorCode())).build();
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
     }catch (ConflictException e){
-            return Response.status(Response.Status.CONFLICT).entity(ErrorResponse.of(e.getMessage(), e.getErrorCode())).build();
+            return Response.status(Response.Status.CONFLICT).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
         }catch (DataAccessException e){
             return serverError("Failed to update player.", e);
         }catch (Exception e){
@@ -106,12 +103,12 @@ public class PlayerResource {
 
     private Response serverError(String message, DataAccessException e) {
         LOGGER.log(Level.SEVERE, message, e);
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponse.of(message, e.getErrorCode())).build();
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponseDTO.of(message, e.getErrorCode())).build();
     }
 
     private Response unexpected(Exception e) {
         LOGGER.log(Level.SEVERE, "Unexpected error in PlayerResource.", e);
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponse.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR")).build();
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR")).build();
     }
 
 }
