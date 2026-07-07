@@ -72,7 +72,7 @@ public class ClubResource {
     @Path("/{id}")
     public Response updateClub(@PathParam("id") UUID id, @Valid ClubRequestDTO request) {
         try{
-            return Response.ok(clubService.updatePlayer(id, request)).build();
+            return Response.ok(clubService.updateClub(id, request)).build();
         }catch(ResourceNotFoundException e){
             return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
         }catch(ConflictException e){

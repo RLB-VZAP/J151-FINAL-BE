@@ -1,6 +1,8 @@
 package com.vzap.trytons.dao;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.Position;
+import jakarta.inject.Singleton;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -12,6 +14,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@Singleton
 public class PositionDAOImpl extends BaseDAO implements PositionDAO {
     private static final Logger LOG = Logger.getLogger(PositionDAOImpl.class.getName());
     private Position mapRow(ResultSet rs) throws SQLException {
@@ -24,11 +27,11 @@ public class PositionDAOImpl extends BaseDAO implements PositionDAO {
         return position;
     }
     @Override
-    public Optional<Position> findById(UUID PositionId) {
-        String query = "SELECT * FROM Position WHERE positionId = ?";
+    public Optional<Position> findById(UUID positionId) {
+        String query = "SELECT * FROM position WHERE positionId = ?";
         try(Connection con = getConnection();
             PreparedStatement ps = con.prepareStatement(query)){
-            ps.setString(1, PositionId.toString());
+            ps.setString(1, positionId.toString());
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 return Optional.of(this.mapRow(rs));
@@ -42,7 +45,7 @@ public class PositionDAOImpl extends BaseDAO implements PositionDAO {
 
     @Override
     public Optional<Position> findByName(String positionName) {
-        String query = "SELECT * FROM Position WHERE positionName = ?";
+        String query = "SELECT * FROM position WHERE positionName = ?";
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query)){
             ps.setString(1, positionName);
@@ -59,7 +62,7 @@ public class PositionDAOImpl extends BaseDAO implements PositionDAO {
 
     @Override
     public Optional<Position> findByPositionCategory(String positionCategory) {
-        String query = "SELECT * FROM Position WHERE positionCategory = ?";
+        String query = "SELECT * FROM position WHERE positionCategory = ?";
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query)){
             ps.setString(1, positionCategory);
@@ -77,7 +80,7 @@ public class PositionDAOImpl extends BaseDAO implements PositionDAO {
     @Override
     public List<Position> findAllPositions() {
         List<Position> positions = new ArrayList<>();
-        String query = "SELECT * FROM Position";
+        String query = "SELECT * FROM position";
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query);
         ResultSet rs = ps.executeQuery()){
@@ -127,7 +130,7 @@ public class PositionDAOImpl extends BaseDAO implements PositionDAO {
     }
     @Override
     public boolean existsByName(String positionName) {
-        String query = "SELECT COUNT(*) FROM Position WHERE positionName = ?";
+        String query = "SELECT COUNT(*) FROM position WHERE positionName = ?";
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query)){
             ps.setString(1,positionName);

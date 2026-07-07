@@ -1,5 +1,7 @@
 package com.vzap.trytons.service;
 
+import com.vzap.trytons.dto.LeaderboardRefreshResultDTO;
+import java.util.UUID;
 import com.vzap.trytons.dao.FantasyTeamDAO;
 import com.vzap.trytons.dao.LeaderboardDAO;
 import com.vzap.trytons.dao.LeagueDAO;
@@ -11,7 +13,6 @@ import com.vzap.trytons.model.Leaderboard;
 import com.vzap.trytons.model.League;
 import com.vzap.trytons.model.Ranking;
 import jakarta.inject.Inject;
-
 import java.sql.SQLException;
 import java.util.*;
 import java.util.logging.Level;
@@ -28,7 +29,15 @@ public class LeaderboardServiceImpl implements LeaderboardService{
     private LeagueDAO leagueDAO;
 
     private static final Logger LOG = Logger.getLogger(LeaderboardServiceImpl.class.getName());
+    
+    @Override
+    public LeaderboardRefreshResultDTO refreshLeagueLeaderboard(UUID actorUserId, UUID leagueId) {
+        return null;
+    }
 
+    @Override
+    public LeaderboardRefreshResultDTO refreshOverallLeaderboard(UUID actorUserId) {
+        return null;
     @Override
     public List<LeaderboardEntryResponseDTO> getLeaderboardForLeague(UUID leagueId, UUID requestingUserId) throws AuthorisationException {
         try {
