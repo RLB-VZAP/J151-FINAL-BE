@@ -13,4 +13,5 @@ import java.util.UUID;
 public class JoinLeagueRequestDTO {
     private String leagueCode; // Will be null for public leagues
     private UUID leagueId;
+    private UUID teamId;
 }
