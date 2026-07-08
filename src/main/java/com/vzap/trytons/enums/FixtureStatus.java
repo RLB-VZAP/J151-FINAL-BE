@@ -2,10 +2,9 @@ package com.vzap.trytons.enums;
 
 public enum FixtureStatus {
     UPCOMING,
-    LIVE,
     LOCKED,
+    SIMULATING,
     COMPLETED,
-    POSTPONED,
-    CANCELLED,
-    SIMULATED
+    CANCELLED
 }
+
