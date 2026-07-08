@@ -17,48 +17,28 @@ public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
     }
 
     @Override
-    public Fixture findFixtureById(UUID id) {
-        return null;
+    public Optional<Fixture> findFixtureById(UUID fixtureId) {
+        return Optional.empty();
     }
 
     @Override
-    public Fixture findFixtureByLeagueId(UUID leagueId) {
-        return null;
+    public List<Fixture> findFixturesByLeagueId(UUID leagueId) {
+        return List.of();
     }
 
     @Override
-    public Fixture findFixtureByDate(LocalDate date) {
-        return null;
+    public List<Fixture> findFixturesByRoundId(UUID roundId) {
+        return List.of();
     }
 
     @Override
-    public Fixture findFixtureByTime(LocalTime time) {
-        return null;
+    public List<Fixture> findFixturesByTeamId(UUID teamId) {
+        return List.of();
     }
 
     @Override
-    public Fixture findFixtureByVenue(String venue) {
-        return null;
-    }
-
-    @Override
-    public Fixture findFixtureByStatus(FixtureStatus status) {
-        return null;
-    }
-
-    @Override
-    public Fixture findFixtureByMatchRoundNumber(int matchRoundNumber) {
-        return null;
-    }
-
-    @Override
-    public Fixture findFixtureByLockDeadline(LocalDateTime lockDeadline) {
-        return null;
-    }
-
-    @Override
-    public Fixture findFixtureByLockStatus(Boolean locked) {
-        return null;
+    public List<Fixture> findFixturesByStatus(FixtureStatus status) {
+        return List.of();
     }
 
     @Override
@@ -67,17 +47,12 @@ public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
     }
 
     @Override
-    public Optional<Fixture> findFixtureByClub(UUID clubId) {
-        return Optional.empty();
-    }
-
-    @Override
     public Fixture updateFixture(Fixture fixture) {
         return null;
     }
 
     @Override
-    public void deleteFixture(Fixture fixture) {
-
+    public boolean cancelFixture(UUID fixtureId) {
+        return false;
     }
 }
