@@ -1,5 +1,6 @@
 package com.vzap.trytons.dao;
 
+import com.vzap.trytons.enums.TransferStatus;
 import com.vzap.trytons.enums.TransferWindowStatus;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.FantasyTeam;
@@ -8,6 +9,7 @@ import com.vzap.trytons.model.Transfer;
 import jakarta.inject.Singleton;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -95,6 +97,21 @@ public class TransferDAOImpl extends BaseDAO implements TransferDAO {
             throw new DataAccessException("Unable to find transfers for the team", e);
         }
         return transfers;
+    }
+
+    @Override
+    public boolean updateTransferStatus(UUID transferId, TransferStatus transferStatus, LocalDateTime confirmationDate) {
+        return false;
+    }
+
+    @Override
+    public int countConfirmedTransfers(UUID teamId, UUID roundId) {
+        return 0;
+    }
+
+    @Override
+    public List<Transfer> getTransfersByRound(UUID roundId) {
+        return List.of();
     }
 
     private Transfer mapTransfer(ResultSet rs) throws SQLException {
