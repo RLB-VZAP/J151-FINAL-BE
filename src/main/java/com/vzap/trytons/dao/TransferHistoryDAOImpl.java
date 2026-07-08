@@ -99,6 +99,7 @@ public class TransferHistoryDAOImpl extends BaseDAO implements TransferHistoryDA
         if  (addedId != null){
             Player added = new  Player();
             added.setPlayerId(UUID.fromString(addedId));
+            history.setAddedPlayer(added);
         }
         return history;
     }

@@ -38,6 +38,8 @@ public class LeaderboardServiceImpl implements LeaderboardService{
     @Override
     public LeaderboardRefreshResultDTO refreshOverallLeaderboard(UUID actorUserId) {
         return null;
+    }
+
     @Override
     public List<LeaderboardEntryResponseDTO> getLeaderboardForLeague(UUID leagueId, UUID requestingUserId) throws AuthorisationException {
         try {
