@@ -131,4 +131,34 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
         }
         return Optional.empty();
     }
+
+    @Override
+    public void saveRanking(Ranking ranking) {
+
+    }
+
+    @Override
+    public void updateRanking(Ranking ranking) {
+
+    }
+
+    @Override
+    public void deleteRankingByLeaderboardId(UUID leaderboardId) {
+
+    }
+
+    @Override
+    public void updateLeaderboard(Leaderboard leaderboard) {
+
+    }
+
+    @Override
+    public void saveLeaderboard(Leaderboard leaderboard) {
+
+    }
+
+    @Override
+    public Optional<Leaderboard> getMasterLeaderboard() {
+        return Optional.empty();
+    }
 }
