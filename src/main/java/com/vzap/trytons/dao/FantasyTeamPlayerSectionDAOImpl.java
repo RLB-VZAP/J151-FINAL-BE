@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public class FantasyTeamPlayerSectionDAOImpl implements FantasyTeamPlayerDAO {
+public class FantasyTeamPlayerSectionDAOImpl implements FantasyTeamPlayerSectionDAO {
     @Override
     public boolean addPlayerToSquad(UUID teamId, UUID playerId) {
         return false;
