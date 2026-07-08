@@ -125,11 +125,7 @@ private static final Logger LOG = Logger.getLogger(LeagueServiceImpl.class.getNa
     @Override
     public boolean isLeagueMember(UUID leagueId, UUID userId) {
 
-        if (membershipDAO.existsActiveByLeagueAndUser(leagueId, userId)) {
-            return true;
-        }
-
-        return false;
+        return membershipDAO.existsActiveByLeagueAndUser(leagueId, userId);
     }
 
     @Override
