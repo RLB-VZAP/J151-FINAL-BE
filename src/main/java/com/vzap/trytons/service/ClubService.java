@@ -10,5 +10,5 @@ public interface ClubService {
     ClubResponseDTO createClub(ClubRequestDTO request);
     ClubResponseDTO getClub(UUID clubId);
     List<ClubResponseDTO> getAllClubs();
-    ClubResponseDTO updatePlayer(UUID playerId, ClubRequestDTO request);
+    ClubResponseDTO updateClub(UUID clubId, ClubRequestDTO request);
 }

@@ -1,12 +1,15 @@
 package com.vzap.trytons.service;
 
-import com.vzap.trytons.dto.LeaderboardEntryResponseDTO;
-
+import com.vzap.trytons.dto.LeaderboardRefreshResultDTO;
+import java.util.UUID;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import com.vzap.trytons.dto.LeaderboardEntryResponseDTO;
 
 public interface LeaderboardService {
+    LeaderboardRefreshResultDTO refreshLeagueLeaderboard(UUID actorUserId, UUID leagueId);
+    LeaderboardRefreshResultDTO refreshOverallLeaderboard(UUID actorUserId);
     List<LeaderboardEntryResponseDTO> getLeaderboardForLeague(UUID leagueId, UUID requestingUserId);
-    Optional<LeaderboardEntryResponseDTO>  getRankingForTeam(UUID teamId, UUID leaderboardId);
+    Optional<LeaderboardEntryResponseDTO>  getRankingForTeam(UUID teamId, UUID leaderboardId, UUID requestingUserId);
 }
