@@ -98,6 +98,50 @@ public class FantasyPointsDAOImpl extends BaseDAO implements FantasyPointsDAO {
 
     @Override
     public List<FantasyPoints> findByTeamId(UUID teamId) {
-        return List.of();
+        String query = "SELECT * FROM fantasyPoints WHERE teamId = ?";
+        List<FantasyPoints> fantasyPoints = new ArrayList<>();
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setString(1, teamId.toString());
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    //creating shallow references to fulfil needed objects
+                    FantasyTeam team = new FantasyTeam();
+                    team.setTeamId(teamId);
+
+                    UUID playerId = UUID.fromString(rs.getString("playerId"));
+                    Player player = new Player();
+                    player.setPlayerId(playerId);
+
+                    UUID fixtureId = UUID.fromString(rs.getString("fixtureId"));
+                    Fixture fixture = new Fixture();
+                    fixture.setFixtureId(fixtureId);
+
+                    String scoringRuleId = rs.getString("ruleId");
+                    ScoringRule rule = null;
+                    if (scoringRuleId != null){
+                        rule = new ScoringRule();
+                        rule.setRuleId(UUID.fromString(scoringRuleId));
+                    }
+
+                    FantasyPoints fp = FantasyPoints.builder()
+                            .pointsId(UUID.fromString(rs.getString("pointsId")))
+                            .pointsEarned(rs.getInt("pointsEarned"))
+                            .calculationDate(rs.getObject("calculationDate", LocalDateTime.class))
+                            .matchRoundNumber(rs.getInt("match_round_number"))
+                            .calculationVersion(rs.getInt("calculationVersion"))
+                            .fantasyTeam(team)
+                            .player(player)
+                            .fixture(fixture)
+                            .scoringRule(rule)
+                            .build();
+                    fantasyPoints.add(fp);
+                }
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Could not find any fantasy points by team ID", e);
+            throw new DataAccessException("Could not find any fantasy points by team ID", e);
+        }
+        return fantasyPoints;
     }
 }
