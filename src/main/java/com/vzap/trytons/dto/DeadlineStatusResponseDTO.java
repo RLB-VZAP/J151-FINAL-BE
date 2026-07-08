@@ -1,5 +1,6 @@
 package com.vzap.trytons.dto;
 
+import com.vzap.trytons.enums.FantasyRoundStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,8 +14,12 @@ import java.util.UUID;
 @NoArgsConstructor
 public class DeadlineStatusResponseDTO {
     //STUB
-    private UUID fixtureId;
-    private LocalDateTime nextDeadline;
+    private UUID roundId;
+    private FantasyRoundStatus roundStatus;
+    private LocalDateTime openDate;
+    private LocalDateTime lockDeadline;
+    private LocalDateTime endDate;
     private boolean locked;
+    private boolean openForTransfers;
     private String message;
 }
