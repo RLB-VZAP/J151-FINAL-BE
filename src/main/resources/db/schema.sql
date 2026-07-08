@@ -21,10 +21,6 @@ USE `tryton_fantasy_rugby`;
         -> leaderboard + ranking
 
     Clubs remain player metadata only. They do not participate in fixtures.
-
-    Naming convention:
-        - One-word and two-word field names use camelCase.
-        - Field names containing three or more words use snake_case.
 */
 
 SET FOREIGN_KEY_CHECKS = 0;
