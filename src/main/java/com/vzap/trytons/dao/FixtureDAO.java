@@ -20,5 +20,4 @@ public interface FixtureDAO {
     List<Fixture> getAllFixtures();
     Fixture updateFixture(Fixture fixture);
     boolean cancelFixture(UUID fixtureId);
-
 }
