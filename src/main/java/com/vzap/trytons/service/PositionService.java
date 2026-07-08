@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.UUID;
 
 public interface PositionService {
-    PositionResponseDTO createPostion(PositionResponseDTO request);
+    PositionResponseDTO createPosition(PositionRequestDTO request);
     PositionResponseDTO getPosition(UUID positionId);
-    List<PositionResponseDTO> getAllPositons();
-    PositionResponseDTO updatePlayer(UUID playerId, PositionRequestDTO request);
+    List<PositionResponseDTO> getAllPositions();
+    PositionResponseDTO updatePosition(UUID positionId, PositionRequestDTO request);
 }
