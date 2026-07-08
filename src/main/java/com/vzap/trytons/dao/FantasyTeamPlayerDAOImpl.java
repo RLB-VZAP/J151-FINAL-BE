@@ -18,9 +18,9 @@ import java.util.logging.Logger;
 public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlayerDAO {
 
     private static final Logger LOG = Logger.getLogger(FantasyTeamPlayerDAOImpl.class.getName());
-    private static final String SELECTION_SELECT = "SELECT"
-            + "selectionId, teamId, playerId, selectedDate, isCaptain, is_vice_captain, isActive "
-            + "FROM fantasy_team_player";
+    private static final String SELECTION_SELECT = "SELECT"+
+            "selectionId,teamId,playerId,selectedDate,isCaptain,is_vice_captain AS isViceCaptain"+
+            "FROM team_player_selection";
     //made a constant when selecting from database to reduce typing. Efficiency :)
 
     private TeamPlayerSelection mapSelection(ResultSet rs) throws SQLException {
@@ -61,8 +61,8 @@ public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlay
     @Override
     public boolean addPlayerToSquad(UUID teamId, UUID playerId) {
         String query = "INSERT INTO team_player_selection "
-                + "(selectionId, teamId, playerId, selectedDate, isCaptain, is_vice_captain, isActive) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+                + "(selectionId, teamId, playerId, selectedDate, isCaptain, is_vice_captain) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
 
         try(Connection con = getConnection();
             PreparedStatement ps = con.prepareStatement(query)) {
@@ -72,14 +72,14 @@ public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlay
             ps.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
             ps.setBoolean(5, false);
             ps.setBoolean(6, false);
-            ps.setBoolean(7, true);
 
             return ps.executeUpdate() == 1;
         } catch (SQLException e) {
             String message = e.getMessage();
 
-            if(message != null && message.contains("uk_team_player_selection_active"))
+            if (message != null && message.contains("uk_team_player_selection")) {
                 throw new ConflictException("Player is already in the squad");
+            }
 
             LOG.log(Level.SEVERE, "Could not add player to squad", e);
             throw new DataAccessException("Could not add player to squad", e);
@@ -90,8 +90,8 @@ public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlay
     public void replaceSquad(UUID teamId, List<UUID> playerIds) {
         String deleteQuery = "DELETE FROM team_player_selection WHERE teamId = ?";
         String insertQuery = "INSERT INTO team_player_selection "
-                + "(selectionId, teamId, playerId, selectedDate, isCaptain, is_vice_captain, isActive) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+                + "(selectionId, teamId, playerId, selectedDate, isCaptain, is_vice_captain) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
 
         Connection con = null; //Declared at the top instead of in try resource for rollback
 
@@ -115,7 +115,6 @@ public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlay
                     ips.setTimestamp(4, Timestamp.valueOf(now));
                     ips.setBoolean(5, false);
                     ips.setBoolean(6, false);
-                    ips.setBoolean(7, true);
                     ips.addBatch();
                 }
 
@@ -152,7 +151,7 @@ public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlay
 
     @Override
     public List<TeamPlayerSelection> getSquadByTeamId(UUID teamId) {
-        String query = SELECTION_SELECT + " WHERE teamId = ? AND isActive = TRUE ORDER BY selectedDate ASC";
+        String query = SELECTION_SELECT + " WHERE teamId = ? ORDER BY selectedDate ASC";
         List<TeamPlayerSelection> squad = new ArrayList<>();
 
         try(Connection con = getConnection();
@@ -173,7 +172,7 @@ public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlay
 
     @Override
     public Optional<TeamPlayerSelection> findSquadEntry(UUID teamId, UUID playerId) {
-        String query = SELECTION_SELECT + " WHERE teamId = ? AND playerId = ? AND isActive = TRUE";
+        String query = SELECTION_SELECT + " WHERE teamId = ? AND playerId = ?";
 
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query)){
@@ -194,7 +193,7 @@ public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlay
 
     @Override
     public boolean removePlayerFromSquad(UUID teamId, UUID playerId) {
-        String query =  "DELETE FROM team_player_selection WHERE teamId = ? AND playerId = ? AND isActive = TRUE";
+        String query =  "DELETE FROM team_player_selection WHERE teamId = ? AND playerId = ?";
 
         try(Connection con = getConnection();
             PreparedStatement ps = con.prepareStatement(query)){
