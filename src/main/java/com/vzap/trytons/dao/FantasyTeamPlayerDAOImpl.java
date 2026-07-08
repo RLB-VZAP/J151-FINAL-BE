@@ -38,7 +38,6 @@ public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlay
 
         selection.setIsCaptain(rs.getBoolean("isCaptain"));
         selection.setIsViceCaptain(rs.getBoolean("isViceCaptain"));
-        selection.setIsActive(rs.getBoolean("isActive"));
         selection.setFantasyTeam(team);
         selection.setPlayer(player);
 
