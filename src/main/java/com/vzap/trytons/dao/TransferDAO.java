@@ -11,7 +11,6 @@ public interface TransferDAO {
     Optional<Transfer> saveTransfer(Transfer transfer);
     Optional<Transfer> getTransferById(UUID transferId);
     List<Transfer> getTransfersByTeamId(UUID teamId);
-
     List<Transfer> findHistoryForTeam(UUID teamId);
     int countTransfersForTeamInRound(UUID teamId, int roundNumber);
     boolean existsDuplicateTransfer(UUID teamId, UUID removedPlayerId, UUID addedPlayerId, int roundNumber);

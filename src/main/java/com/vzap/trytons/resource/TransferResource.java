@@ -49,14 +49,13 @@ public class TransferResource {
 
             TransferResponseDTO response = transferService.executeTransfer(authenticatedActorId, request);
 
-            ApiResponseDTO<TransferResponseDTO> successPayload =
+            ApiResponseDTO<TransferResponseDTO> payload =
                     ApiResponseDTO.success("Transfer executed successfully.", response);
 
-            return Response.ok(successPayload).build();
+            return Response.ok(payload).build();
 
         } catch (ApplicationException e) {
             return handledApplicationError(e);
-
         } catch (Exception e) {
             return unexpected(e);
         }
@@ -74,14 +73,13 @@ public class TransferResource {
             List<TransferResponseDTO> history =
                     transferService.listTransferHistory(authenticatedActorId, teamId);
 
-            ApiResponseDTO<List<TransferResponseDTO>> successPayload =
+            ApiResponseDTO<List<TransferResponseDTO>> payload =
                     ApiResponseDTO.success("Transfer history retrieved successfully.", history);
 
-            return Response.ok(successPayload).build();
+            return Response.ok(payload).build();
 
         } catch (ApplicationException e) {
             return handledApplicationError(e);
-
         } catch (Exception e) {
             return unexpected(e);
         }

@@ -7,7 +7,12 @@ import com.vzap.trytons.model.Player;
 import com.vzap.trytons.model.Transfer;
 import jakarta.inject.Singleton;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -22,22 +27,26 @@ public class TransferDAOImpl extends BaseDAO implements TransferDAO {
 
     @Override
     public Optional<Transfer> saveTransfer(Transfer transfer) {
-        String query = "INSERT INTO `transfer` " +
-                "(transferId, teamId, removed_player_id, added_player_id, transferDate, " +
-                "penaltyApplied, penaltyPoints, transfer_window_status, roundNumber, confirmed) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String query = "INSERT INTO `transfer` "
+                + "(transferId, teamId, removed_player_id, added_player_id, transferDate, "
+                + "penaltyApplied, penaltyPoints, transfer_window_status, roundNumber, confirmed) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {
 
             ps.setString(1, transfer.getTransferId().toString());
             ps.setString(2, transfer.getFantasyTeam().getTeamId().toString());
-            ps.setString(3, transfer.getRemovedPlayer() != null ? transfer.getRemovedPlayer().getPlayerId().toString() : null);
-            ps.setString(4, transfer.getAddedPlayer() != null ? transfer.getAddedPlayer().getPlayerId().toString() : null);
+            ps.setString(3, transfer.getRemovedPlayer() != null
+                    ? transfer.getRemovedPlayer().getPlayerId().toString()
+                    : null);
+            ps.setString(4, transfer.getAddedPlayer() != null
+                    ? transfer.getAddedPlayer().getPlayerId().toString()
+                    : null);
             ps.setTimestamp(5, Timestamp.valueOf(transfer.getTransferDate()));
             ps.setBoolean(6, Boolean.TRUE.equals(transfer.getPenaltyApplied()));
             ps.setInt(7, transfer.getPenaltyPoints());
-            ps.setString(8, transfer.getTransferWindowStatus().toString());
+            ps.setString(8, transfer.getTransferWindowStatus().name());
 
             if (transfer.getRoundNumber() > 0) {
                 ps.setInt(9, transfer.getRoundNumber());
@@ -132,8 +141,8 @@ public class TransferDAOImpl extends BaseDAO implements TransferDAO {
 
     @Override
     public int countTransfersForTeamInRound(UUID teamId, int roundNumber) {
-        String query = "SELECT COUNT(*) FROM `transfer` " +
-                "WHERE teamId = ? AND roundNumber = ? AND confirmed = TRUE";
+        String query = "SELECT COUNT(*) FROM `transfer` "
+                + "WHERE teamId = ? AND roundNumber = ? AND confirmed = TRUE";
 
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {
@@ -162,22 +171,21 @@ public class TransferDAOImpl extends BaseDAO implements TransferDAO {
             UUID addedPlayerId,
             int roundNumber
     ) {
-        String query = "SELECT COUNT(*) FROM `transfer` " +
-                "WHERE teamId = ? " +
-                "AND roundNumber = ? " +
-                "AND confirmed = TRUE " +
-                "AND ((? IS NULL AND removed_player_id IS NULL) OR removed_player_id = ?) " +
-                "AND ((? IS NULL AND added_player_id IS NULL) OR added_player_id = ?)";
+        String query = "SELECT COUNT(*) FROM `transfer` "
+                + "WHERE teamId = ? "
+                + "AND roundNumber = ? "
+                + "AND confirmed = TRUE "
+                + "AND ((? IS NULL AND removed_player_id IS NULL) OR removed_player_id = ?) "
+                + "AND ((? IS NULL AND added_player_id IS NULL) OR added_player_id = ?)";
 
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {
 
-            ps.setString(1, teamId.toString());
-            ps.setInt(2, roundNumber);
-
             String removedId = removedPlayerId != null ? removedPlayerId.toString() : null;
             String addedId = addedPlayerId != null ? addedPlayerId.toString() : null;
 
+            ps.setString(1, teamId.toString());
+            ps.setInt(2, roundNumber);
             ps.setString(3, removedId);
             ps.setString(4, removedId);
             ps.setString(5, addedId);
@@ -195,11 +203,11 @@ public class TransferDAOImpl extends BaseDAO implements TransferDAO {
 
     @Override
     public boolean existsPlayerConflict(UUID teamId, UUID playerId, int roundNumber) {
-        String query = "SELECT COUNT(*) FROM `transfer` " +
-                "WHERE teamId = ? " +
-                "AND roundNumber = ? " +
-                "AND confirmed = TRUE " +
-                "AND (removed_player_id = ? OR added_player_id = ?)";
+        String query = "SELECT COUNT(*) FROM `transfer` "
+                + "WHERE teamId = ? "
+                + "AND roundNumber = ? "
+                + "AND confirmed = TRUE "
+                + "AND (removed_player_id = ? OR added_player_id = ?)";
 
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {
