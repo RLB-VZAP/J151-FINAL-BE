@@ -99,8 +99,13 @@ public class TransferServiceImpl implements TransferService {
         BigDecimal oldRemainingBudget = valueOrZero(team.getRemainingBudget());
         BigDecimal oldTeamValue = valueOrZero(team.getTotalTeamValue());
 
-        BigDecimal removedValue = removedPlayer != null ? requirePlayerValue(removedPlayer, "Removed player") : BigDecimal.ZERO;
-        BigDecimal addedValue = addedPlayer != null ? requirePlayerValue(addedPlayer, "Added player") : BigDecimal.ZERO;
+        BigDecimal removedValue = removedPlayer != null
+                ? requirePlayerValue(removedPlayer, "Removed player")
+                : BigDecimal.ZERO;
+
+        BigDecimal addedValue = addedPlayer != null
+                ? requirePlayerValue(addedPlayer, "Added player")
+                : BigDecimal.ZERO;
 
         BigDecimal newRemainingBudget = oldRemainingBudget.add(removedValue).subtract(addedValue);
         BigDecimal newTeamValue = oldTeamValue.subtract(removedValue).add(addedValue);
@@ -110,6 +115,7 @@ public class TransferServiceImpl implements TransferService {
         }
 
         List<UUID> proposedPlayerIds = currentSquad.stream()
+                .filter(selection -> selection != null && selection.getPlayer() != null)
                 .map(selection -> selection.getPlayer().getPlayerId())
                 .collect(Collectors.toList());
 
@@ -121,12 +127,15 @@ public class TransferServiceImpl implements TransferService {
             proposedPlayerIds.add(request.getAddedPlayerId());
         }
 
-        SquadValidationResultDTO validationResult = squadValidationService.validateSquad(proposedPlayerIds, newTeamValue);
+        SquadValidationResultDTO validationResult =
+                squadValidationService.validateSquad(proposedPlayerIds, newTeamValue);
 
         if (!validationResult.isValid()) {
-            String firstError = validationResult.getErrors().isEmpty()
-                    ? "Unknown squad validation error"
-                    : validationResult.getErrors().get(0).getMessage();
+            String firstError = "Unknown squad validation error";
+
+            if (validationResult.getErrors() != null && !validationResult.getErrors().isEmpty()) {
+                firstError = validationResult.getErrors().get(0).getMessage();
+            }
 
             throw new BusinessRuleException("Squad validation failed: " + firstError);
         }
@@ -195,8 +204,8 @@ public class TransferServiceImpl implements TransferService {
 
         validateTeamOwnership(authenticatedActorId, team);
 
-        return transferDAO.findHistoryForTeam(teamId).stream()
-                .map(transfer -> toResponse(transfer, null, null))
+        return transferHistoryDAO.getHistoryByTeamId(teamId).stream()
+                .map(this::toHistoryResponse)
                 .collect(Collectors.toList());
     }
 
@@ -243,35 +252,39 @@ public class TransferServiceImpl implements TransferService {
     }
 
     private void enforceDeadlineAndLocks(TransferRequestDTO request, FantasyTeam team) {
-        DeadlineStatusResponseDTO deadlineStatus = deadlineLockService.getDeadlineStatus(request.getFixtureId());
+        DeadlineStatusResponseDTO deadlineStatus =
+                deadlineLockService.getDeadlineStatus(request.getFixtureId());
 
         if (deadlineStatus != null && deadlineStatus.isLocked()) {
             throw new BusinessRuleException("The transfer deadline has passed for this fixture");
         }
 
-        LockStatusResponseDTO lockStatus = deadlineLockService.getLockStatus(request.getFixtureId());
+        LockStatusResponseDTO lockStatus =
+                deadlineLockService.getLockStatus(request.getFixtureId());
 
         if (lockStatus != null && lockStatus.isLocked()) {
             throw new BusinessRuleException(
                     lockStatus.getMessage() != null
                             ? lockStatus.getMessage()
-                            : "Transfers are locked for this fixture"
-            );
+                            : "Transfers are locked for this fixture");
         }
 
         List<UUID> lockedTeamIds = deadlineLockService.getLockedTeamIds(request.getFixtureId());
+
         if (lockedTeamIds != null && lockedTeamIds.contains(team.getTeamId())) {
             throw new BusinessRuleException("This team is locked for the selected fixture");
         }
 
         List<UUID> lockedPlayerIds = deadlineLockService.getLockedPlayerIds(request.getFixtureId());
 
-        if (lockedPlayerIds != null && request.getRemovedPlayerId() != null
+        if (lockedPlayerIds != null
+                && request.getRemovedPlayerId() != null
                 && lockedPlayerIds.contains(request.getRemovedPlayerId())) {
             throw new BusinessRuleException("The player you are trying to remove is locked");
         }
 
-        if (lockedPlayerIds != null && request.getAddedPlayerId() != null
+        if (lockedPlayerIds != null
+                && request.getAddedPlayerId() != null
                 && lockedPlayerIds.contains(request.getAddedPlayerId())) {
             throw new BusinessRuleException("The player you are trying to add is locked");
         }
@@ -300,9 +313,14 @@ public class TransferServiceImpl implements TransferService {
     }
 
     private void validateCurrentSquadRules(TransferRequestDTO request, List<TeamPlayerSelection> currentSquad) {
+        if (currentSquad == null) {
+            throw new BusinessRuleException("Current squad could not be loaded");
+        }
+
         if (request.getRemovedPlayerId() != null) {
             boolean inSquad = currentSquad.stream()
-                    .anyMatch(selection -> selection.getPlayer().getPlayerId().equals(request.getRemovedPlayerId()));
+                    .filter(selection -> selection != null && selection.getPlayer() != null)
+                    .anyMatch(selection -> request.getRemovedPlayerId().equals(selection.getPlayer().getPlayerId()));
 
             if (!inSquad) {
                 throw new BusinessRuleException("The player you are trying to remove is not in your squad");
@@ -311,7 +329,8 @@ public class TransferServiceImpl implements TransferService {
 
         if (request.getAddedPlayerId() != null) {
             boolean alreadyInSquad = currentSquad.stream()
-                    .anyMatch(selection -> selection.getPlayer().getPlayerId().equals(request.getAddedPlayerId()));
+                    .filter(selection -> selection != null && selection.getPlayer() != null)
+                    .anyMatch(selection -> request.getAddedPlayerId().equals(selection.getPlayer().getPlayerId()));
 
             if (alreadyInSquad) {
                 throw new BusinessRuleException("The player you are trying to add is already in your squad");
@@ -354,5 +373,18 @@ public class TransferServiceImpl implements TransferService {
                 transfer.getPenaltyPoints(),
                 newRemainingBudget,
                 newTeamValue);
+    }
+
+    private TransferResponseDTO toHistoryResponse(TransferHistory history) {
+        return new TransferResponseDTO(
+                history.getTransfer() != null ? history.getTransfer().getTransferId() : null,
+                history.getFantasyTeam() != null ? history.getFantasyTeam().getTeamId() : null,
+                history.getRemovedPlayer() != null ? history.getRemovedPlayer().getPlayerId() : null,
+                history.getAddedPlayer() != null ? history.getAddedPlayer().getPlayerId() : null,
+                history.getCreatedAt(),
+                history.getPenaltyPoints() > 0,
+                history.getPenaltyPoints(),
+                history.getNewRemainingBudget(),
+                history.getNewTeamValue());
     }
 }

@@ -6,6 +6,7 @@ import com.vzap.trytons.model.Player;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 
@@ -37,7 +38,7 @@ public class SquadValidationServiceImpl implements SquadValidationService {
     private PlayerDAO playerDAO;
 
     @Override
-    public SquadValidationResultDTO validateSquad(List<UUID> proposedPlayerIds) {
+    public SquadValidationResultDTO validateSquad(List<UUID> proposedPlayerIds, BigDecimal newTeamValue) {
         SquadValidationResultDTO result = SquadValidationResultDTO.builder().build();
         validateDuplicatePlayers(proposedPlayerIds, result);
         List<Player> players = getPlayers(proposedPlayerIds, result);
