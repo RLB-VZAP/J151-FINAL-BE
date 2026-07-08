@@ -3,6 +3,7 @@ package com.vzap.trytons.resource;
 import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.dto.RegisteredUserRequestDTO;
 import com.vzap.trytons.dto.RegisteredUserResponseDTO;
+import com.vzap.trytons.enums.UserRole;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.RegisteredUser;
@@ -16,7 +17,6 @@ import java.net.URI;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-// TODO move @ApplicationPath("/api") to RestApplication in BE07; resource classes should only define endpoint paths
 @Path("/users")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
@@ -48,7 +48,7 @@ public class UserResources {
     }
 
     public RegisteredUserResponseDTO toResponse(RegisteredUser created) {
-        return new RegisteredUserResponseDTO(created.getUserId(), created.getUsername(), created.getRegistrationStatus()
+        return new RegisteredUserResponseDTO(created.getUserId(), created.getUsername(), UserRole.REGISTERED_USER ,created.getRegistrationStatus()
         );
     }
 }
