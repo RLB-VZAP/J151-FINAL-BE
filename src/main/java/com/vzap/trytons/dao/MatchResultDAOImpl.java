@@ -10,41 +10,41 @@ public class MatchResultDAOImpl implements MatchResultDAO {
 
     @Override
     public MatchResult save(MatchResult matchResult) {
-        return null;
+        throw new UnsupportedOperationException("MatchResultDAOImpl stub: save is not implemented yet.");
     }
 
     @Override
     public Optional<MatchResult> findById(UUID resultId) {
-        return Optional.empty();
+        throw new UnsupportedOperationException("MatchResultDAOImpl stub: findById is not implemented yet.");
     }
 
     @Override
     public Optional<MatchResult> findCurrentByFixtureId(UUID fixtureId) {
-        return Optional.empty();
+        throw new UnsupportedOperationException("MatchResultDAOImpl stub: findCurrentByFixtureId is not implemented yet.");
     }
 
     @Override
     public List<MatchResult> findAllByFixtureId(UUID fixtureId) {
-        return List.of();
+        throw new UnsupportedOperationException("MatchResultDAOImpl stub: findAllByFixtureId is not implemented yet.");
     }
 
     @Override
     public int getNextSimulationRunNumber(UUID fixtureId) {
-        return 0;
+        throw new UnsupportedOperationException("MatchResultDAOImpl stub: getNextSimulationRunNumber is not implemented yet.");
     }
 
     @Override
     public int markAllFixtureResultsNotCurrent(UUID fixtureId) {
-        return 0;
+        throw new UnsupportedOperationException("MatchResultDAOImpl stub: markAllFixtureResultsNotCurrent is not implemented yet.");
     }
 
     @Override
     public boolean markResultCurrent(UUID resultId) {
-        return false;
+        throw new UnsupportedOperationException("MatchResultDAOImpl stub: markResultCurrent is not implemented yet.");
     }
 
     @Override
     public boolean approveResult(UUID resultId, UUID approvedByAdminId) {
-        return false;
+        throw new UnsupportedOperationException("MatchResultDAOImpl stub: approveResult is not implemented yet.");
     }
 }
