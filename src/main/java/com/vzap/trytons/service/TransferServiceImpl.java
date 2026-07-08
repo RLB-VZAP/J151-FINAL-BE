@@ -183,7 +183,7 @@ public class TransferServiceImpl implements TransferService {
     }
 
     @Override
-    public List<TransferResponseDTO> getTransferHistoryForTeam(UUID requestingUserId, UUID teamId) {
+    public List<TransferResponseDTO> getTransfersForTeam(UUID requestingUserId, UUID teamId) {
         FantasyTeam team = fantasyTeamDAO.getTeamById(teamId)
                 .orElseThrow(() -> new ResourceNotFoundException("Fantasy team not found."));
 
