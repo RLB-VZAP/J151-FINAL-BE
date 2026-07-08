@@ -1,20 +1,18 @@
 package com.vzap.trytons.dao;
 
 import com.vzap.trytons.exceptions.DataAccessException;
-import com.vzap.trytons.model.FantasyPoints;
-
-import java.lang.reflect.Type;
+import com.vzap.trytons.model.*;
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.vzap.trytons.util.DBConnectionManager.getConnection;
-
 public class FantasyPointsDAOImpl extends BaseDAO implements FantasyPointsDAO {
     private static final Logger LOG = Logger.getLogger(FantasyPointsDAO.class.getName());
+
     @Override
     public FantasyPoints save(FantasyPoints points) {
 
@@ -51,7 +49,51 @@ public class FantasyPointsDAOImpl extends BaseDAO implements FantasyPointsDAO {
 
     @Override
     public List<FantasyPoints> findByFixtureId(UUID fixtureId) {
-        return List.of();
+            String query = "SELECT * FROM fantasyPoints WHERE fixtureId = ?";
+            List<FantasyPoints> fantasyPoints = new ArrayList<>();
+            try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
+                ps.setString(1, fixtureId.toString());
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        //creating shallow references to fulfil needed objects
+                        UUID teamId = UUID.fromString(rs.getString("teamId"));
+                        FantasyTeam team = new FantasyTeam();
+                        team.setTeamId(teamId);
+
+                        UUID playerId = UUID.fromString(rs.getString("playerId"));
+                        Player player = new Player();
+                        player.setPlayerId(playerId);
+
+                        Fixture fixture = new Fixture();
+                        fixture.setFixtureId(fixtureId);
+
+                        String scoringRuleId = rs.getString("ruleId");
+                        ScoringRule rule = null;
+                        if (scoringRuleId != null){
+                            rule = new ScoringRule();
+                            rule.setRuleId(UUID.fromString(scoringRuleId));
+                        }
+
+                        FantasyPoints fp = FantasyPoints.builder()
+                                .pointsId(UUID.fromString(rs.getString("pointsId")))
+                                .pointsEarned(rs.getInt("pointsEarned"))
+                                .calculationDate(rs.getObject("calculationDate", LocalDateTime.class))
+                                .matchRoundNumber(rs.getInt("match_round_number"))
+                                .calculationVersion(rs.getInt("calculationVersion"))
+                                .fantasyTeam(team)
+                                .player(player)
+                                .fixture(fixture)
+                                .scoringRule(rule)
+                                .build();
+                        fantasyPoints.add(fp);
+                    }
+                }
+            } catch (SQLException e) {
+                LOG.log(Level.SEVERE, "Could not find any fantasy points by fixture ID", e);
+                throw new DataAccessException("Could not find any fantasy points by fixture ID", e);
+            }
+            return fantasyPoints;
     }
 
     @Override
