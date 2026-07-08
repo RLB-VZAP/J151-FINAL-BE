@@ -16,22 +16,20 @@ import java.util.UUID;
 @Getter
 @Setter
 public class Fixture {
-
     private UUID fixtureId;
-    private LocalDate matchDate;
-    private LocalTime matchTime;
-    private String venue;
-    private FixtureStatus status;
-    private Boolean isSimulated;
-    private Boolean isLocked;
-    private int matchRoundNumber;
-    private LocalDateTime lockDeadline;
-
     private League league;
-    private MatchResult matchResult;
-    private List<Locking> lockings = new ArrayList<>();
+    private UUID roundId;
 
-    private Club homeClub;
-    private Club awayClub;
-    private List<PlayerStatistics> playerStatistics = new ArrayList<>();
+    private FantasyTeam teamA;
+    private FantasyTeam teamB;
+
+    private LocalDate fixtureDate;
+    private LocalTime fixtureTime;
+
+    private FixtureStatus status;
+
+    private LocalDateTime simulationDate;
+    private LocalDateTime createdAt;
+
+    private MatchResult matchResult;
 }
