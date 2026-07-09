@@ -8,6 +8,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,19 +40,21 @@ public class FantasyRoundDAOImpl implements FantasyRoundDAO {
                             .roundId(roundId)
                             .season(rs.getString("season"))
                             .roundNumber(rs.getInt("roundNumber"))
-
+                            .openDate(rs.getObject("openDate", LocalDateTime.class))
+                            .lockDeadline(rs.getObject("lockDeadline", LocalDateTime.class))
+                            .endDate(rs.getObject("endDate", LocalDateTime.class))
+                            .status(FantasyRoundStatus.valueOf(rs.getString("status")))
 
                             .build();
+
+                    return Optional.of(fr);
                 }
             }
 
-
-
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Could not save fantasy points", e);
-            throw new DataAccessException("Could not save fantasy points", e);
+            LOG.log(Level.SEVERE, "Could not find fantasy round by ID", e);
+            throw new DataAccessException("Could not find fantasy round by ID", e);
         }
-
 
         return Optional.empty();
     }
