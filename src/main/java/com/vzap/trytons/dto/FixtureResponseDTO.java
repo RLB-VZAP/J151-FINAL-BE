@@ -17,20 +17,15 @@ import java.util.UUID;
 
 public class FixtureResponseDTO {
     private UUID fixtureId;
-
     private UUID leagueId;
     private UUID roundId;
-
     private UUID teamAId;
     private String teamAName;
-
     private UUID teamBId;
     private String teamBName;
-
     private LocalDate fixtureDate;
     private LocalTime fixtureTime;
-
-    private FixtureStatus status;
+    private String fixtureStatus;
     private LocalDateTime simulationDate;
     private LocalDateTime createdAt;
 }
