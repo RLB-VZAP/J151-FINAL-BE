@@ -147,7 +147,23 @@ public class FantasyPointsDAOImpl extends BaseDAO implements FantasyPointsDAO {
 
     @Override
     public int markExistingPointsForStatAsNotFinal(UUID statId) {
-        throw new UnsupportedOperationException("FantasyPointsDAOImpl stub: markExistingPointsForStatAsNotFinal is not implemented yet.");
+
+        String query = "UPDATE fantasyPoints SET isFinal = ? WHERE statId = ? AND isFinal = ?";
+
+        try (Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)){
+
+            ps.setBoolean(1, false);
+            ps.setString(2, statId.toString());
+            ps.setBoolean(3, true);
+
+                return ps.executeUpdate();
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to mark existing points for stat as not final", e);
+            throw new DataAccessException("Unable to mark existing points for stat as not final", e);
+        }
+
     }
 
     @Override
