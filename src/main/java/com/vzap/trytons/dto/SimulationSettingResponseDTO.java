@@ -28,4 +28,16 @@ public class SimulationSettingResponseDTO {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FantasyPointBreakdownResponseDTO {
+
+        private UUID breakdownId;
+        private UUID pointsId;
+        private String category;
+        private int points;
+        private String description;
+    }
 }
