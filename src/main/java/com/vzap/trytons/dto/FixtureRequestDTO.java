@@ -13,12 +13,11 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FixtureRequestDTO {
-    //STUB - please confirm what all is needed with the model!
-    private LocalDate matchDate;
-    private LocalTime matchTime;
-    private String venue;
-    private int matchRoundNumber;
-    private UUID awayClubId;
-    private UUID homeClubId;
     private UUID leagueId;
+    private UUID roundId;
+    private UUID teamAId;
+    private UUID teamBId;
+
+    private LocalDate fixtureDate;
+    private LocalTime fixtureTime;
 }

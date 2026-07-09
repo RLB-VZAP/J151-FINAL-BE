@@ -11,13 +11,14 @@ import java.util.UUID;
 @Getter
 @Setter
 public class TeamPlayerSelection {
-
     private UUID selectionId;
+
     private LocalDateTime selectedDate;
+
     private Boolean isCaptain;
     private Boolean isViceCaptain;
-    private Boolean isActive;
 
     private FantasyTeam fantasyTeam;
+
     private Player player;
 }
