@@ -1,16 +1,57 @@
 package com.vzap.trytons.dao;
 
 import com.vzap.trytons.enums.FantasyRoundStatus;
+import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.FantasyRound;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static com.vzap.trytons.util.DBConnectionManager.getConnection;
 
 public class FantasyRoundDAOImpl implements FantasyRoundDAO {
+    private static final Logger LOG = Logger.getLogger(FantasyRound.class.getName());
+
 
     @Override
     public Optional<FantasyRound> getRoundById(UUID roundId) {
+
+        String query = "SELECT * FROM fantasyRound WHERE roundId = ?";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, roundId.toString());
+
+            try(ResultSet rs = ps.executeQuery()){
+
+                if (rs.next()){
+
+                    FantasyRound fr = FantasyRound.builder()
+                            .roundId(roundId)
+                            .season(rs.getString("season"))
+                            .roundNumber(rs.getInt("roundNumber"))
+
+
+                            .build();
+                }
+            }
+
+
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Could not save fantasy points", e);
+            throw new DataAccessException("Could not save fantasy points", e);
+        }
+
+
         return Optional.empty();
     }
 
