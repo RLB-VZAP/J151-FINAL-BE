@@ -15,7 +15,7 @@ import java.util.UUID;
 @Builder
 public class Fixture {
     private UUID fixtureId;
-    private League league;
+    private League leagueId;
     private FantasyRound roundId;
     private FantasyTeam teamA;
     private FantasyTeam teamB;
