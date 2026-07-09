@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -61,12 +62,78 @@ public class FantasyRoundDAOImpl implements FantasyRoundDAO {
 
     @Override
     public Optional<FantasyRound> getRoundBySeasonAndNumber(String season, int roundNumber) {
+
+        String query = "SELECT * FROM fantasyRound WHERE season = ? AND roundNumber = ?";
+
+        try(Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, season);
+            ps.setInt(2, roundNumber);
+
+            try(ResultSet rs = ps.executeQuery()){
+                if (rs.next()){
+
+                    FantasyRound fr = FantasyRound.builder()
+                            .roundId(UUID.fromString(rs.getString("roundId")))
+                            .season(season)
+                            .roundNumber(roundNumber)
+                            .openDate(rs.getObject("openDate", LocalDateTime.class))
+                            .lockDeadline(rs.getObject("lockDeadline", LocalDateTime.class))
+                            .endDate(rs.getObject("endDate", LocalDateTime.class))
+                            .status(FantasyRoundStatus.valueOf(rs.getString("status")))
+
+                            .build();
+
+                    return Optional.of(fr);
+
+                }
+            }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Could not find fantasy round by season and round number", e);
+            throw new DataAccessException("Could not find fantasy round by season and round number", e);
+        }
         return Optional.empty();
     }
 
     @Override
     public List<FantasyRound> getAllRounds() {
-        return List.of();
+
+        String query = "SELECT * FROM fantasyRound";
+
+        List<FantasyRound> fantasyRounds = new ArrayList<>();
+
+        try(Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)) {
+
+            try(ResultSet rs = ps.executeQuery()){
+
+                while (rs.next()){
+                    FantasyRound fr = FantasyRound.builder()
+                            .roundId(UUID.fromString(rs.getString("roundId")))
+                            .season(rs.getString("season"))
+                            .roundNumber(rs.getInt("roundNumber"))
+                            .openDate(rs.getObject("openDate", LocalDateTime.class))
+                            .lockDeadline(rs.getObject("lockDeadline", LocalDateTime.class))
+                            .endDate(rs.getObject("endDate", LocalDateTime.class))
+                            .status(FantasyRoundStatus.valueOf(rs.getString("status")))
+
+                            .build();
+
+                    fantasyRounds.add(fr);
+
+                }
+            }
+
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Could not find all fantasy rounds", e);
+            throw new DataAccessException("Could not find all fantasy rounds", e);
+        }
+
+
+        return fantasyRounds;
     }
 
     @Override
