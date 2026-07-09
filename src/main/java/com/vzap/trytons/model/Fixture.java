@@ -1,9 +1,7 @@
 package com.vzap.trytons.model;
 
 import com.vzap.trytons.enums.FixtureStatus;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,21 +11,18 @@ import java.util.UUID;
 @NoArgsConstructor
 @Getter
 @Setter
+@AllArgsConstructor
+@Builder
 public class Fixture {
     private UUID fixtureId;
     private League league;
-    private UUID roundId;
-
+    private FantasyRound roundId;
     private FantasyTeam teamA;
     private FantasyTeam teamB;
-
     private LocalDate fixtureDate;
     private LocalTime fixtureTime;
-
     private FixtureStatus status;
-
     private LocalDateTime simulationDate;
     private LocalDateTime createdAt;
-
     private MatchResult matchResult;
 }
