@@ -8,32 +8,32 @@ import java.util.UUID;
 
 public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
     @Override
-    public Fixture createFixture(Fixture fixture) {
+    public Fixture create(Fixture fixture) {
         return null;
     }
 
     @Override
-    public Optional<Fixture> findFixtureById(UUID fixtureId) {
+    public Optional<Fixture> findById(UUID fixtureId) {
         return Optional.empty();
     }
 
     @Override
-    public List<Fixture> findFixturesByLeagueId(UUID leagueId) {
+    public List<Fixture> findByLeagueId(UUID leagueId) {
         return List.of();
     }
 
     @Override
-    public List<Fixture> findFixturesByRoundId(UUID roundId) {
+    public List<Fixture> findByRoundId(UUID roundId) {
         return List.of();
     }
 
     @Override
-    public List<Fixture> findFixturesByTeamId(UUID teamId) {
+    public List<Fixture> findByTeamId(UUID teamId) {
         return List.of();
     }
 
     @Override
-    public List<Fixture> findFixturesByStatus(FixtureStatus status) {
+    public List<Fixture> findByStatus(FixtureStatus status) {
         return List.of();
     }
 
