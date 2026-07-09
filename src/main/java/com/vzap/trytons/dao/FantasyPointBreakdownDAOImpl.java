@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -85,6 +86,36 @@ public class FantasyPointBreakdownDAOImpl implements FantasyPointBreakdownDAO {
 
     @Override
     public List<FantasyPointBreakdown> findByPointsId(UUID pointsId) {
-        throw new UnsupportedOperationException("FantasyPointBreakdownDAOImpl stub: findByPointsId is not implemented yet.");
+
+        String query = "SELECT * FROM fantasy_point_breakdown WHERE pointsId = ?";
+
+        List<FantasyPointBreakdown> breakdowns = new ArrayList<>();
+
+        try (Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, pointsId.toString());
+
+            try(ResultSet rs = ps.executeQuery()){
+                while (rs.next()){
+                    FantasyPointBreakdown fpb = FantasyPointBreakdown.builder()
+                            .breakdownId(UUID.fromString(rs.getString("breakdownId")))
+                            .pointsId(pointsId)
+                            .ruleId(UUID.fromString(rs.getString("ruleId")))
+                            .eventCount(rs.getInt("eventCount"))
+                            .pointsEarned(rs.getInt("pointsEarned"))
+                            .build();
+
+                    breakdowns.add(fpb);
+
+                }
+            }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Could not find fantasy points breakdown by pointsId", e);
+            throw new DataAccessException("Could not find fantasy points breakdown by pointsId", e);
+        }
+
+        return breakdowns;
     }
 }
