@@ -3,6 +3,7 @@ package com.vzap.trytons.model;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import com.vzap.trytons.enums.LeaderBoardScope;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
@@ -18,5 +19,5 @@ public class Leaderboard {
     private UUID leagueId;
     private LocalDate lastUpdated;
     private String season;
-    private boolean is_master_leaderboard;
+    private LeaderBoardScope scope;
 }
