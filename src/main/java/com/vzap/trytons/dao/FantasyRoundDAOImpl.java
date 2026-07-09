@@ -175,6 +175,37 @@ public class FantasyRoundDAOImpl implements FantasyRoundDAO {
 
     @Override
     public Optional<FantasyRound> getCurrentOpenRound() {
+
+        String query = "SELECT * FROM fantasyRound WHERE status = ? ORDER BY openDate DESC LIMIT 1";
+
+        try(Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, FantasyRoundStatus.OPEN.name());
+
+            try(ResultSet rs = ps.executeQuery()){
+                if (rs.next()){
+
+                    FantasyRound fr = FantasyRound.builder()
+                            .roundId(UUID.fromString(rs.getString("roundId")))
+                            .season(rs.getString("season"))
+                            .roundNumber(rs.getInt("roundNumber"))
+                            .openDate(rs.getObject("openDate", LocalDateTime.class))
+                            .lockDeadline(rs.getObject("lockDeadline", LocalDateTime.class))
+                            .endDate(rs.getObject("endDate", LocalDateTime.class))
+                            .status(FantasyRoundStatus.OPEN)
+
+                            .build();
+
+                    return Optional.of(fr);
+
+                }
+            }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Could not find fantasy round by status", e);
+            throw new DataAccessException("Could not find fantasy round by status", e);
+        }
         return Optional.empty();
     }
 
