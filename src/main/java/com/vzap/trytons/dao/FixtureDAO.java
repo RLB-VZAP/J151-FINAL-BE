@@ -15,7 +15,7 @@ public interface FixtureDAO {
     List<Fixture> findByTeamId(UUID teamId);
     List<Fixture> findByStatus(FixtureStatus status);
     List<Fixture> getAllFixtures();
-    Fixture updateFixture(Fixture fixture);
+    boolean updateFixture(Fixture fixture);
     boolean cancelFixture(UUID fixtureId);
-    Fixture updateStatus(Fixture fixture, FixtureStatus status);
+    boolean updateStatus(Fixture fixture, FixtureStatus status);
 }
