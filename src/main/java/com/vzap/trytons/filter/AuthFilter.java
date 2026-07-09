@@ -1,12 +1,12 @@
 package com.vzap.trytons.filter;
 
-import com.vzap.trytons.dao.UserDAO;
-import com.vzap.trytons.exceptions.AuthenticationException;
-import com.vzap.trytons.model.User;
+import com.vzap.trytons.auth.dao.UserDAO;
+import com.vzap.trytons.shared.exceptions.AuthenticationException;
+import com.vzap.trytons.auth.model.User;
 import com.vzap.trytons.security.AuthPrincipal;
 import com.vzap.trytons.security.AuthTokenPayload;
-import com.vzap.trytons.Annotations.Authenticated;
-import com.vzap.trytons.util.AuthTokenUtil;
+import com.vzap.trytons.auth.annotation.Authenticated;
+import com.vzap.trytons.auth.util.AuthTokenUtil;
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;

@@ -1,0 +1,23 @@
+package com.vzap.trytons.auth.dao;
+
+import com.vzap.trytons.auth.model.User;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface UserDAO {
+    Optional<User> getUserById(UUID userId);
+
+    Optional<User> getUserByEmail(String email);
+
+    Optional<User> getUserByUsername(String username);
+
+    Optional<User> updateUser(User newUser);
+
+    boolean emailExists(String email);
+
+    boolean usernameExists(String username);
+
+    boolean updateLastLogin(UUID userId, LocalDateTime lastLoginAt);
+}

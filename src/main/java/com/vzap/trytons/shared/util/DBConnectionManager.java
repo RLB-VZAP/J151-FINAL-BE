@@ -1,0 +1,31 @@
+package com.vzap.trytons.shared.util;
+
+import com.vzap.trytons.shared.config.DotEnvConfig;
+import io.github.cdimascio.dotenv.Dotenv;
+import org.apache.commons.dbcp2.BasicDataSource;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+
+public class DBConnectionManager {
+    private static final BasicDataSource dataSource;
+
+    static {
+        dataSource = new BasicDataSource();
+        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        dataSource.setUsername(DotEnvConfig.getRequired("DB_USERNAME"));
+        dataSource.setPassword(DotEnvConfig.getRequired("DB_PASSWORD"));
+        dataSource.setUrl(DotEnvConfig.getRequired("DB_URL"));
+        dataSource.setMinIdle(DotEnvConfig.getRequiredInt("DB_MIN_IDLE"));
+        dataSource.setMaxIdle(DotEnvConfig.getRequiredInt("DB_MAX_IDLE"));
+        dataSource.setMaxOpenPreparedStatements(DotEnvConfig.getRequiredInt("DB_MAX_OPEN_PREPARED_STATEMENTS"));
+    }
+
+    public static Connection getConnection() throws SQLException {
+        return dataSource.getConnection();
+    }
+
+    public static void closeDataSource() throws SQLException {
+        dataSource.close();
+    }
+}

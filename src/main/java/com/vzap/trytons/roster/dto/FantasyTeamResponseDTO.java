@@ -1,0 +1,22 @@
+package com.vzap.trytons.roster.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+
+@Getter
+@AllArgsConstructor
+public class FantasyTeamResponseDTO {
+    private UUID teamId;
+    private String teamName;
+    private UUID managerId;
+    private String managerUsername;
+    private BigDecimal totalTeamValue;
+    private BigDecimal remainingBudget;
+    private Integer weeklyPoints;
+    private Integer totalPoints;
+    private List<FantasyTeamPlayerSelectionResponseDTO> selectedPlayers;
+}

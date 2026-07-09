@@ -1,0 +1,19 @@
+package com.vzap.trytons.fixture.dto;
+
+import com.vzap.trytons.fixture.enums.MatchTeamSide;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
+
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+public class MatchTeamScoreResponseDTO {
+    private UUID teamScoreId;
+    private UUID resultId;
+    private UUID teamId;
+    private MatchTeamSide teamSide;
+    private int score;
+}
