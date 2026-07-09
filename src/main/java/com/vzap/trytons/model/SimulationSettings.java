@@ -12,10 +12,7 @@ import java.util.UUID;
 @Getter
 @Setter
 public class SimulationSettings {
-
     private UUID simulationSettingsId;
-    private BigDecimal homeAdvantageWeight;
-    private BigDecimal clubStrengthWeight;
     private BigDecimal playerFormWeight;
     private BigDecimal teamBalanceWeight;
     private BigDecimal randomVariationWeight;
@@ -25,6 +22,4 @@ public class SimulationSettings {
     private Boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-    private League league;
 }

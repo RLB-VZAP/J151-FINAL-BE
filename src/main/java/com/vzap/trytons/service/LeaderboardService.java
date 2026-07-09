@@ -10,6 +10,7 @@ import com.vzap.trytons.dto.LeaderboardEntryResponseDTO;
 public interface LeaderboardService {
     LeaderboardRefreshResultDTO refreshLeagueLeaderboard(UUID actorUserId, UUID leagueId);
     LeaderboardRefreshResultDTO refreshOverallLeaderboard(UUID actorUserId);
+    List<LeaderboardEntryResponseDTO> getOverallLeaderboard(UUID actorUserId);
     List<LeaderboardEntryResponseDTO> getLeaderboardForLeague(UUID leagueId, UUID requestingUserId);
     Optional<LeaderboardEntryResponseDTO>  getRankingForTeam(UUID teamId, UUID leaderboardId, UUID requestingUserId);
 }

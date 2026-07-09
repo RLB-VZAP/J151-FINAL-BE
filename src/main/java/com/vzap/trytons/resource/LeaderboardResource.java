@@ -1,7 +1,7 @@
 package com.vzap.trytons.resource;
 
 import com.vzap.trytons.Annotations.Authenticated;
-import com.vzap.trytons.dto.ErrorResponse;
+import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.dto.LeaderboardEntryResponseDTO;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.DataAccessException;
@@ -15,7 +15,6 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -41,9 +40,9 @@ public class LeaderboardResource {
         try{
             return Response.ok(leaderboardService.getLeaderboardForLeague(leagueId, requestingUserId)).build();
         }catch(ResourceNotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponse.of(e.getMessage(), "NOT_FOUND")).build();
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), "NOT_FOUND")).build();
         }catch(AuthorisationException e) {
-            return Response.status(Response.Status.FORBIDDEN).entity(ErrorResponse.of(e.getMessage(), "FORBIDDEN")).build();
+            return Response.status(Response.Status.FORBIDDEN).entity(ErrorResponseDTO.of(e.getMessage(), "FORBIDDEN")).build();
         }catch(DataAccessException e){
             return serverError("Failed to load leaderboard for league " + leagueId, e);
         }catch(Exception e){
@@ -62,9 +61,9 @@ public class LeaderboardResource {
             }
             return Response.ok(result.get()).build();
         }catch(ResourceNotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponse.of(e.getMessage(), "NOT_FOUND")).build();
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), "NOT_FOUND")).build();
         }catch(AuthorisationException e) {
-            return Response.status(Response.Status.FORBIDDEN).entity(ErrorResponse.of(e.getMessage(), "FORBIDDEN")).build();
+            return Response.status(Response.Status.FORBIDDEN).entity(ErrorResponseDTO.of(e.getMessage(), "FORBIDDEN")).build();
         }catch(DataAccessException e){
             return serverError("Failed to load ranking for team " + teamId, e);
         }catch(Exception e){
@@ -72,17 +71,37 @@ public class LeaderboardResource {
         }
     }
 
+    @POST
+    @Path("/{leagueId}/refrsh")
+    public Response refreshLeagueLeaderboard(@PathParam("leagueId") UUID leagueId) {
+        return Response.ok().build();
+    }
+
+    @GET
+    @Path("/master")
+    public Response getOverallLeaderboard(){
+        return Response.ok().build();
+    }
+
+    @POST
+    @Path("/master/refresh")
+    public Response refreshMaterLeaderboard() {
+        //Complete this one , I have no idea
+        return Response.accepted().build();
+    }
+
+
     //Credit goes to Jaunte Kelvin Garcia for making these....SHOUTOUT!
     private Response serverError(String message, DataAccessException e) {
         LOGGER.log(Level.SEVERE, message, e);
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(ErrorResponse.of(message, e.getErrorCode())).build();
+                .entity(ErrorResponseDTO.of(message, e.getErrorCode())).build();
     }
 
     private Response unexpected(Exception e) {
         LOGGER.log(Level.SEVERE, "Unexpected error in LeaderboardResource.", e);
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(ErrorResponse.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR")).build();
+                .entity(ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR")).build();
     }
 
 }

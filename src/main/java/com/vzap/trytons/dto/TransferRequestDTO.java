@@ -9,7 +9,9 @@ import java.util.UUID;
 public class TransferRequestDTO {
     @NotNull(message = "Team ID is required")
     private UUID teamId;
+    @NotNull(message = "Removed player is required")
     private UUID removedPlayerId;
+    @NotNull(message="Added player is required")
     private UUID addedPlayerId;
 
 }

@@ -22,8 +22,6 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static jakarta.ws.rs.core.Response.serverError;
-
 @Path("/transfers")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
@@ -57,13 +55,14 @@ public class TransferResource {
     }
 
     @GET
-    @Path("/{teamId}/history")
+    @Path("/{teamId}/history")//This one has a change
     public Response getTransferHistory(
             @PathParam("teamId") UUID teamId,
             @Context SecurityContext securityContext){
         try{
             UUID userId = currentUserId(securityContext);
-            List<TransferResponseDTO> history = transferService.getTransferHistoryForTeam(userId, teamId);
+            List<TransferResponseDTO> history = transferService.getTransfersForTeam(userId, teamId);
+            //TransferDAO.getTransferByTeamId(...)
 
             return Response.status(Response.Status.OK).entity(history).build();
 

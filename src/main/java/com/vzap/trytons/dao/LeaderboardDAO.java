@@ -12,4 +12,10 @@ public interface LeaderboardDAO {
     List<Ranking> getRankingsByLeaderboardId(UUID leaderboardId);
     Optional<Ranking> getRankingByTeamId(UUID teamId, UUID leaderboardId);
     Optional<Leaderboard> getLeaderboardById(UUID leaderboardId);
+    void saveRanking(Ranking ranking);
+    void updateRanking(Ranking ranking);
+    void deleteRankingByLeaderboardId(UUID leaderboardId);
+    void updateLeaderboard(Leaderboard leaderboard);
+    void saveLeaderboard(Leaderboard leaderboard);
+    Optional<Leaderboard> getMasterLeaderboard();
 }
