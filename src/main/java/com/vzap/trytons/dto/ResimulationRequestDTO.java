@@ -1,11 +1,15 @@
 package com.vzap.trytons.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Data
+import java.util.UUID;
+
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class ResimulationRequestDTO {
+    private UUID fixtureId;
+    private String resimulationReason;
 }

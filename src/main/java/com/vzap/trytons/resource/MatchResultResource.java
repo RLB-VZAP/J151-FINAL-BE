@@ -1,18 +1,34 @@
 package com.vzap.trytons.resource;
 
-import com.vzap.trytons.service.MatchResultService;
-import jakarta.inject.Inject;
-import jakarta.ws.rs.ApplicationPath;
+import com.vzap.trytons.dto.MatchResultRequestDTO;
+import jakarta.enterprise.context.RequestScoped;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
-@ApplicationPath("/api")
-@Path("/match-result")
+import java.util.UUID;
+
+@RequestScoped
+@Path("/match-results")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class MatchResultResource {
-    @Inject
-    private MatchResultService matchResultService;
+
+    @POST
+    public Response captureResult(MatchResultRequestDTO request) {
+
+        throw new UnsupportedOperationException("MatchResultResource.captureResult is a stub for W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after MatchResultServiceImpl orchestration and authenticated actor extraction are confirmed.");
+    }
+
+    @GET
+    @Path("/fixture/{fixtureId}")
+    public Response getResult(@PathParam("fixtureId") UUID fixtureId) {
+
+        throw new UnsupportedOperationException("MatchResultResource.getResult is a stub for W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after MatchResultServiceImpl result lookup and response mapping are confirmed.");
+    }
 }

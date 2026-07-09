@@ -1,5 +1,7 @@
 package com.vzap.trytons.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -7,12 +9,19 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@NoArgsConstructor
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class PlayerStatistics {
 
     private UUID statId;
+
+    private UUID resultId;
+    private UUID teamId;
+    private UUID playerId;
+
     private int tries;
     private int assists;
     private int tackles;
@@ -22,9 +31,6 @@ public class PlayerStatistics {
     private int metersGained;
     private int yellowCards;
     private int redCards;
-    private LocalDateTime statisticDate;
 
-    private Fixture fixture;
-    private Player player;
-    private Administrator capturedByAdmin;
+    private LocalDateTime statisticDate;
 }
