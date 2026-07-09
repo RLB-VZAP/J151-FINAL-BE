@@ -203,14 +203,31 @@ public class FantasyRoundDAOImpl implements FantasyRoundDAO {
             }
 
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Could not find fantasy round by status", e);
-            throw new DataAccessException("Could not find fantasy round by status", e);
+            LOG.log(Level.SEVERE, "Could not get current open fantasy round", e);
+            throw new DataAccessException("Could not get current open fantasy round", e);
         }
         return Optional.empty();
     }
 
     @Override
     public boolean updateRoundStatus(UUID roundId, FantasyRoundStatus status) {
+
+        String query = "UPDATE fantasyRound SET status = ? WHERE roundId = ?";
+
+        try(Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, status.name());
+            ps.setString(2, roundId.toString());
+
+             if(ps.executeUpdate() > 0){
+                 return true;
+             }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Could not update fantasy round status", e);
+            throw new DataAccessException("Could not update fantasy round status", e);
+        }
         return false;
     }
 
