@@ -1,5 +1,7 @@
 package com.vzap.trytons.service;
 
+import com.vzap.trytons.dto.JoinLeagueRequestDTO;
+import com.vzap.trytons.dto.JoinLeagueResponseDTO;
 import com.vzap.trytons.dto.LeagueRequestDTO;
 import com.vzap.trytons.dto.LeagueResponseDTO;
 
@@ -17,4 +19,6 @@ public interface LeagueService {
     boolean isLeagueMember(UUID leagueId, UUID userId);
 
     List<LeagueResponseDTO> getAllLeagues(UUID currentUserId);
+
+    JoinLeagueResponseDTO joinLeague(JoinLeagueRequestDTO request, UUID currentUserId);
 }

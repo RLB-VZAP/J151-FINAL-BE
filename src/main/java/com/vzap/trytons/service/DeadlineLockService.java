@@ -7,27 +7,11 @@ import com.vzap.trytons.model.Player;
 import java.util.List;
 import java.util.UUID;
 
-public class DeadlineLockService {
-    //STUB
-    public LockStatusResponseDTO getLockStatus(UUID fixtureId){
-        //This is a STUB please complete.
-        throw  new UnsupportedOperationException("STUB");
-    }
-    public DeadlineStatusResponseDTO getDeadlineStatus(UUID fixtureId){
-        //This is a STUB please complete.
-        throw  new UnsupportedOperationException("STUB");
-    }
-    public List<UUID> getLockedTeamIds(UUID fixtureId) {
-        //STUB please complete
-        throw  new UnsupportedOperationException("STUB");
-    }
-    public List<UUID> getLockedPlayerIds(UUID fixtureId) {
-        //STUB please complete
-        throw  new UnsupportedOperationException("STUB");
-    }
-    public List<Player> getAvailableTransferPlayers(UUID fixtureId) {
-        //STUB please complete
-        throw  new UnsupportedOperationException("STUB");
-    }
-
+public interface DeadlineLockService {
+    LockStatusResponseDTO getLockStatus(UUID roundId);
+    DeadlineStatusResponseDTO getDeadlineStatus(UUID roundId);
+    LockStatusResponseDTO lockRound(UUID actorAdminUserId, UUID roundId, String reason);
+    List<UUID> getLockedTeamIds(UUID roundId);
+    List<UUID> getLockedPlayerIds(UUID roundId, UUID teamId);
+    List<Player> getAvailableTransferPlayers(UUID roundId, UUID teamId);
 }

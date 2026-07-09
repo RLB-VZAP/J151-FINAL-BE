@@ -1,9 +1,7 @@
 package com.vzap.trytons.resource;
 
 import com.vzap.trytons.Annotations.Authenticated;
-import com.vzap.trytons.dto.ErrorResponseDTO;
-import com.vzap.trytons.dto.LeagueRequestDTO;
-import com.vzap.trytons.dto.LeagueResponseDTO;
+import com.vzap.trytons.dto.*;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
@@ -79,6 +77,25 @@ public class LeagueResource {
         }catch(DataAccessException e){
             return serverError("Failed to get Leagues", e);
         } catch (Exception e) {
+            return unexpected(e);
+        }
+    }
+
+    @POST
+    @Path("/join")
+    public Response joinLeague(@Valid JoinLeagueRequestDTO request) {
+        try {
+            JoinLeagueResponseDTO response = leagueService.joinLeague(request, getCurrentUserId());
+            return Response.status(Response.Status.OK)
+                    .entity(response)
+                    .build();
+        }catch(ResourceNotFoundException e){
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
+        }catch(ConflictException e){
+            return Response.status(Response.Status.CONFLICT).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
+        }catch(DataAccessException e){
+            return serverError("Failed to join League", e);
+        }catch(Exception e){
             return unexpected(e);
         }
     }

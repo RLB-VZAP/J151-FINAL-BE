@@ -3,23 +3,32 @@ package com.vzap.trytons.service;
 import com.vzap.trytons.dao.FantasyTeamDAO;
 import com.vzap.trytons.dao.LeagueDAO;
 import com.vzap.trytons.dao.LeagueMembershipDAO;
+import com.vzap.trytons.dto.JoinLeagueRequestDTO;
+import com.vzap.trytons.dto.JoinLeagueResponseDTO;
 import com.vzap.trytons.dto.LeagueRequestDTO;
 import com.vzap.trytons.dto.LeagueResponseDTO;
 import com.vzap.trytons.enums.LeagueMemberRole;
 import com.vzap.trytons.enums.LeagueType;
+import com.vzap.trytons.exceptions.ConflictException;
+import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.model.FantasyTeam;
 import com.vzap.trytons.model.League;
+import com.vzap.trytons.model.LeagueMembership;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import java.util.*;
+import java.util.logging.Logger;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
+@ApplicationScoped
 public class LeagueServiceImpl implements LeagueService{
-
+@Inject
     private final LeagueDAO leagueDAO;
+@Inject
     private final LeagueMembershipDAO membershipDAO;
+@Inject
     private final FantasyTeamDAO fantasyTeamDAO;
+
+private static final Logger LOG = Logger.getLogger(LeagueServiceImpl.class.getName());
 
     public LeagueServiceImpl(LeagueDAO leagueDAO, LeagueMembershipDAO membershipDAO,  FantasyTeamDAO fantasyTeamDAO) {
         this.leagueDAO = leagueDAO;
@@ -116,11 +125,7 @@ public class LeagueServiceImpl implements LeagueService{
     @Override
     public boolean isLeagueMember(UUID leagueId, UUID userId) {
 
-        if (membershipDAO.existsActiveByLeagueAndUser(leagueId, userId)) {
-            return true;
-        }
-
-        return false;
+        return membershipDAO.existsActiveByLeagueAndUser(leagueId, userId);
     }
 
     @Override
@@ -154,5 +159,35 @@ public class LeagueServiceImpl implements LeagueService{
             }
         }
         return visibleLeagues;
+    }
+
+    @Override
+    public JoinLeagueResponseDTO joinLeague(JoinLeagueRequestDTO request, UUID currentUserId) {
+        UUID leagueId = request.getLeagueId();
+        UUID teamId = request.getTeamId();
+        League league = leagueDAO.findLeagueById(leagueId).orElseThrow(() -> new ResourceNotFoundException("League not found"));
+        FantasyTeam team = fantasyTeamDAO.getTeamById(teamId).orElseThrow(() -> new ResourceNotFoundException("Team not found"));
+        if(!team.getOwner().getUserId().equals(currentUserId)){
+            throw new ConflictException("Team does not belong to the current user.");
+        }
+        if(membershipDAO.existsActiveByLeagueAndUser(leagueId, currentUserId)){
+            throw new ConflictException("User already a member of this league.");
+        }
+        if(league.getLeagueType() == LeagueType.PRIVATE){
+            String leagueCode = request.getLeagueCode();
+            if(leagueCode == null || !leagueCode.equals(league.getLeagueCode())){
+                throw new ConflictException("Missing or invalid league code.");
+            }
+        }
+        if(membershipDAO.countActiveMembers(leagueId) >= league.getMaxMembers()){
+            throw new ConflictException("This league is full.");
+        }
+        LeagueMembership membership = membershipDAO.createMembership(leagueId,currentUserId,teamId,LeagueMemberRole.MEMBER);
+        JoinLeagueResponseDTO response = new JoinLeagueResponseDTO();
+        response.setLeagueId(league.getLeagueId());
+        response.setLeagueName(league.getLeagueName());
+        response.setMembershipId(membership.getMembershipId());
+        response.setMessage("Joined the league successfully.");
+        return  response;
     }
 }

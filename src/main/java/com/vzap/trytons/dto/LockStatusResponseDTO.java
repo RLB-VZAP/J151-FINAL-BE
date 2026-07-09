@@ -1,5 +1,6 @@
 package com.vzap.trytons.dto;
 
+import com.vzap.trytons.enums.FantasyRoundStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,9 +14,11 @@ import java.util.UUID;
 @AllArgsConstructor
 public class LockStatusResponseDTO {
     //STUB
-    private UUID fixtureId;
-    private List<UUID>LockedPlayerIds;
-    private List<UUID>LockedTeamIds;
+    private UUID roundId;
+    private FantasyRoundStatus roundStatus;
+    private List<UUID> lockedPlayerIds;
+    private List<UUID> lockedTeamIds;
     private boolean locked;
+    private boolean snapshotsCreated;
     private String message;
 }

@@ -1,22 +1,22 @@
 package com.vzap.trytons.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class TransferResponseDTO {
-    private final UUID transferId;
-    private final UUID teamId;
-    private final UUID removedPlayerId;
-    private final UUID addedPlayerId;
-    private final LocalDateTime transferDate;
-    private final boolean penaltyApplied;
-    private final int penaltyPointAmount;
-    private final BigDecimal newRemainingBudget;
-    private final BigDecimal newTotalTeamValue;
+    private  UUID transferId, teamId, roundId, removed_player_id, added_player_id;
+    private String removed_player_name, added_player_name;
+    private BigDecimal removed_player_value, added_player_value, valueDifference;
+    private int penaltyPoints;
+    private String status;
+    private LocalDateTime transferDate, confirmationDate;
+
 }

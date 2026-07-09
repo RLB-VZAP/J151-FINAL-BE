@@ -1,11 +1,12 @@
 package com.vzap.trytons.service;
 
-import java.util.*;
-import java.util.UUID;
-import com.vzap.trytons.dto.*;
-import java.util.*;
+import com.vzap.trytons.dto.ResimulationRequestDTO;
+import com.vzap.trytons.dto.ResimulationResponseDTO;
+
+import java.util.List;
 import java.util.UUID;
 
 public interface ControlledResimulationService {
-    ResimulationResponseDTO requestResimulation(UUID actorUserId, ResimulationRequestDTO request);
+    ResimulationResponseDTO resimulateFixture(UUID actorUserId, ResimulationRequestDTO request);
+    List<ResimulationResponseDTO> listResimulationsForFixture(UUID fixtureId);
 }
