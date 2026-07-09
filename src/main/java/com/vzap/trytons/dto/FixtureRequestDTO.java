@@ -1,5 +1,6 @@
 package com.vzap.trytons.dto;
 
+import com.vzap.trytons.enums.FixtureStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,7 +18,7 @@ public class FixtureRequestDTO {
     private UUID roundId;
     private UUID teamAId;
     private UUID teamBId;
-    private String fixtureStatus;
+    private FixtureStatus fixtureStatus;
     private LocalDate fixtureDate;
     private LocalTime fixtureTime;
 }
