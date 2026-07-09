@@ -1,5 +1,6 @@
 package com.vzap.trytons.dao;
 
+import com.vzap.trytons.enums.MatchTeamSide;
 import com.vzap.trytons.model.MatchTeamScore;
 
 import java.util.List;
@@ -24,7 +25,7 @@ public class MatchTeamScoreDAOImpl implements MatchTeamScoreDAO {
     }
 
     @Override
-    public Optional<MatchTeamScore> findByResultIdAndTeamSide(UUID resultId, String teamSide) {
+    public Optional<MatchTeamScore> findByResultIdAndTeamSide(UUID resultId, MatchTeamSide teamSide) {
         throw new UnsupportedOperationException("MatchTeamScoreDAOImpl stub: findByResultIdAndTeamSide is not implemented yet.");
     }
 }
