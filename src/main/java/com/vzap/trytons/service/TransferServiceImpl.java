@@ -4,6 +4,8 @@ import com.vzap.trytons.dao.*;
 import com.vzap.trytons.dto.SquadValidationResultDTO;
 import com.vzap.trytons.dto.TransferRequestDTO;
 import com.vzap.trytons.dto.TransferResponseDTO;
+import com.vzap.trytons.enums.FantasyRoundStatus;
+import com.vzap.trytons.enums.TransferStatus;
 import com.vzap.trytons.enums.TransferWindowStatus;
 import com.vzap.trytons.exceptions.*;
 import com.vzap.trytons.model.*;
@@ -26,8 +28,6 @@ public class TransferServiceImpl implements TransferService {
     @Inject
     private TransferDAO transferDAO;
     @Inject
-    private TransferHistoryDAO transferHistoryDAO;
-    @Inject
     private FantasyTeamDAO fantasyTeamDAO;
     @Inject
     private FantasyTeamPlayerDAO fantasyTeamPlayerDAO;
@@ -35,17 +35,16 @@ public class TransferServiceImpl implements TransferService {
     private PlayerDAO playerDAO;
     @Inject
     private SquadValidationService squadValidationService;
+    @Inject
+    private FantasyRoundDAO fantasyRoundDAO;
 
     @Override
     @Transactional
     public TransferResponseDTO executeTransfer(UUID requestingUserId, TransferRequestDTO request) {
-        if (request.getRemovedPlayerId() == null && request.getAddedPlayerId() == null) {
-            throw new ValidationException("A transfer must include a player to remove and/or add");
+        if (request.getRemovedPlayerId() == null || request.getAddedPlayerId() == null) {
+            throw new ValidationException("A transfer must include both a player to remove and a player to add");
         }
-
-        if (request.getRemovedPlayerId() != null
-                && request.getAddedPlayerId() != null
-                && request.getRemovedPlayerId().equals(request.getAddedPlayerId())) {
+        if (request.getRemovedPlayerId().equals(request.getAddedPlayerId())) {
             throw new ValidationException("The same player cannot be both added and removed in one transfer.");
         }
 
@@ -56,8 +55,11 @@ public class TransferServiceImpl implements TransferService {
             throw new AuthorisationException("You do not own this fantasy team");
         }
 
-        if (Boolean.TRUE.equals(team.getIsLocked())) {
-            throw new BusinessRuleException("This team cannot be transferred while locked");
+        FantasyRound currentRound = fantasyRoundDAO.getCurrentOpenRound()
+                .orElseThrow(() -> new BusinessRuleException("There is no open round to transfer in right now"));
+
+        if (currentRound.getStatus() != FantasyRoundStatus.OPEN) {
+            throw new BusinessRuleException("Transfers are closed for the current round");
         }
 
         List<TeamPlayerSelection> currentSquad = fantasyTeamPlayerDAO.getSquadByTeamId(request.getTeamId());
@@ -121,14 +123,14 @@ public class TransferServiceImpl implements TransferService {
         }
 
         SquadValidationResultDTO validationResult = squadValidationService.validateSquad(
-                proposedPlayerIds, newTeamValue);
+                proposedPlayerIds);
 
-        if (validationResult.isValid()) {
+        if (!validationResult.isValid()) {
             String firstError = validationResult.getErrors().get(0).getMessage();
             throw new BusinessRuleException("Squad validation failed: " + firstError);
         }
 
-        int transfersAlreadyThisRound = transferDAO.getTransfersByTeamId(team.getTeamId()).size();
+        int transfersAlreadyThisRound = transferDAO.countConfirmedTransfers(team.getTeamId(), currentRound.getRoundId());
         boolean penaltyApplied = transfersAlreadyThisRound >= FREE_TRANSFERS_PER_ROUND;
         int penaltyPoints = penaltyApplied ? PENALTY_POINTS_PER_EXTRA_TRANSFER : 0;
 
@@ -139,47 +141,42 @@ public class TransferServiceImpl implements TransferService {
             throw new DataAccessException("Unable to update budget after transfer", null);
         }
 
+        RegisteredUser createdBy = new RegisteredUser();
+        createdBy.setUserId(requestingUserId);
+
         Transfer transfer = new Transfer();
         transfer.setTransferId(UUID.randomUUID());
         transfer.setTransferDate(LocalDateTime.now());
-        transfer.setPenaltyApplied(penaltyApplied);
-        transfer.setPenaltyPoints(penaltyPoints);
-        transfer.setTransferWindowStatus(TransferWindowStatus.OPEN);
-        transfer.setConfirmed(true);
+        transfer.setRound(currentRound);
         transfer.setFantasyTeam(team);
-        transfer.setAddedPlayer(addedPlayer);
         transfer.setRemovedPlayer(removedPlayer);
+        transfer.setAddedPlayer(addedPlayer);
+        transfer.setRemoved_player_value(removedValue);
+        transfer.setAdded_player_value(addedValue);
+        transfer.setPenaltyPoints(penaltyPoints);
+        transfer.setStatus(TransferStatus.CONFIRMED);
+        transfer.setConfirmationDate(LocalDateTime.now());
+        transfer.setCreatedBy(createdBy);
 
         transferDAO.saveTransfer(transfer)
                 .orElseThrow(() -> new DataAccessException("Unable to save transfer", null));
 
-        TransferHistory history = new TransferHistory();
-        history.setTransferHistoryId(UUID.randomUUID());
-        history.setOldTeamValue(oldTeamValue);
-        history.setNewTeamValue(newTeamValue);
-        history.setOldRemainingBudget(oldRemainingBudget);
-        history.setNewRemainingBudget(newRemainingBudget);
-        history.setPenaltyPoints(penaltyPoints);
-        history.setCreatedAt(LocalDateTime.now());
-        history.setTransfer(transfer);
-        history.setFantasyTeam(team);
-        history.setRemovedPlayer(removedPlayer);
-        history.setAddedPlayer(addedPlayer);
-
-        transferHistoryDAO.saveTransferHistory(history)
-                .orElseThrow(() -> new DataAccessException("Unable to save transfer history", null));
-
-        return new TransferResponseDTO(
-                transfer.getTransferId(),
-                team.getTeamId(),
-                removedPlayer != null ? removedPlayer.getPlayerId() : null,
-                addedPlayer != null ? addedPlayer.getPlayerId() : null,
-                transfer.getTransferDate(),
-                penaltyApplied,
-                penaltyPoints,
-                newRemainingBudget,
-                newTeamValue
-        );
+        return TransferResponseDTO.builder()
+                .transferId(transfer.getTransferId())
+                .teamId(team.getTeamId())
+                .roundId(currentRound.getRoundId())
+                .removed_player_id(removedPlayer.getPlayerId())
+                .added_player_id(addedPlayer.getPlayerId())
+                .removed_player_name(removedPlayer.getPlayerName())
+                .added_player_name(addedPlayer.getPlayerName())
+                .removed_player_value(removedValue)
+                .added_player_value(addedValue)
+                .valueDifference(addedValue.subtract(removedValue))
+                .penaltyPoints(penaltyPoints)
+                .status(transfer.getStatus().name())
+                .transferDate(transfer.getTransferDate())
+                .confirmationDate(transfer.getConfirmationDate())
+                .build();
     }
 
     @Override
@@ -194,17 +191,29 @@ public class TransferServiceImpl implements TransferService {
         List<Transfer> transfers = transferDAO.getTransfersByTeamId(teamId);
 
         return transfers.stream()
-                .map(t -> new TransferResponseDTO(
-                        t.getTransferId(),
-                        teamId,
-                        t.getRemovedPlayer() != null ? t.getRemovedPlayer().getPlayerId() : null,
-                        t.getAddedPlayer() != null ? t.getAddedPlayer().getPlayerId() : null,
-                        t.getTransferDate(),
-                        Boolean.TRUE.equals(t.getPenaltyApplied()),
-                        t.getPenaltyPoints(),
-                        null,
-                        null
-                )).collect(Collectors.toList());
+                .map(t -> TransferResponseDTO.builder()
+                        .transferId(t.getTransferId())
+                        .teamId(teamId)
+                        .roundId(t.getRound() != null ? t.getRound().getRoundId() : null)
+                        .removed_player_id(
+                                t.getRemovedPlayer() != null ? t.getRemovedPlayer().getPlayerId() : null)
+                        .added_player_id(
+                                t.getAddedPlayer() != null ? t.getAddedPlayer().getPlayerId() : null)
+                        .removed_player_name(
+                                t.getRemovedPlayer() != null ? t.getRemovedPlayer().getPlayerName() : null)
+                        .added_player_name(
+                                t.getAddedPlayer() != null ? t.getAddedPlayer().getPlayerName() : null)
+                        .removed_player_value(t.getRemoved_player_value())
+                        .added_player_value(t.getAdded_player_value())
+                        .valueDifference(
+                                t.getAdded_player_value() != null
+                                        && t.getRemoved_player_value() != null ? t.getAdded_player_value().subtract(t.getRemoved_player_value()) : null)
+                        .penaltyPoints(t.getPenaltyPoints())
+                        .status(t.getStatus() != null ? t.getStatus().name() : null)
+                        .transferDate(t.getTransferDate())
+                        .confirmationDate(t.getConfirmationDate())
+                        .build())
+                .collect(Collectors.toList());
     }
 }
 
