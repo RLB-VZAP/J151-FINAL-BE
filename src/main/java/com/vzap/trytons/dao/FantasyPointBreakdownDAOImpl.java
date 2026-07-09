@@ -1,21 +1,86 @@
 package com.vzap.trytons.dao;
 
+import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.FantasyPointBreakdown;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static com.vzap.trytons.util.DBConnectionManager.getConnection;
 
 public class FantasyPointBreakdownDAOImpl implements FantasyPointBreakdownDAO {
+    private static final Logger LOG = Logger.getLogger(FantasyPointsDAOImpl.class.getName());
 
     @Override
     public FantasyPointBreakdown save(FantasyPointBreakdown fantasyPointBreakdown) {
-        throw new UnsupportedOperationException("FantasyPointBreakdownDAOImpl stub: save is not implemented yet.");
+
+        UUID newId = UUID.randomUUID();
+
+        String query = "INSERT INTO fantasy_point_breakdown"
+                + "(breakdownId, pointsId, ruleId, eventCount, pointsEarned) "
+                + "VALUES (?, ?, ?, ?, ?)";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, newId.toString());
+            ps.setString(2, fantasyPointBreakdown.getPointsId().toString());
+            ps.setString(3, fantasyPointBreakdown.getRuleId().toString());
+            ps.setInt(4, fantasyPointBreakdown.getEventCount());
+            ps.setInt(5, fantasyPointBreakdown.getPointsEarned());
+
+            ps.executeUpdate();
+
+            fantasyPointBreakdown.setBreakdownId(newId);
+
+            return fantasyPointBreakdown;
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Could not save fantasy points breakdown", e);
+            throw new DataAccessException("Could not save fantasy points breakdown", e);
+        }
+
     }
 
     @Override
     public Optional<FantasyPointBreakdown> findById(UUID breakdownId) {
-        throw new UnsupportedOperationException("FantasyPointBreakdownDAOImpl stub: findById is not implemented yet.");
+
+        String query = "SELECT * FROM fantasy_point_breakdown WHERE breakdownId = ?";
+
+        try (Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, breakdownId.toString());
+
+            try(ResultSet rs = ps.executeQuery()){
+                if(rs.next()){
+
+                    FantasyPointBreakdown fpb = FantasyPointBreakdown.builder()
+                            .breakdownId(breakdownId)
+                            .pointsId(UUID.fromString(rs.getString("pointsId")))
+                            .ruleId(UUID.fromString(rs.getString("ruleId")))
+                            .eventCount(rs.getInt("eventCount"))
+                            .pointsEarned(rs.getInt("pointsEarned"))
+                            .build();
+
+                    return Optional.of(fpb);
+
+                }
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Could not find fantasy points breakdown by ID", e);
+            throw new DataAccessException("Could not find fantasy points breakdown by ID", e);
+        }
+
+        return Optional.empty();
+
     }
 
     @Override
