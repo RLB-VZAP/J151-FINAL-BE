@@ -17,7 +17,8 @@ import lombok.experimental.SuperBuilder;
 public class Leaderboard {
     private UUID leaderboardId;
     private UUID leagueId;
-    private LocalDate lastUpdated;
     private String season;
     private LeaderBoardScope scope;
+    private String scopeKey;
+    private LocalDate lastUpdated;
 }
