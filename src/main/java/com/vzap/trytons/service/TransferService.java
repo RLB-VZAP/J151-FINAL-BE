@@ -8,5 +8,5 @@ import java.util.UUID;
 
 public interface TransferService {
     TransferResponseDTO executeTransfer(UUID requestingUserId, TransferRequestDTO request);
-    List<TransferResponseDTO> getTransferHistoryForTeam (UUID requestingUserId, UUID teamId);
+    List<TransferResponseDTO> getTransfersForTeam(UUID requestingUserId, UUID teamId);
 }

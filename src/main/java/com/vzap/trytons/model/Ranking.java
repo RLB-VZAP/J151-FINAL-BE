@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @NoArgsConstructor
@@ -14,14 +15,11 @@ import java.util.UUID;
 @SuperBuilder
 
 public class Ranking {
-
     private UUID rankingId;
     private UUID leaderboardId;
     private UUID teamId;
     private int currentRanking;
     private int previousRanking;
-    private int weeklyScore;
-    private int totalScore;
-    private int rankMovement;
-    private LocalDate updatedAt;
+    private int matchesPlayed, matchesWon, matchesDrawn, matchesLost, pointsFor, pointsAgainst, scoreDifference,leaguePoints, totalFantasyPoints;
+    private LocalDateTime updatedAt;
 }

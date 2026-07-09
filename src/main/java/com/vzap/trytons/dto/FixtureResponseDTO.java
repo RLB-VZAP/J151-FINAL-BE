@@ -16,25 +16,21 @@ import java.util.UUID;
 @NoArgsConstructor
 
 public class FixtureResponseDTO {
-    //STUB
     private UUID fixtureId;
+
     private UUID leagueId;
+    private UUID roundId;
 
-    private UUID homeClubId;
+    private UUID teamAId;
+    private String teamAName;
 
-    private UUID awayClubId;
+    private UUID teamBId;
+    private String teamBName;
 
-    private LocalDate matchDate;
-
-    private LocalTime matchTime;
-
-    private String venue;
+    private LocalDate fixtureDate;
+    private LocalTime fixtureTime;
 
     private FixtureStatus status;
-
-    private boolean locked;
-
-    private LocalDateTime lockDeadline;
-
-    private String message;
+    private LocalDateTime simulationDate;
+    private LocalDateTime createdAt;
 }
