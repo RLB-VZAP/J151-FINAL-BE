@@ -15,7 +15,7 @@ public class MatchTeamScoreDAOImpl implements MatchTeamScoreDAO {
     }
 
     @Override
-    public Optional<MatchTeamScore> findById(UUID teamScoreId) {
+    public Optional<MatchTeamScore> findById(UUID ScoreId) {
         throw new UnsupportedOperationException("MatchTeamScoreDAOImpl stub: findById is not implemented yet.");
     }
 
