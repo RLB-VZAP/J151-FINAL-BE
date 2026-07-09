@@ -27,16 +27,13 @@ public class FantasyRoundDAOImpl implements FantasyRoundDAO {
     public Optional<FantasyRound> getRoundById(UUID roundId) {
 
         String query = "SELECT * FROM fantasyRound WHERE roundId = ?";
-
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {
 
             ps.setString(1, roundId.toString());
 
             try(ResultSet rs = ps.executeQuery()){
-
                 if (rs.next()){
-
                     FantasyRound fr = FantasyRound.builder()
                             .roundId(roundId)
                             .season(rs.getString("season"))
@@ -47,7 +44,6 @@ public class FantasyRoundDAOImpl implements FantasyRoundDAO {
                             .status(FantasyRoundStatus.valueOf(rs.getString("status")))
 
                             .build();
-
                     return Optional.of(fr);
                 }
             }
@@ -233,6 +229,23 @@ public class FantasyRoundDAOImpl implements FantasyRoundDAO {
 
     @Override
     public boolean roundExists(UUID roundId) {
+        String query = "SELECT * FROM fantasyRound WHERE roundId = ?";
+
+        try(Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, roundId.toString());
+
+            try(ResultSet rs = ps.executeQuery()){
+                if (rs.next()){
+                    return true;
+                }
+            }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to check whether round exists for ID " + roundId, e);
+            throw new DataAccessException("Unable to check whether round exists for ID " + roundId, e);
+        }
         return false;
     }
 }
