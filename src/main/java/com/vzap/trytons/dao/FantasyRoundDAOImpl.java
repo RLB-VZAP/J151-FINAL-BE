@@ -138,7 +138,39 @@ public class FantasyRoundDAOImpl implements FantasyRoundDAO {
 
     @Override
     public List<FantasyRound> getRoundsByStatus(FantasyRoundStatus status) {
-        return List.of();
+        String query = "SELECT * FROM fantasyRound WHERE status = ?";
+
+        List<FantasyRound> fantasyRounds = new ArrayList<>();
+
+        try(Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, status.name());
+
+            try(ResultSet rs = ps.executeQuery()){
+                while (rs.next()){
+
+                    FantasyRound fr = FantasyRound.builder()
+                            .roundId(UUID.fromString(rs.getString("roundId")))
+                            .season(rs.getString("season"))
+                            .roundNumber(rs.getInt("roundNumber"))
+                            .openDate(rs.getObject("openDate", LocalDateTime.class))
+                            .lockDeadline(rs.getObject("lockDeadline", LocalDateTime.class))
+                            .endDate(rs.getObject("endDate", LocalDateTime.class))
+                            .status(status)
+
+                            .build();
+
+                    fantasyRounds.add(fr);
+
+                }
+            }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Could not find fantasy round by status", e);
+            throw new DataAccessException("Could not find fantasy round by status", e);
+        }
+        return fantasyRounds;
     }
 
     @Override
