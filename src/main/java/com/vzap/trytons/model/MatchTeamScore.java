@@ -1,5 +1,6 @@
 package com.vzap.trytons.model;
 
+import com.vzap.trytons.enums.MatchTeamSide;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,6 +18,6 @@ public class MatchTeamScore {
     private UUID teamScoreId;
     private UUID resultId;
     private UUID teamId;
-    private String teamSide;
+    private MatchTeamSide teamSide;
     private int score;
 }

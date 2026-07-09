@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public interface MatchTeamScoreDAO {
     MatchTeamScore save(MatchTeamScore matchTeamScore);
-    Optional<MatchTeamScore> findById(UUID teamScoreId);
+    Optional<MatchTeamScore> findById(UUID ScoreId);
     List<MatchTeamScore> findByResultId(UUID resultId);
     Optional<MatchTeamScore> findByResultIdAndTeamSide(UUID resultId, MatchTeamSide teamSide);
 }
