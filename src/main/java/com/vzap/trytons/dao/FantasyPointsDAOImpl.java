@@ -168,7 +168,29 @@ public class FantasyPointsDAOImpl extends BaseDAO implements FantasyPointsDAO {
 
     @Override
     public int getNextCalculationVersion(UUID statId) {
-        throw new UnsupportedOperationException("FantasyPointsDAOImpl stub: getNextCalculationVersion is not implemented yet.");
+
+        String query = "SELECT calculationVersion FROM fantasyPoints WHERE statId = ? ORDER BY calculationVersion DESC LIMIT 1";
+
+        try(Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)){
+
+            ps.setString(1, statId.toString());
+
+            try(ResultSet rs = ps.executeQuery()){
+
+                if (rs.next()){
+
+                    return rs.getInt("calculationVersion") + 1;
+
+                }
+            }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to get the next calculation version", e);
+            throw new DataAccessException("Unable to get the next calculation version", e);
+        }
+
+        return 1;
     }
 
 
