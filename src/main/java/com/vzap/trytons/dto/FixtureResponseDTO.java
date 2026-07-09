@@ -25,7 +25,7 @@ public class FixtureResponseDTO {
     private String teamBName;
     private LocalDate fixtureDate;
     private LocalTime fixtureTime;
-    private String fixtureStatus;
+    private FixtureStatus fixtureStatus;
     private LocalDateTime simulationDate;
     private LocalDateTime createdAt;
 }
