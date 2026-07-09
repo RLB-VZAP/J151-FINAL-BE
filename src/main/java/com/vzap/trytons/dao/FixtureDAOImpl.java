@@ -7,7 +7,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
-    //STUB - Check methods
     @Override
     public Fixture createFixture(Fixture fixture) {
         return null;
