@@ -735,16 +735,18 @@ CREATE TABLE `match_team_score`
     `scoreId`         VARCHAR(36) NOT NULL,
     `resultId`        VARCHAR(36) NOT NULL,
     `teamId`          VARCHAR(36) NOT NULL,
+    `teamSide`        ENUM('TEAM_A', 'TEAM_B') NOT NULL,
     `playerPoints`    INT         NOT NULL DEFAULT 0,
     `captainBonus`    INT         NOT NULL DEFAULT 0,
     `transferPenalty` INT         NOT NULL DEFAULT 0,
     `totalScore`      INT GENERATED ALWAYS AS (
-                          `playerPoints` + `captainBonus` - `transferPenalty`
-                      ) STORED,
+        `playerPoints` + `captainBonus` - `transferPenalty`
+        ) STORED,
     `calculatedAt`    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`scoreId`),
     UNIQUE KEY `uk_match_team_score_result_team` (`resultId`, `teamId`),
+    UNIQUE KEY `uk_match_team_score_result_side` (`resultId`, `teamSide`),
     KEY `idx_match_team_score_team` (`teamId`),
 
     CONSTRAINT `fk_match_team_score_result`
