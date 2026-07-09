@@ -16,8 +16,8 @@ import java.util.UUID;
 public class FantasyPointBreakdown {
     private UUID breakdownId;
     private UUID pointsId;
+    private UUID ruleId;
+    private int eventCount;
+    private int pointsEarned;
 
-    private String category;
-    private int points;
-    private String description;
 }
