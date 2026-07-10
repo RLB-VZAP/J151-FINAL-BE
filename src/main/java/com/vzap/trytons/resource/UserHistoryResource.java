@@ -49,6 +49,23 @@ public class UserHistoryResource {
         }
     }
 
+    @GET
+    @Path("/weekly")
+    public Response getWeeklyPerformance() {
+        try {
+            UUID requestingUserId = ((AuthPrincipal) requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY)).getUserId();
+            return Response.ok(userHistoryService.getWeeklyPerformance(requestingUserId.toString())).build();
+        } catch (ResourceNotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), "NOT_FOUND")).build();
+        } catch (AuthorisationException e) {
+            return Response.status(Response.Status.FORBIDDEN).entity(ErrorResponseDTO.of(e.getMessage(), "FORBIDDEN")).build();
+        } catch (DataAccessException e) {
+            return serverError("Failed to load weekly performance", e);
+        } catch (Exception e) {
+            return unexpected(e);
+        }
+    }
+
     //Credit goes to Jaunte Kelvin Garcia for making these....SHOUTOUT!
     private Response serverError(String message, DataAccessException e) {
         LOGGER.log(Level.SEVERE, message, e);
