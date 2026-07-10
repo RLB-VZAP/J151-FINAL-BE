@@ -44,6 +44,24 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         fantasyTeam.setIsValid(true);
         fantasyTeam.setIsLocked(false);
 
+        List<FantasyTeamPlayerSelectionRequestDTO> selectedRequestPlayers = request.getSelectedPlayers();
+        List<FantasyTeamPlayerSelectionResponseDTO> selectedResponsePlayers = new ArrayList<>();
+        for (FantasyTeamPlayerSelectionRequestDTO requestPlayers : selectedRequestPlayers){
+            Player player = playerDAO.getPlayerById(requestPlayers.getPlayerId()).orElseThrow(() -> new RuntimeException("Player Not Found."));
+            selectedResponsePlayers.add(FantasyTeamPlayerSelectionResponseDTO.builder()
+                    .playerId(player.getPlayerId())
+                    .playerName(player.getPlayerName())
+                    .positionId(player.getPosition().getPositionId())
+                    .positionName(player.getPosition().getPositionName())
+                    .clubId(player.getClub().getClubId())
+                    .clubName(player.getClub().getClubName())
+                    .value(player.getValue())
+                    .isActive(player.isActive())
+                    .totalFantasyPoints(player.getTotalFantasyPoints())
+                    .currentForm(player.getCurrentForm())
+                    .build());
+        }
+
         return FantasyTeamResponseDTO.builder()
                 .teamId(fantasyTeam.getTeamId())
                 .teamName(fantasyTeam.getTeamName())
@@ -55,7 +73,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                 .totalPoints(fantasyTeam.getTotalPoints())
                 .valid(fantasyTeam.getIsValid())
                 .locked(fantasyTeam.getIsLocked())
-                .selectedPlayers()
+                .selectedPlayers(selectedResponsePlayers)
                 .build();
     }
 
@@ -103,8 +121,44 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
 
     @Override
     public ViewOwnTeamDTO viewOwnTeam(UUID registeredUserId, UUID teamId) {
-
-        return null;
+        FantasyTeam fantasyTeam = fantasyTeamDAO.findTeamById(teamId);
+        List<TeamPlayerSelection> playerResponses = fantasyTeamPlayerDAO.getSquadByTeamId(teamId);
+        List<PlayerResponseDTO> playerResponsesDTO = new ArrayList<>();
+        for(TeamPlayerSelection playerResponse : playerResponses){
+            Player player = playerResponse.getPlayer();
+            playerResponsesDTO.add(PlayerResponseDTO.builder()
+                    .playerId(player.getPlayerId())
+                    .playerName(player.getPlayerName())
+                    .value(player.getValue())
+                    .attackingAbility(player.getAttackingAbility())
+                    .defensiveAbility(player.getDefensiveAbility())
+                    .kickingAbility(player.getKickingAbility())
+                    .discipline(player.getDiscipline())
+                    .consistency(player.getConsistency())
+                    .fitness(player.getFitness())
+                    .currentForm(player.getCurrentForm())
+                    .totalFantasyPoints(player.getTotalFantasyPoints())
+                    .isActive(player.isActive())
+                    .club(player.getClub())
+                    .position(player.getPosition())
+                    .isCaptain(player.isActive())
+                    .isViceCaptain(player.isActive())
+                    .isBench(playerResponse.getSquadRole() == SquadRole.BENCH)
+                    .build());
+        }
+        return ViewOwnTeamDTO.builder()
+                .teamId(fantasyTeam.getTeamId())
+                .teamName(fantasyTeam.getTeamName())
+                .totalTeamValue(fantasyTeam.getTotalTeamValue())
+                .remainingBudget(fantasyTeam.getRemainingBudget())
+                .creationDate(fantasyTeam.getCreationDate())
+                .totalPoints(fantasyTeam.getTotalPoints())
+                .weeklyPoints(fantasyTeam.getWeeklyPoints())
+                .isValid(fantasyTeam.getIsValid())
+                .isLocked(fantasyTeam.getIsLocked())
+                .ownerUsername(fantasyTeam.getOwner().getUsername())
+                .players(playerResponsesDTO)
+                .build();
     }
 
     @Override
