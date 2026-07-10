@@ -4,11 +4,11 @@ import com.vzap.trytons.dao.FantasyTeamDAO;
 import com.vzap.trytons.dao.FixtureDAO;
 import com.vzap.trytons.dao.MatchResultDAO;
 import com.vzap.trytons.dao.MatchTeamScoreDAO;
-import com.vzap.trytons.dto.PlayerPointsHistoryResponseDTO;
 import com.vzap.trytons.dto.UserPointsHistoryResponseDTO;
 import com.vzap.trytons.dto.WeeklyPerformanceResponseDTO;
 import com.vzap.trytons.enums.MatchTeamSide;
 import com.vzap.trytons.exceptions.AuthorisationException;
+import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.model.FantasyTeam;
 import com.vzap.trytons.model.Fixture;
 import com.vzap.trytons.model.MatchResult;
@@ -36,11 +36,28 @@ public class UserHistoryServiceImpl implements UserHistoryService {
     @Override
     public UserPointsHistoryResponseDTO getUserPointsHistory(String actorUserId) {
 
-        UUID ownerID = UUID.fromString(actorUserId);
+        UUID ownerID;
+        try {
+            ownerID = UUID.fromString(actorUserId);
+        } catch (IllegalArgumentException e) {
+            throw new AuthorisationException("Invalid or missing authenticated user context");
+        }
 
-        fantasyTeamDAO.findTeamsByOwner(ownerID);
+        List<FantasyTeam> fantasyTeams = fantasyTeamDAO.findTeamsByOwner(ownerID);
 
-        return null;
+        if (fantasyTeams.isEmpty()){
+            throw new ResourceNotFoundException("No Fantasy Teams were found");
+        }
+
+        List<WeeklyPerformanceResponseDTO> rounds = getWeeklyPerformance(actorUserId);
+
+        int totals = fantasyTeams.get(0).getTotalPoints();
+
+        return UserPointsHistoryResponseDTO.builder()
+                .totals(totals)
+                .rounds(rounds)
+                .ranking(null)
+                .build();
     }
 
     @Override
