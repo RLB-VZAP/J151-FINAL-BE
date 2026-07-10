@@ -3,6 +3,7 @@ package com.vzap.trytons.dao;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.FantasyTeam;
+import com.vzap.trytons.model.Player;
 import com.vzap.trytons.model.RegisteredUser;
 
 import java.math.BigDecimal;
@@ -139,27 +140,6 @@ public class FantasyTeamDAOImpl extends BaseDAO implements FantasyTeamDAO{
     @Override
     public FantasyTeam findTeamById(UUID teamId) {
         return getTeamById(teamId).orElse(null);
-    }
-
-    @Override
-    public List<FantasyTeam> findTeamsByOwner(UUID ownerId) {
-        String query = FANTASY_TEAM_SELECT + " WHERE ft.owner_user_id = ? ORDER BY fr.creationDate ASC";
-        List<FantasyTeam> teams = new ArrayList<>();
-
-        try(Connection con = getConnection();
-            PreparedStatement ps = con.prepareStatement(query)) {
-            ps.setString(1, ownerId.toString());
-
-            try(ResultSet rs = ps.executeQuery()){
-                while(rs.next()){
-                    teams.add(mapTeam(rs));
-                }
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to find fantasy team by owner", e);
-            throw new DataAccessException("Unable to find fantasy team by owner", e);
-        }
-        return teams;
     }
 
     @Override
