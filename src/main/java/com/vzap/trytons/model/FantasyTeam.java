@@ -14,7 +14,6 @@ import java.util.UUID;
 @Setter
 @SuperBuilder
 public class FantasyTeam {
-
     private UUID teamId;
     private String teamName;
     private BigDecimal totalTeamValue;
