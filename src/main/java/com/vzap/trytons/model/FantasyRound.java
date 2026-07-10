@@ -1,10 +1,7 @@
 package com.vzap.trytons.model;
 
 import com.vzap.trytons.enums.FantasyRoundStatus;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -14,6 +11,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class FantasyRound {
     private UUID roundId;
     private String season;
