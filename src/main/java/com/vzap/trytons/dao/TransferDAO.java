@@ -13,7 +13,8 @@ public interface TransferDAO {
     Optional<Transfer> saveTransfer(Transfer transfer);
     Optional<Transfer> getTransferById(UUID transferId);
     List<Transfer> getTransfersByTeamId(UUID teamId);
+    List<Transfer> getTransfersByRound(UUID roundId);
     boolean updateTransferStatus(UUID transferId, TransferStatus transferStatus, LocalDateTime confirmationDate);
     int countConfirmedTransfers(UUID teamId, UUID roundId);
-    List<Transfer> getTransfersByRound(UUID roundId);
+    boolean existsConfirmedTransfer(UUID teamId, UUID roundId, UUID removedPlayerId, UUID addedPlayerId);
 }

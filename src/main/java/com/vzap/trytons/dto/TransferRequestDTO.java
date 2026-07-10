@@ -1,17 +1,20 @@
 package com.vzap.trytons.dto;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
-
-import java.util.UUID;
+import lombok.Setter;
 
 @Getter
+@Setter
 public class TransferRequestDTO {
-    @NotNull(message = "Team ID is required")
-    private UUID teamId;
-    @NotNull(message = "Removed player is required")
-    private UUID removedPlayerId;
-    @NotNull(message="Added player is required")
-    private UUID addedPlayerId;
 
+    @NotBlank(message = "Team ID is required")
+    private String teamId;
+    @NotBlank(message = "Round ID is required")
+    private String roundId;
+    @NotBlank(message = "Removed player is required")
+    private String removedPlayerId;
+    @NotBlank(message = "Added player is required")
+    private String addedPlayerId;
+    private boolean penaltyConfirmed;
 }
