@@ -40,7 +40,7 @@ public class UserHistoryServiceImpl implements UserHistoryService {
         try {
             ownerID = UUID.fromString(actorUserId);
         } catch (IllegalArgumentException e) {
-            throw new AuthorisationException("Invalid or missing authenticated user context");
+            throw new AuthorisationException("No UserId found");
         }
 
         List<FantasyTeam> fantasyTeams = fantasyTeamDAO.findTeamsByOwner(ownerID);
@@ -67,7 +67,7 @@ public class UserHistoryServiceImpl implements UserHistoryService {
         try {
             ownerID = UUID.fromString(actorUserId);
         } catch (IllegalArgumentException e) {
-            throw new AuthorisationException("Invalid or missing authenticated user context");
+            throw new AuthorisationException("No UserId found");
         }
 
         List<WeeklyPerformanceResponseDTO> weeklyPerformance = new ArrayList<>();
