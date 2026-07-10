@@ -8,6 +8,7 @@ import com.vzap.trytons.dto.PlayerPointsHistoryResponseDTO;
 import com.vzap.trytons.dto.UserPointsHistoryResponseDTO;
 import com.vzap.trytons.dto.WeeklyPerformanceResponseDTO;
 import com.vzap.trytons.enums.MatchTeamSide;
+import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.model.FantasyTeam;
 import com.vzap.trytons.model.Fixture;
 import com.vzap.trytons.model.MatchResult;
@@ -45,7 +46,12 @@ public class UserHistoryServiceImpl implements UserHistoryService {
     @Override
     public List<WeeklyPerformanceResponseDTO> getWeeklyPerformance(String actorUserId) {
 
-        UUID ownerID = UUID.fromString(actorUserId);
+        UUID ownerID;
+        try {
+            ownerID = UUID.fromString(actorUserId);
+        } catch (IllegalArgumentException e) {
+            throw new AuthorisationException("Invalid or missing authenticated user context");
+        }
 
         List<WeeklyPerformanceResponseDTO> weeklyPerformance = new ArrayList<>();
 
@@ -101,9 +107,29 @@ public class UserHistoryServiceImpl implements UserHistoryService {
 
                 } else {
 
+                    Optional<MatchTeamScore> pointsScored = matchTeamScoreDAO.findByResultIdAndTeamSide(result.getResultId(), side);
 
+                    if (pointsScored.isEmpty()){
+                        continue;
+                    }
 
+                    String outcome = result.getWinnerSide();
 
+                    if (side.name().equals(outcome)){
+
+                        outcome = "WIN";
+                    } else {
+                        outcome = "LOSS";
+                    }
+
+                    WeeklyPerformanceResponseDTO wpr = WeeklyPerformanceResponseDTO.builder()
+                            .roundId(roundId)
+                            .fixtureId(fixture.getFixtureId())
+                            .pointsScored(pointsScored.get().getScore())
+                            .result(outcome)
+                            .build();
+
+                    weeklyPerformance.add(wpr);
 
                 }
 
