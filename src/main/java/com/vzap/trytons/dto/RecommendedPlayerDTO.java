@@ -1,14 +1,23 @@
 package com.vzap.trytons.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+
+import java.math.BigDecimal;
+import java.util.UUID;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class RecommendedPlayerDTO {
-    //STUB
+    private UUID playerId;
+    private String playerName;
+    private String positionName;
+    private String clubName;
+    private BigDecimal value;
+    private int currentForm;
+    private String availabilityStatus;
+    private UUID replacesPlayerId;
+    private String reason;
 }
