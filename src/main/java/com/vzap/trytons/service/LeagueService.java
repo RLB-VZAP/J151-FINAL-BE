@@ -14,8 +14,6 @@ public interface LeagueService {
 
     LeagueResponseDTO getLeague(UUID leagueId,UUID currentUserId);
 
-    void joinLeague(UUID leagueId, UUID currentUserId, UUID fantasyTeamId);
-
     boolean isLeagueMember(UUID leagueId, UUID userId);
 
     List<LeagueResponseDTO> getAllLeagues(UUID currentUserId);
