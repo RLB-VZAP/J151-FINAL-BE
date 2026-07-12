@@ -13,7 +13,6 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LeagueRequestDTO {
-    private UUID managerUserId;
     private String leagueName;
     private String description;
     private LeagueType leagueType;
