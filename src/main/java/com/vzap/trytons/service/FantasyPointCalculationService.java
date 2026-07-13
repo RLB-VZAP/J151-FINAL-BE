@@ -5,5 +5,5 @@ import com.vzap.trytons.dto.FantasyPointCalculationResultDTO;
 import java.util.UUID;
 
 public interface FantasyPointCalculationService {
-    FantasyPointCalculationResultDTO calculateForFixture(UUID actorUserId, UUID fixtureId);
+    FantasyPointCalculationResultDTO calculateForFixture(String fixtureId);
 }

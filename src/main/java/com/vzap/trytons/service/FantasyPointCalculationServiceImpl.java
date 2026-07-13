@@ -9,7 +9,7 @@ import java.util.UUID;
 public class FantasyPointCalculationServiceImpl implements FantasyPointCalculationService {
 
     @Override
-    public FantasyPointCalculationResultDTO calculateForFixture(UUID actorUserId, UUID fixtureId) {
-        return new FantasyPointCalculationResultDTO();
+    public FantasyPointCalculationResultDTO calculateForFixture(String fixtureId) {
+        return null;
     }
 }
