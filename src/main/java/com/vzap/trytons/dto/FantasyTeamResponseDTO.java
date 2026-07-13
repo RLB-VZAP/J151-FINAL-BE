@@ -1,6 +1,7 @@
 package com.vzap.trytons.dto;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
@@ -9,6 +10,7 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
+@Builder
 public class FantasyTeamResponseDTO {
     private UUID teamId;
     private String teamName;
@@ -18,5 +20,7 @@ public class FantasyTeamResponseDTO {
     private BigDecimal remainingBudget;
     private Integer weeklyPoints;
     private Integer totalPoints;
+    private Boolean valid;
+    private Boolean locked;
     private List<FantasyTeamPlayerSelectionResponseDTO> selectedPlayers;
 }
