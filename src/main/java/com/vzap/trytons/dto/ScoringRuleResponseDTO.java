@@ -5,10 +5,17 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 public class ScoringRuleResponseDTO {
-    //STUB
+
+    private UUID ruleId;
+    private String eventType;
+    private int pointsValue;
+    private String season;
+    private boolean active;
 }
