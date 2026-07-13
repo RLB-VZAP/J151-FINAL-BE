@@ -1,9 +1,6 @@
 package com.vzap.trytons.dao;
 
 import com.vzap.trytons.exceptions.DataAccessException;
-import com.vzap.trytons.model.Administrator;
-import com.vzap.trytons.model.FantasyPoints;
-import com.vzap.trytons.model.Fixture;
 import com.vzap.trytons.model.MatchResult;
 import jakarta.inject.Singleton;
 
@@ -235,6 +232,19 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
 
     @Override
     public int markAllFixtureResultsNotCurrent(UUID fixtureId) {
-        return 0;
+        String query = "UPDATE matchResult SET isCurrent = ? WHERE fixtureId = ? AND isCurrent = TRUE";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)){
+
+            ps.setBoolean(1, false);
+            ps.setString(2, fixtureId.toString());
+
+            return ps.executeUpdate();
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to mark all fixture results as not current", e);
+            throw new DataAccessException("Unable to mark all fixture results as not current", e);
+        }
     }
 }
