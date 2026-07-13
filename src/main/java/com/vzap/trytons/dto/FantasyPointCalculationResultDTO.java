@@ -10,4 +10,8 @@ import lombok.NoArgsConstructor;
 
 public class FantasyPointCalculationResultDTO {
 
+    private String fixtureId;
+    private int pointsRowsWritten;
+    private int calculationVersion;
+
 }
