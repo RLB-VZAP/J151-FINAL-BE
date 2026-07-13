@@ -2,11 +2,13 @@ package com.vzap.trytons.dao;
 
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.Administrator;
+import com.vzap.trytons.model.FantasyPoints;
 import com.vzap.trytons.model.Fixture;
 import com.vzap.trytons.model.MatchResult;
 import jakarta.inject.Singleton;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -53,7 +55,59 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
     @Override
     public Optional<MatchResult> findById(UUID resultId) {
 
+        String query = "SELECT resultId, matchResult.fixtureId, team_a_score, team_b_score, winnerSide, isDraw, resultDate, approved, approved_by_admin_user_id, simulation_run_number, isCurrent, fixture.team_a_id, fixture.team_b_id\n" +
+                "FROM matchResult\n" +
+                "INNER JOIN fixture  \n" +
+                "  ON matchResult.fixtureId = fixture.fixtureId WHERE matchResult.resultId = ?";
 
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+
+                ps.setString(1, resultId.toString());
+
+                try(ResultSet rs = ps.executeQuery()){
+                    if(rs.next()){
+                        String approvedByAdminIdStr = rs.getString("approved_by_admin_user_id");
+                        UUID approvedByAdminId;
+                        if (approvedByAdminIdStr != null) {
+                            approvedByAdminId = UUID.fromString(approvedByAdminIdStr);
+                        } else {
+                            approvedByAdminId = null;
+                        }
+
+
+                        MatchResult mr = MatchResult.builder()
+                                .resultId(resultId)
+                                .fixtureId(UUID.fromString(rs.getString("fixtureId")))
+                                .teamAId(UUID.fromString(rs.getString("team_a_id")))
+                                .teamBId(UUID.fromString(rs.getString("team_b_id")))
+                                .winnerSide(rs.getString("winnerSide"))
+                                .draw(rs.getBoolean("isDraw"))
+                                .resultDate(rs.getObject("resultDate", LocalDateTime.class))
+                                .approved(rs.getBoolean("approved"))
+                                .approvedByAdminId(approvedByAdminId)
+                                .simulationRunNumber(rs.getInt("simulation_run_number"))
+                                .current(rs.getBoolean("isCurrent"))
+                                .build();
+
+                        return Optional.of(mr);
+
+                    }
+                }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to find match result by ID.", e);
+            throw new DataAccessException("Unable to find match result by ID.", e);
+        }
+
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<MatchResult> findCurrentByFixtureId(UUID fixtureId) {
+        String query = "SELECT resultId, matchResult.fixtureId, team_a_score, team_b_score, winnerSide, isDraw, resultDate, approved, approved_by_admin_user_id, simulation_run_number, isCurrent, fixture.team_a_id, fixture.team_b_id\n" +
+                "FROM matchResult\n" +
+                "INNER JOIN fixture  \n" +
+                "  ON matchResult.fixtureId = fixture.fixtureId WHERE matchResult.fixtureId = ? AND isCurrent = TRUE";
 
         return Optional.empty();
     }
@@ -99,15 +153,6 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
             throw new DataAccessException("Unable to retrieve match result by fixture ID.", e);
         }
 
-        return Optional.empty();
-    }
-
-
-
-
-
-    @Override
-    public Optional<MatchResult> findCurrentByFixtureId(UUID fixtureId) {
         return Optional.empty();
     }
 
