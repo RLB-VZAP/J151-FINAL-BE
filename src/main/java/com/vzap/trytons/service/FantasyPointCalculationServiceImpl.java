@@ -3,8 +3,6 @@ package com.vzap.trytons.service;
 import com.vzap.trytons.dto.FantasyPointCalculationResultDTO;
 import jakarta.enterprise.context.ApplicationScoped;
 
-import java.util.UUID;
-
 @ApplicationScoped
 public class FantasyPointCalculationServiceImpl implements FantasyPointCalculationService {
 
