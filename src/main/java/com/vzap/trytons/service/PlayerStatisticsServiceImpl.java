@@ -14,8 +14,6 @@ import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.exceptions.ValidationException;
-import com.vzap.trytons.model.FantasyTeam;
-import com.vzap.trytons.model.FantasyTeamRoundSelection;
 import com.vzap.trytons.model.Fixture;
 import com.vzap.trytons.model.MatchResult;
 import com.vzap.trytons.model.PlayerStatistics;
@@ -69,10 +67,17 @@ public class PlayerStatisticsServiceImpl implements PlayerStatisticsService {
     public PlayerStatisticsResponseDTO captureStatistic(UUID actorUserId, PlayerStatisticsRequestDTO request) {
         validateRequest(request);
         requireAdmin(actorUserId);
+
         MatchResult result = requireResult(request.getResultId());
-        Fixture fixture = fixtureDAO.findFixtureById(result.getFixtureId()).orElseThrow(() -> new ResourceNotFoundException("Fixture was not found for the result."));
+        Fixture fixture = fixtureDAO.findById(result.getFixtureId()).orElseThrow(() -> new ResourceNotFoundException("Fixture was not found for the result."));
+
         requireTeamInFixture(fixture, request.getTeamId());
-        requirePlayerInLockedSquad(fixture.getRoundId(), request.getTeamId(), request.getPlayerId());
+
+        if (fixture.getRoundId() == null || fixture.getRoundId().getRoundId() == null) {
+            throw new ResourceNotFoundException("Fantasy round was not found for the fixture.");
+        }
+
+        requirePlayerInLockedSquad(fixture.getRoundId().getRoundId(), request.getTeamId(), request.getPlayerId());
 
         if (playerStatisticsDAO.findByResultIdAndTeamIdAndPlayerId(request.getResultId(), request.getTeamId(), request.getPlayerId()).isPresent()) {
             throw new ConflictException("Statistics have already been captured for this player in the result.");
