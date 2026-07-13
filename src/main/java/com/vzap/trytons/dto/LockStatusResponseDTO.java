@@ -13,7 +13,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LockStatusResponseDTO {
-    //STUB
     private UUID roundId;
     private FantasyRoundStatus roundStatus;
     private List<UUID> lockedPlayerIds;
