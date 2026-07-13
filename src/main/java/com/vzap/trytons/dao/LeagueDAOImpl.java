@@ -19,11 +19,10 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
 
     @Override
     public League createLeague(League league) {
-        String query = "INSERT INTO league(leagueId,manager_user_id,leagueName,description,leagueType,leagueCode,maxMembers) VALUES (?,?,?,?,?,?,?)";
+        String query = "INSERT INTO league(leagueId,leagueName,description,leagueType,leagueCode,maxMembers) VALUES (?,?,?,?,?,?)";
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query);){
             ps.setString(1,league.getLeagueId().toString());
-            ps.setString(2,league.getManager().getUserId().toString());
             ps.setString(3,league.getLeagueName());
             ps.setString(4,league.getDescription());
             ps.setString(5,league.getLeagueType().toString());
@@ -155,14 +154,14 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
             ps.setString(1,leagueCode);
             try(ResultSet rs = ps.executeQuery();){
                 if(rs.next()){
-                    return true;
+                    return rs.getInt(1) > 0;
                 }
+                return false;
             }
         }catch(SQLException e){
             LOG.log(Level.SEVERE, "Unable to find League by league code", e);
             throw new DataAccessException("Unable to find League by league code", e);
         }
-        return false;
     }
 
     @Override
@@ -226,4 +225,18 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
         }
         return league;
     }
+
+    @Override
+    public boolean assignManager(UUID leagueId, UUID managerUserId) {
+        String query = "UPDATE league SET manager_user_id = ? WHERE leagueId = ?";
+        try(Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setString(1, managerUserId.toString());
+            ps.setString(2, leagueId.toString());
+            return ps.executeUpdate() > 0;
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE,"Unable to assign manager for league " + leagueId, e);
+            throw new DataAccessException("Unable to assign manager for league " + leagueId, e);
+        }
     }
+}
