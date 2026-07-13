@@ -17,11 +17,9 @@ import java.util.UUID;
 public class PlayerStatistics {
 
     private UUID statId;
-
     private UUID resultId;
     private UUID teamId;
     private UUID playerId;
-
     private int tries;
     private int assists;
     private int tackles;
