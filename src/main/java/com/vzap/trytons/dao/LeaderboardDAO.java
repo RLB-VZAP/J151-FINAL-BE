@@ -17,5 +17,5 @@ public interface LeaderboardDAO {
     void deleteRankingByLeaderboardId(UUID leaderboardId);
     void updateLeaderboard(Leaderboard leaderboard);
     void saveLeaderboard(Leaderboard leaderboard);
-    Optional<Leaderboard> getMasterLeaderboard();
+    Optional<Leaderboard> getMasterLeaderboard(String season);
 }
