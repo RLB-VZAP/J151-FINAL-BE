@@ -32,17 +32,17 @@ public class LeaderboardServiceImpl implements LeaderboardService{
     
     @Override
     public LeaderboardRefreshResultDTO refreshLeagueLeaderboard(UUID actorUserId, UUID leagueId) {
-        return null;
+        throw new UnsupportedOperationException("LeaderboardServiceImpl.refreshLeagueLeaderboard is a stub.");
     }
 
     @Override
     public LeaderboardRefreshResultDTO refreshOverallLeaderboard(UUID actorUserId) {
-        return null;
+        throw new UnsupportedOperationException("LeaderboardServiceImpl.refreshOverallLeaderboard is a stub.");
     }
 
     @Override
     public List<LeaderboardEntryResponseDTO> getOverallLeaderboard(UUID actorUserId) {
-        return List.of();
+        throw new UnsupportedOperationException("LeaderboardServiceImpl.getOverallLeaderboard is a stub.");
     }
 
     @Override
@@ -75,9 +75,16 @@ public class LeaderboardServiceImpl implements LeaderboardService{
                         .teamName(team.getTeamName())
                         .owner(team.getOwner().getUsername())
                         .rank(ranking.getCurrentRanking())
-                        .weeklyPoints(team.getWeeklyPoints())
-                        .totalPoints(team.getTotalPoints())
-                        .rankMovement(ranking.getRankMovement())
+                        .previousRank(ranking.getPreviousRanking())
+                        .matchesPlayed(ranking.getMatchesPlayed())
+                        .matchesWon(ranking.getMatchesWon())
+                        .matchesDrawn(ranking.getMatchesDrawn())
+                        .matchesLost(ranking.getMatchesLost())
+                        .pointsFor(ranking.getPointsFor())
+                        .pointsAgainst(ranking.getPointsAgainst())
+                        .scoreDifference(ranking.getScoreDifference())
+                        .leaguePoints(ranking.getLeaguePoints())
+                        .totalFantasyPoints(ranking.getTotalFantasyPoints())
                         .build();
 
                 leaderboardEntryResponseDTOList.add(dto);
@@ -111,9 +118,16 @@ public class LeaderboardServiceImpl implements LeaderboardService{
                         .teamName(team.getTeamName())
                         .owner(team.getOwner().getUsername())
                         .rank(r.get().getCurrentRanking())
-                        .weeklyPoints(team.getWeeklyPoints())
-                        .totalPoints(team.getTotalPoints())
-                        .rankMovement(r.get().getRankMovement())
+                        .previousRank(r.get().getPreviousRanking())
+                        .matchesPlayed(r.get().getMatchesPlayed())
+                        .matchesWon(r.get().getMatchesWon())
+                        .matchesDrawn(r.get().getMatchesDrawn())
+                        .matchesLost(r.get().getMatchesLost())
+                        .pointsFor(r.get().getPointsFor())
+                        .pointsAgainst(r.get().getPointsAgainst())
+                        .scoreDifference(r.get().getScoreDifference())
+                        .leaguePoints(r.get().getLeaguePoints())
+                        .totalFantasyPoints(r.get().getTotalFantasyPoints())
                         .build();
 
                 return Optional.of(dto);

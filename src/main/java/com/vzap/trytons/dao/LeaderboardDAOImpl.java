@@ -1,6 +1,7 @@
 package com.vzap.trytons.dao;
 
 import com.vzap.trytons.exceptions.DataAccessException;
+import com.vzap.trytons.enums.LeaderBoardScope;
 import com.vzap.trytons.model.Leaderboard;
 import com.vzap.trytons.model.Ranking;
 
@@ -9,6 +10,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +35,7 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
                             .leagueId(UUID.fromString(rs.getString("leagueId")))
                             .lastUpdated(rs.getObject("lastUpdated", LocalDate.class))
                             .season(rs.getString("season"))
-                            .is_master_leaderboard(rs.getBoolean("is_master_leaderboard"))
+                            .scope(LeaderBoardScope.valueOf(rs.getString("scope")))
                             .build();
 
                     return Optional.of(lb);
@@ -61,10 +63,16 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
                             .teamId(UUID.fromString(rs.getString("teamId")))
                             .currentRanking(rs.getInt("currentRanking"))
                             .previousRanking(rs.getInt("previousRanking"))
-                            .weeklyScore(rs.getInt("weeklyScore"))
-                            .totalScore(rs.getInt("totalScore"))
-                            .rankMovement(rs.getInt("rankMovement"))
-                            .updatedAt(rs.getObject("updatedAt", LocalDate.class))
+                            .matchesPlayed(rs.getInt("matchesPlayed"))
+                            .matchesWon(rs.getInt("matchesWon"))
+                            .matchesDrawn(rs.getInt("matchesDrawn"))
+                            .matchesLost(rs.getInt("matchesLost"))
+                            .pointsFor(rs.getInt("pointsFor"))
+                            .pointsAgainst(rs.getInt("pointsAgainst"))
+                            .scoreDifference(rs.getInt("scoreDifference"))
+                            .leaguePoints(rs.getInt("leaguePoints"))
+                            .totalFantasyPoints(rs.getInt("total_fantasy_points"))
+                            .updatedAt(rs.getObject("updatedAt", LocalDateTime.class))
                             .build();
                     rankings.add(r);
                 }
@@ -90,10 +98,16 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
                             .teamId(UUID.fromString(rs.getString("teamId")))
                             .currentRanking(rs.getInt("currentRanking"))
                             .previousRanking(rs.getInt("previousRanking"))
-                            .weeklyScore(rs.getInt("weeklyScore"))
-                            .totalScore(rs.getInt("totalScore"))
-                            .rankMovement(rs.getInt("rankMovement"))
-                            .updatedAt(rs.getObject("updatedAt", LocalDate.class))
+                            .matchesPlayed(rs.getInt("matchesPlayed"))
+                            .matchesWon(rs.getInt("matchesWon"))
+                            .matchesDrawn(rs.getInt("matchesDrawn"))
+                            .matchesLost(rs.getInt("matchesLost"))
+                            .pointsFor(rs.getInt("pointsFor"))
+                            .pointsAgainst(rs.getInt("pointsAgainst"))
+                            .scoreDifference(rs.getInt("scoreDifference"))
+                            .leaguePoints(rs.getInt("leaguePoints"))
+                            .totalFantasyPoints(rs.getInt("total_fantasy_points"))
+                            .updatedAt(rs.getObject("updatedAt", LocalDateTime.class))
                             .build();
 
                     return Optional.of(r);
@@ -119,7 +133,7 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
                             .leagueId(UUID.fromString(rs.getString("leagueId")))
                             .lastUpdated(rs.getObject("lastUpdated", LocalDate.class))
                             .season(rs.getString("season"))
-                            .is_master_leaderboard(rs.getBoolean("is_master_leaderboard"))
+                            .scope(LeaderBoardScope.valueOf(rs.getString("scope")))
                             .build();
 
                     return Optional.of(lb);
@@ -134,31 +148,31 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
 
     @Override
     public void saveRanking(Ranking ranking) {
-
+        throw new UnsupportedOperationException("LeaderboardDAOImpl.saveRanking is a stub.");
     }
 
     @Override
     public void updateRanking(Ranking ranking) {
-
+        throw new UnsupportedOperationException("LeaderboardDAOImpl.updateRanking is a stub.");
     }
 
     @Override
     public void deleteRankingByLeaderboardId(UUID leaderboardId) {
-
+        throw new UnsupportedOperationException("LeaderboardDAOImpl.deleteRankingByLeaderboardId is a stub.");
     }
 
     @Override
     public void updateLeaderboard(Leaderboard leaderboard) {
-
+        throw new UnsupportedOperationException("LeaderboardDAOImpl.updateLeaderboard is a stub.");
     }
 
     @Override
     public void saveLeaderboard(Leaderboard leaderboard) {
-
+        throw new UnsupportedOperationException("LeaderboardDAOImpl.saveLeaderboard is a stub.");
     }
 
     @Override
     public Optional<Leaderboard> getMasterLeaderboard() {
-        return Optional.empty();
+        throw new UnsupportedOperationException("LeaderboardDAOImpl.getMasterLeaderboard is a stub.");
     }
 }

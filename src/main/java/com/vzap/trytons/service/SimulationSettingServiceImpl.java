@@ -1,5 +1,6 @@
 package com.vzap.trytons.service;
 
+import com.vzap.trytons.dto.SimulationSettingRequestDTO;
 import com.vzap.trytons.dto.SimulationSettingResponseDTO;
 import jakarta.enterprise.context.ApplicationScoped;
 
