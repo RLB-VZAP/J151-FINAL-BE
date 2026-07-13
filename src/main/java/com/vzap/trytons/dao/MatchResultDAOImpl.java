@@ -9,6 +9,7 @@ import jakarta.inject.Singleton;
 
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -153,6 +154,59 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
         return Optional.empty();
     }
 
+    @Override
+    public List<MatchResult> findAllByFixtureId(UUID fixtureId) {
+        String query = "SELECT resultId, matchResult.fixtureId, team_a_score, team_b_score, winnerSide, isDraw, resultDate, approved, approved_by_admin_user_id, simulation_run_number, isCurrent, fixture.team_a_id, fixture.team_b_id\n" +
+                "FROM matchResult\n" +
+                "INNER JOIN fixture  \n" +
+                "  ON matchResult.fixtureId = fixture.fixtureId WHERE matchResult.fixtureId = ? ORDER BY simulation_run_number";
+        List<MatchResult> matchResults = new ArrayList<>();
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query))   {
+
+            ps.setString(1, fixtureId.toString());
+
+            try(ResultSet rs = ps.executeQuery()){
+                while (rs.next()){
+
+                    String approvedByAdminIdStr = rs.getString("approved_by_admin_user_id");
+                    UUID approvedByAdminId;
+                    if (approvedByAdminIdStr != null) {
+                        approvedByAdminId = UUID.fromString(approvedByAdminIdStr);
+                    } else {
+                        approvedByAdminId = null;
+                    }
+
+
+                    MatchResult mr = MatchResult.builder()
+                            .resultId(UUID.fromString(rs.getString("resultId")))
+                            .fixtureId(fixtureId)
+                            .teamAId(UUID.fromString(rs.getString("team_a_id")))
+                            .teamBId(UUID.fromString(rs.getString("team_b_id")))
+                            .winnerSide(rs.getString("winnerSide"))
+                            .draw(rs.getBoolean("isDraw"))
+                            .resultDate(rs.getObject("resultDate", LocalDateTime.class))
+                            .approved(rs.getBoolean("approved"))
+                            .approvedByAdminId(approvedByAdminId)
+                            .simulationRunNumber(rs.getInt("simulation_run_number"))
+                            .current(rs.getBoolean("isCurrent"))
+                            .build();
+
+                    matchResults.add(mr);
+
+                }
+            }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to find all match results by fixtureId", e);
+            throw new DataAccessException("Unable to find all match results by fixtureId", e);
+        }
+
+        return matchResults;
+    }
+
+
     private MatchResult mapMatchResult(ResultSet result) throws SQLException {
         Fixture fixture = new Fixture();
         fixture.setFixtureId(UUID.fromString(result.getString("fixtureId")));
@@ -195,11 +249,6 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
         }
 
         return Optional.empty();
-    }
-
-    @Override
-    public List<MatchResult> findAllByFixtureId(UUID fixtureId) {
-        return List.of();
     }
 
     @Override
