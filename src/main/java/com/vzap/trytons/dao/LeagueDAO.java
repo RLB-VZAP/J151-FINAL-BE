@@ -16,4 +16,5 @@ public interface LeagueDAO {
     boolean deactivateLeague(UUID leagueId);
     boolean updateLeague(League league);
     boolean deleteLeague(UUID leagueId);
+    boolean assignManager(UUID leagueId, UUID managerUserId);
 }
