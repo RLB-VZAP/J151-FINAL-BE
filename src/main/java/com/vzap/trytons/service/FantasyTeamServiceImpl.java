@@ -1,152 +1,257 @@
 package com.vzap.trytons.service;
 
-import com.vzap.trytons.dao.FantasyTeamDAO;
-import com.vzap.trytons.dto.FantasyTeamRequestDTO;
-import com.vzap.trytons.dto.FantasyTeamResponseDTO;
-import com.vzap.trytons.dto.ViewOpponentTeamDTO;
-import com.vzap.trytons.dto.ViewOwnTeamDTO;
+import com.vzap.trytons.dao.*;
+import com.vzap.trytons.dto.*;
+import com.vzap.trytons.enums.SquadRole;
 import com.vzap.trytons.exceptions.AuthorisationException;
+import com.vzap.trytons.exceptions.BusinessRuleException;
+import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
-import com.vzap.trytons.exceptions.ValidationException;
+import com.vzap.trytons.exceptions.BadRequestException;
 import com.vzap.trytons.model.FantasyTeam;
-import com.vzap.trytons.model.RegisteredUser;
-import jakarta.enterprise.context.ApplicationScoped;
+import com.vzap.trytons.model.Player;
+import com.vzap.trytons.model.TeamPlayerSelection;
 import jakarta.inject.Inject;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
-@ApplicationScoped
 public class FantasyTeamServiceImpl implements FantasyTeamService {
-
-    private static final BigDecimal STARTING_BUDGET = new BigDecimal("100.00");
+    private static final BigDecimal INITIAL_BUDGET = BigDecimal.valueOf(100000000.00);
 
     @Inject
     private FantasyTeamDAO fantasyTeamDAO;
 
+    @Inject
+    private FantasyTeamPlayerDAO fantasyTeamPlayerDAO;
+
+    @Inject
+    private RegisteredUserDAO registeredUserDAO;
+
+    @Inject
+    private PlayerDAO playerDAO;
+
+
+    @Inject
+    private SquadValidationService squadValidationService;
     @Override
     public FantasyTeamResponseDTO createTeam(UUID registeredUserId, FantasyTeamRequestDTO request) {
-        validateUserId(registeredUserId);
-        validateRequest(request);
+        FantasyTeam fantasyTeam = mapRequestToFantasyTeam(request);
 
-        RegisteredUser owner = new RegisteredUser();
-        owner.setUserId(registeredUserId);
+        fantasyTeam.setTeamId(UUID.randomUUID());
+        fantasyTeam.setOwner(registeredUserDAO.getRegisteredUserById(registeredUserId).orElseThrow(() -> new RuntimeException("Register User not found.")));
+        fantasyTeam.setTotalTeamValue(totalTeamValue(request));
+        fantasyTeam.setRemainingBudget(INITIAL_BUDGET);
+        fantasyTeam.setCreationDate(LocalDateTime.now());
+        fantasyTeam.setTotalPoints(0);
+        fantasyTeam.setWeeklyPoints(0);
+        fantasyTeam.setIsValid(true);
+        fantasyTeam.setIsLocked(false);
 
-        FantasyTeam team = new FantasyTeam();
-        team.setTeamId(UUID.randomUUID());
-        team.setTeamName(request.getTeamName().trim());
-        team.setOwner(owner);
-        team.setRemainingBudget(STARTING_BUDGET);
-        team.setTotalTeamValue(BigDecimal.ZERO);
-        team.setCreationDate(LocalDateTime.now());
-        team.setTotalPoints(0);
-        team.setWeeklyPoints(0);
-        team.setIsValid(false);
-        team.setIsLocked(false);
+        List<FantasyTeamPlayerSelectionRequestDTO> selectedRequestPlayers = request.getSelectedPlayers();
+        List<FantasyTeamPlayerSelectionResponseDTO> selectedResponsePlayers = new ArrayList<>();
+        for (FantasyTeamPlayerSelectionRequestDTO requestPlayers : selectedRequestPlayers){
+            Player player = playerDAO.getPlayerById(requestPlayers.getPlayerId()).orElseThrow(() -> new RuntimeException("Player Not Found."));
+            selectedResponsePlayers.add(FantasyTeamPlayerSelectionResponseDTO.builder()
+                    .playerId(player.getPlayerId())
+                    .playerName(player.getPlayerName())
+                    .positionId(player.getPosition().getPositionId())
+                    .positionName(player.getPosition().getPositionName())
+                    .clubId(player.getClub().getClubId())
+                    .clubName(player.getClub().getClubName())
+                    .value(player.getValue())
+                    .isActive(player.isActive())
+                    .totalFantasyPoints(player.getTotalFantasyPoints())
+                    .currentForm(player.getCurrentForm())
+                    .build());
+        }
 
-        FantasyTeam savedTeam = fantasyTeamDAO.createTeam(team)
-                .orElseThrow(() -> new ResourceNotFoundException("Fantasy team could not be created"));
-
-        return toResponse(savedTeam);
+        return FantasyTeamResponseDTO.builder()
+                .teamId(fantasyTeam.getTeamId())
+                .teamName(fantasyTeam.getTeamName())
+                .managerId(fantasyTeam.getOwner().getUserId())
+                .managerUsername(fantasyTeam.getOwner().getUsername())
+                .totalTeamValue(fantasyTeam.getTotalTeamValue())
+                .remainingBudget(fantasyTeam.getRemainingBudget())
+                .weeklyPoints(fantasyTeam.getWeeklyPoints())
+                .totalPoints(fantasyTeam.getTotalPoints())
+                .valid(fantasyTeam.getIsValid())
+                .locked(fantasyTeam.getIsLocked())
+                .selectedPlayers(selectedResponsePlayers)
+                .build();
     }
 
     @Override
     public ViewOpponentTeamDTO viewOpponentTeam(UUID teamId) {
-        FantasyTeam team = getRequiredTeam(teamId);
+        FantasyTeam fantasyTeam = fantasyTeamDAO.findTeamById(teamId);
+        PlayerResponseDTO playerResponseDTO;
+        List<PlayerResponseDTO> playerResponses = new ArrayList<>();
+        Player player;
+        List<TeamPlayerSelection> squad = fantasyTeamPlayerDAO.getSquadByTeamId(teamId);
+        for(TeamPlayerSelection squadPlayer : squad){
 
-        return new ViewOpponentTeamDTO(
-                team.getTeamId(),
-                team.getTeamName(),
-                team.getTotalPoints(),
-                team.getWeeklyPoints(),
-                Collections.emptyList()
-        );
+            player = squadPlayer.getPlayer();
+
+            playerResponseDTO = PlayerResponseDTO.builder()
+                    .playerId(player.getPlayerId())
+                    .playerName(player.getPlayerName())
+                    .value(player.getValue())
+                    .attackingAbility(player.getAttackingAbility())
+                    .defensiveAbility(player.getDefensiveAbility())
+                    .kickingAbility(player.getKickingAbility())
+                    .discipline(player.getDiscipline())
+                    .consistency(player.getConsistency())
+                    .fitness(player.getFitness())
+                    .currentForm(player.getCurrentForm())
+                    .totalFantasyPoints(player.getTotalFantasyPoints())
+                    .isActive(player.isActive())
+                    .club(player.getClub())
+                    .position(player.getPosition())
+                    .isCaptain(squadPlayer.getIsCaptain())
+                    .isViceCaptain(squadPlayer.getIsViceCaptain())
+                    .isBench(squadPlayer.getSquadRole() == SquadRole.BENCH)
+                    .build();
+            playerResponses.add(playerResponseDTO);
+        }
+
+        return ViewOpponentTeamDTO.builder()
+                .teamId(teamId)
+                .teamName(fantasyTeam.getTeamName())
+                .totalPoints(fantasyTeam.getTotalPoints())
+                .weeklyPoints(fantasyTeam.getWeeklyPoints())
+                .players(playerResponses)
+                .build();
     }
 
     @Override
     public ViewOwnTeamDTO viewOwnTeam(UUID registeredUserId, UUID teamId) {
-        validateUserId(registeredUserId);
-        FantasyTeam team = getRequiredTeam(teamId);
-        requireOwner(team, registeredUserId);
-
-        return new ViewOwnTeamDTO(
-                team.getTeamId(),
-                team.getTeamName(),
-                safeMoney(team.getTotalTeamValue()),
-                safeMoney(team.getRemainingBudget()),
-                team.getCreationDate(),
-                team.getTotalPoints(),
-                team.getWeeklyPoints(),
-                team.getIsValid(),
-                team.getIsLocked(),
-                team.getOwner() != null ? team.getOwner().getUsername() : null,
-                Collections.emptyList()
-        );
+        FantasyTeam fantasyTeam = fantasyTeamDAO.findTeamById(teamId);
+        List<TeamPlayerSelection> playerResponses = fantasyTeamPlayerDAO.getSquadByTeamId(teamId);
+        List<PlayerResponseDTO> playerResponsesDTO = new ArrayList<>();
+        for(TeamPlayerSelection playerResponse : playerResponses){
+            Player player = playerResponse.getPlayer();
+            playerResponsesDTO.add(PlayerResponseDTO.builder()
+                    .playerId(player.getPlayerId())
+                    .playerName(player.getPlayerName())
+                    .value(player.getValue())
+                    .attackingAbility(player.getAttackingAbility())
+                    .defensiveAbility(player.getDefensiveAbility())
+                    .kickingAbility(player.getKickingAbility())
+                    .discipline(player.getDiscipline())
+                    .consistency(player.getConsistency())
+                    .fitness(player.getFitness())
+                    .currentForm(player.getCurrentForm())
+                    .totalFantasyPoints(player.getTotalFantasyPoints())
+                    .isActive(player.isActive())
+                    .club(player.getClub())
+                    .position(player.getPosition())
+                    .isCaptain(player.isActive())
+                    .isViceCaptain(player.isActive())
+                    .isBench(playerResponse.getSquadRole() == SquadRole.BENCH)
+                    .build());
+        }
+        return ViewOwnTeamDTO.builder()
+                .teamId(fantasyTeam.getTeamId())
+                .teamName(fantasyTeam.getTeamName())
+                .totalTeamValue(fantasyTeam.getTotalTeamValue())
+                .remainingBudget(fantasyTeam.getRemainingBudget())
+                .creationDate(fantasyTeam.getCreationDate())
+                .totalPoints(fantasyTeam.getTotalPoints())
+                .weeklyPoints(fantasyTeam.getWeeklyPoints())
+                .isValid(fantasyTeam.getIsValid())
+                .isLocked(fantasyTeam.getIsLocked())
+                .ownerUsername(fantasyTeam.getOwner().getUsername())
+                .players(playerResponsesDTO)
+                .build();
     }
 
     @Override
-    public FantasyTeamResponseDTO updateTeam(UUID registeredUserId, UUID teamId, FantasyTeamRequestDTO request) {
-        validateUserId(registeredUserId);
-        validateRequest(request);
+    public FantasyTeamResponseDTO updateTeam(UUID registeredId, UUID teamId, FantasyTeamRequestDTO fantasyTeamDTO) {
+        FantasyTeam fantasyTeam = fantasyTeamDAO.getTeamById(teamId).orElseThrow(() -> new ResourceNotFoundException("Fantasy team not found."));
 
-        FantasyTeam team = getRequiredTeam(teamId);
-        requireOwner(team, registeredUserId);
-
-        // The current DAO contract does not expose an update-team-name method yet.
-        // Returning the existing team keeps the backend deployable until that DAO method is added.
-        team.setTeamName(request.getTeamName().trim());
-        return toResponse(team);
-    }
-
-    private FantasyTeam getRequiredTeam(UUID teamId) {
-        if (teamId == null) {
-            throw new ValidationException("Team ID is required");
+        if (!fantasyTeam.getOwner().getUserId().equals(registeredId)) {
+            throw new AuthorisationException("You do not own this fantasy team.");
         }
 
-        return fantasyTeamDAO.getTeamById(teamId)
-                .orElseThrow(() -> new ResourceNotFoundException("Fantasy team not found"));
-    }
-
-    private void validateUserId(UUID registeredUserId) {
-        if (registeredUserId == null) {
-            throw new ValidationException("Registered user ID is required");
+        if (fantasyTeam.getIsLocked()) {
+            throw new BusinessRuleException("This fantasy team is locked.");
         }
-    }
+        List<UUID> selectedPlayerIds = new ArrayList<>();
+        List<FantasyTeamPlayerSelectionResponseDTO> selectedResponsePlayers = new ArrayList<>();
 
-    private void validateRequest(FantasyTeamRequestDTO request) {
-        if (request == null) {
-            throw new ValidationException("Fantasy team request is required");
+        for (FantasyTeamPlayerSelectionRequestDTO requestPlayers : fantasyTeamDTO.getSelectedPlayers()) {
+            Player player = playerDAO.getPlayerById(requestPlayers.getPlayerId()).orElseThrow(() -> new ResourceNotFoundException("Player not found."));
+            selectedPlayerIds.add(player.getPlayerId());
+            selectedResponsePlayers.add(FantasyTeamPlayerSelectionResponseDTO.builder()
+                    .playerId(player.getPlayerId())
+                    .playerName(player.getPlayerName())
+                    .positionId(player.getPosition().getPositionId())
+                    .positionName(player.getPosition().getPositionName())
+                    .clubId(player.getClub().getClubId())
+                    .clubName(player.getClub().getClubName())
+                    .value(player.getValue())
+                    .isActive(player.isActive())
+                    .totalFantasyPoints(player.getTotalFantasyPoints())
+                    .currentForm(player.getCurrentForm())
+                    .build());
         }
 
-        if (request.getTeamName() == null || request.getTeamName().trim().isEmpty()) {
-            throw new ValidationException("Team name is required");
+        SquadValidationResultDTO validationResult = squadValidationService.validateSquad(selectedPlayerIds);
+        if (!validationResult.isValid()) {
+            String firstError = validationResult.getErrors().get(0).getMessage();
+            throw new BusinessRuleException("Squad validation failed: " + firstError);
         }
-    }
 
-    private void requireOwner(FantasyTeam team, UUID registeredUserId) {
-        if (team.getOwner() == null || team.getOwner().getUserId() == null
-                || !team.getOwner().getUserId().equals(registeredUserId)) {
-            throw new AuthorisationException("You do not own this fantasy team");
+        BigDecimal totalTeamValue = totalTeamValue(fantasyTeamDTO);
+        BigDecimal remainingBudget = INITIAL_BUDGET.subtract(totalTeamValue);
+        if (remainingBudget.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessRuleException("You cannot afford this squad. Insufficient remaining budget.");
         }
+
+        fantasyTeamPlayerDAO.replaceSquad(teamId, selectedPlayerIds);
+
+        boolean budgetUpdated = fantasyTeamDAO.updateBudgetAndValue(teamId, totalTeamValue, remainingBudget);
+        if (!budgetUpdated) {
+            throw new DataAccessException("Unable to update fantasy team budget and value.",null);
+        }
+
+        fantasyTeam.setTotalTeamValue(totalTeamValue);
+        fantasyTeam.setRemainingBudget(remainingBudget);
+
+        return FantasyTeamResponseDTO.builder()
+                .teamId(fantasyTeam.getTeamId())
+                .teamName(fantasyTeam.getTeamName())
+                .managerId(fantasyTeam.getOwner().getUserId())
+                .managerUsername(fantasyTeam.getOwner().getUsername())
+                .totalTeamValue(fantasyTeam.getTotalTeamValue())
+                .remainingBudget(fantasyTeam.getRemainingBudget())
+                .weeklyPoints(fantasyTeam.getWeeklyPoints())
+                .totalPoints(fantasyTeam.getTotalPoints())
+                .valid(fantasyTeam.getIsValid())
+                .locked(fantasyTeam.getIsLocked())
+                .selectedPlayers(selectedResponsePlayers)
+                .build();
     }
 
-    private FantasyTeamResponseDTO toResponse(FantasyTeam team) {
-        return new FantasyTeamResponseDTO(
-                team.getTeamId(),
-                team.getTeamName(),
-                team.getOwner() != null ? team.getOwner().getUserId() : null,
-                team.getOwner() != null ? team.getOwner().getUsername() : null,
-                safeMoney(team.getTotalTeamValue()),
-                safeMoney(team.getRemainingBudget()),
-                team.getWeeklyPoints(),
-                team.getTotalPoints(),
-                Collections.emptyList()
-        );
+    private FantasyTeam mapRequestToFantasyTeam(FantasyTeamRequestDTO request) {
+        FantasyTeam fantasyTeam = new FantasyTeam();
+        fantasyTeam.setTeamName(request.getTeamName().trim());
+        return fantasyTeam;
     }
 
-    private BigDecimal safeMoney(BigDecimal value) {
-        return value != null ? value : BigDecimal.ZERO;
+    private BigDecimal totalTeamValue(FantasyTeamRequestDTO request) {
+        BigDecimal teamValue = BigDecimal.ZERO;
+        try {
+            for(FantasyTeamPlayerSelectionRequestDTO playerSelectionDTO : request.getSelectedPlayers()) {
+                Player player = playerDAO.getPlayerById(playerSelectionDTO.getPlayerId()).orElseThrow(() -> new RuntimeException("Player not found."));
+                teamValue = teamValue.add(player.getValue());
+            }
+            return teamValue;
+        }catch(RuntimeException e) {
+            throw new BadRequestException(e.getMessage());
+        }
     }
 }
