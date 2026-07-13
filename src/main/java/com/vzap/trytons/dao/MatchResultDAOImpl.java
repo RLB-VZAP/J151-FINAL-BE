@@ -128,7 +128,7 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
 
                     MatchResult mr = MatchResult.builder()
                             .resultId(UUID.fromString(rs.getString("resultId")))
-                            .fixtureId(UUID.fromString(rs.getString("fixtureId")))
+                            .fixtureId(fixtureId)
                             .teamAId(UUID.fromString(rs.getString("team_a_id")))
                             .teamBId(UUID.fromString(rs.getString("team_b_id")))
                             .winnerSide(rs.getString("winnerSide"))
@@ -146,8 +146,8 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
             }
 
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to find fantasy points by statId", e);
-            throw new DataAccessException("Unable to find fantasy points by statId", e);
+            LOG.log(Level.SEVERE, "Unable to find match result by fixtureId", e);
+            throw new DataAccessException("Unable to find match result by fixtureId", e);
         }
 
         return Optional.empty();
