@@ -5,6 +5,7 @@ public enum FixtureStatus {
     LOCKED,
     SIMULATING,
     COMPLETED,
+    PROCESSED,
     CANCELLED
 }
 
