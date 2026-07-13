@@ -1,5 +1,6 @@
 package com.vzap.trytons.resource;
 
+import com.vzap.trytons.dto.SimulationSettingRequestDTO;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
