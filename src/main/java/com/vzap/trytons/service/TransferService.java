@@ -1,12 +1,12 @@
 package com.vzap.trytons.service;
 
-import com.vzap.trytons.dto.TransferRequest;
-import com.vzap.trytons.dto.TransferResponse;
+import com.vzap.trytons.dto.TransferRequestDTO;
+import com.vzap.trytons.dto.TransferResponseDTO;
 
 import java.util.List;
-import java.util.UUID;
 
 public interface TransferService {
-    TransferResponse executeTransfer(UUID requestingUserId, TransferRequest request);
-    List<TransferResponse> getTransferHistoryForTeam (UUID requestingUserId, UUID teamId);
+
+    TransferResponseDTO executeTransfer(String actorUserId, TransferRequestDTO request);
+    List<TransferResponseDTO> listTransferHistory(String actorUserId, String teamId);
 }
