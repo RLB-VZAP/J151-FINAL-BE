@@ -5,7 +5,6 @@ import com.vzap.trytons.dto.DeadlineStatusResponseDTO;
 import com.vzap.trytons.dto.LockStatusResponseDTO;
 import com.vzap.trytons.enums.FantasyRoundStatus;
 import com.vzap.trytons.enums.RoundLockAction;
-import com.vzap.trytons.exceptions.AuthenticationException;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.BusinessRuleException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
@@ -15,7 +14,6 @@ import com.vzap.trytons.model.Player;
 import com.vzap.trytons.model.RoundLock;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
