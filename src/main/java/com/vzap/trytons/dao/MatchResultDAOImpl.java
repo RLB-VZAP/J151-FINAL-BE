@@ -109,6 +109,47 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
                 "INNER JOIN fixture  \n" +
                 "  ON matchResult.fixtureId = fixture.fixtureId WHERE matchResult.fixtureId = ? AND isCurrent = TRUE";
 
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query))   {
+
+            ps.setString(1, fixtureId.toString());
+
+            try(ResultSet rs = ps.executeQuery()){
+                if (rs.next()){
+
+                    String approvedByAdminIdStr = rs.getString("approved_by_admin_user_id");
+                    UUID approvedByAdminId;
+                    if (approvedByAdminIdStr != null) {
+                        approvedByAdminId = UUID.fromString(approvedByAdminIdStr);
+                    } else {
+                        approvedByAdminId = null;
+                    }
+
+
+                    MatchResult mr = MatchResult.builder()
+                            .resultId(UUID.fromString(rs.getString("resultId")))
+                            .fixtureId(UUID.fromString(rs.getString("fixtureId")))
+                            .teamAId(UUID.fromString(rs.getString("team_a_id")))
+                            .teamBId(UUID.fromString(rs.getString("team_b_id")))
+                            .winnerSide(rs.getString("winnerSide"))
+                            .draw(rs.getBoolean("isDraw"))
+                            .resultDate(rs.getObject("resultDate", LocalDateTime.class))
+                            .approved(rs.getBoolean("approved"))
+                            .approvedByAdminId(approvedByAdminId)
+                            .simulationRunNumber(rs.getInt("simulation_run_number"))
+                            .current(rs.getBoolean("isCurrent"))
+                            .build();
+
+                    return Optional.of(mr);
+
+                }
+            }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to find fantasy points by statId", e);
+            throw new DataAccessException("Unable to find fantasy points by statId", e);
+        }
+
         return Optional.empty();
     }
 
