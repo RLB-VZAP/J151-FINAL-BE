@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public interface LeagueMembershipDAO {
 
-    LeagueMembership createMembership(UUID leagueId, UUID userId, UUID teamId, LeagueMemberRole role);
+    LeagueMembership createMembership(UUID leagueId, UUID userId, UUID teamId);
 
     Optional<LeagueMembership> findById(UUID membershipId);
 
@@ -18,17 +18,13 @@ public interface LeagueMembershipDAO {
 
     List<LeagueMembership> findActiveByUser(UUID userId);
 
-    List<League> findLeaguesByLeague(UUID leagueId); //
+    List<League> findLeaguesByLeague(UUID leagueId);
 
-    List<League> findLeaguesByUser(UUID userId); //
+    List<League> findLeaguesByUser(UUID userId);
 
     boolean existsActiveByLeagueAndUser(UUID leagueId, UUID userId);
 
     int countActiveMembers(UUID leagueId);
 
     boolean deactivateMembership(UUID membershipId);
-
-    boolean updateRole(UUID membershipId, LeagueMemberRole newRole);
-
-
 }

@@ -18,11 +18,8 @@ public class FantasyPoints {
 
     private UUID pointsId;
     private UUID statId;
-
     private int totalPoints;
     private int calculationVersion;
-
     private boolean finalVersion;
-
     private LocalDateTime calculationDate;
 }

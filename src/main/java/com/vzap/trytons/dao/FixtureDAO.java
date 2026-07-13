@@ -8,13 +8,14 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface FixtureDAO {
-    Fixture createFixture(Fixture fixture);
-    Optional<Fixture> findFixtureById(UUID fixtureId);
-    List<Fixture> findFixturesByLeagueId(UUID leagueId);
-    List<Fixture> findFixturesByRoundId(UUID roundId);
-    List<Fixture> findFixturesByTeamId(UUID teamId);
-    List<Fixture> findFixturesByStatus(FixtureStatus status);
+    Fixture create(Fixture fixture);
+    Optional<Fixture> findById(UUID fixtureId);
+    List<Fixture> findByLeagueId(UUID leagueId);
+    List<Fixture> findByRoundId(UUID roundId);
+    List<Fixture> findByTeamId(UUID teamId);
+    List<Fixture> findByStatus(FixtureStatus status);
     List<Fixture> getAllFixtures();
-    Fixture updateFixture(Fixture fixture);
+    boolean updateFixture(Fixture fixture);
     boolean cancelFixture(UUID fixtureId);
+    boolean updateStatus(Fixture fixture, FixtureStatus status);
 }
