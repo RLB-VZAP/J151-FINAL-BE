@@ -8,12 +8,14 @@ import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ValidationException;
 import com.vzap.trytons.model.User;
+import com.vzap.trytons.util.AuthTokenUtil;
 import com.vzap.trytons.util.PasswordUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 @ApplicationScoped
 public class AuthServiceImpl implements AuthService {
@@ -23,11 +25,10 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponseDTO authenticate(String identifier, String password) {
-
         validateCredentials(identifier, password);
+
         String cleanedIdentifier = identifier.trim();
         Optional<User> possibleUser = userDAO.getUserByEmail(cleanedIdentifier);
-
         if (possibleUser.isEmpty()) {
             possibleUser = userDAO.getUserByUsername(cleanedIdentifier);
         }
@@ -39,27 +40,56 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthorisationException("This account is inactive.");
         }
 
-        boolean passwordMatches = PasswordUtil.verifyPassword(password, user.getPasswordHash());
-        if (!passwordMatches) {
+        if (!PasswordUtil.verifyPassword(password, user.getPasswordHash())) {
             throw new AuthenticationException("Invalid email/username or password.");
         }
 
-        boolean lastLoginUpdated = userDAO.updateLastLogin(user.getUserId(), LocalDateTime.now());
-        if (!lastLoginUpdated) {
+        if (!userDAO.updateLastLogin(user.getUserId(), LocalDateTime.now())) {
             throw new DataAccessException("Unable to update the user's last login time.", null);
         }
 
-        return new LoginResponseDTO(user.getUserId(), user.getUsername(), user.getEmail(), user.getRole());
+        String token = AuthTokenUtil.createToken(user.getUserId());
+        return new LoginResponseDTO(
+                user.getUserId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole(),
+                token
+        );
     }
 
     @Override
     public String logout() {
-        return "";
+        // Authentication is stateless. The frontend removes the token/session.
+        return "Logout acknowledged.";
     }
 
     @Override
     public AuthStatusResponseDTO getAuthStatus(String requestingUserId) {
-        return null;
+        if (requestingUserId == null || requestingUserId.isBlank()) {
+            return new AuthStatusResponseDTO(false, null, null, null, null);
+        }
+
+        final UUID userId;
+        try {
+            userId = UUID.fromString(requestingUserId.trim());
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException("requestingUserId must be a valid UUID.");
+        }
+
+        Optional<User> possibleUser = userDAO.getUserById(userId);
+        if (possibleUser.isEmpty() || !Boolean.TRUE.equals(possibleUser.get().getIsActive())) {
+            return new AuthStatusResponseDTO(false, null, null, null, null);
+        }
+
+        User user = possibleUser.get();
+        return new AuthStatusResponseDTO(
+                true,
+                user.getUserId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole()
+        );
     }
 
     private void validateCredentials(String identifier, String password) {

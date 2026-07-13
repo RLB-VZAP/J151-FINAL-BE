@@ -1,16 +1,15 @@
 package com.vzap.trytons.dao;
 
 import com.vzap.trytons.exceptions.DataAccessException;
-import com.vzap.trytons.model.Administrator;
-import com.vzap.trytons.model.Fixture;
-import com.vzap.trytons.model.Player;
 import com.vzap.trytons.model.PlayerStatistics;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -18,109 +17,149 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@Singleton
+@ApplicationScoped
 public class PlayerStatisticsDAOImpl extends BaseDAO implements PlayerStatisticsDAO {
 
-    private static final Logger LOG =
-            Logger.getLogger(PlayerStatisticsDAOImpl.class.getName());
+    private static final Logger LOG = Logger.getLogger(PlayerStatisticsDAOImpl.class.getName());
 
-    private static final String PLAYER_STATISTICS_SELECT =
-            "SELECT statId, fixtureId, playerId, tries, assists, tackles, missedTackles, conversions, penalties, metersGained, yellowCards, redCards, statisticDate, captured_by_admin_user_id AS capturedByAdminUserId FROM playerStatistics ";
+    private static final String SELECT_COLUMNS = """
+            SELECT statId, resultId, teamId, playerId, tries, assists, tackles,
+                   missedTackles, conversions, penalties, metersGained,
+                   yellowCards, redCards, statisticDate
+              FROM playerStatistics
+            """;
 
-    private PlayerStatistics mapPlayerStatistics(ResultSet rs) throws SQLException {
-        Fixture fixture = new Fixture();
-        fixture.setFixtureId(UUID.fromString(rs.getString("fixtureId")));
-
-        Player player = new Player();
-        player.setPlayerId(UUID.fromString(rs.getString("playerId")));
-
-        PlayerStatistics statistics = new PlayerStatistics();
-        statistics.setStatId(UUID.fromString(rs.getString("statId")));
-        statistics.setTries(rs.getInt("tries"));
-        statistics.setAssists(rs.getInt("assists"));
-        statistics.setTackles(rs.getInt("tackles"));
-        statistics.setMissedTackles(rs.getInt("missedTackles"));
-        statistics.setConversions(rs.getInt("conversions"));
-        statistics.setPenalties(rs.getInt("penalties"));
-        statistics.setMetersGained(rs.getInt("metersGained"));
-        statistics.setYellowCards(rs.getInt("yellowCards"));
-        statistics.setRedCards(rs.getInt("redCards"));
-        statistics.setStatisticDate(rs.getTimestamp("statisticDate").toLocalDateTime());
-        statistics.setFixture(fixture);
-        statistics.setPlayer(player);
-        String capturedByAdminUserId = rs.getString("capturedByAdminUserId");
-
-        if (capturedByAdminUserId != null) {
-            Administrator admin = new Administrator();
-            admin.setUserId(UUID.fromString(capturedByAdminUserId));
-            statistics.setCapturedByAdmin(admin);
-        }
-
-        return statistics;
+    private PlayerStatistics mapRow(ResultSet rs) throws SQLException {
+        Timestamp statisticDate = rs.getTimestamp("statisticDate");
+        return PlayerStatistics.builder()
+                .statId(UUID.fromString(rs.getString("statId")))
+                .resultId(UUID.fromString(rs.getString("resultId")))
+                .teamId(UUID.fromString(rs.getString("teamId")))
+                .playerId(UUID.fromString(rs.getString("playerId")))
+                .tries(rs.getInt("tries"))
+                .assists(rs.getInt("assists"))
+                .tackles(rs.getInt("tackles"))
+                .missedTackles(rs.getInt("missedTackles"))
+                .conversions(rs.getInt("conversions"))
+                .penalties(rs.getInt("penalties"))
+                .metersGained(rs.getInt("metersGained"))
+                .yellowCards(rs.getInt("yellowCards"))
+                .redCards(rs.getInt("redCards"))
+                .statisticDate(statisticDate == null ? null : statisticDate.toLocalDateTime())
+                .build();
     }
 
     @Override
-    public List<PlayerStatistics> findByFixtureId(UUID fixtureId) {
-        String query = PLAYER_STATISTICS_SELECT + "WHERE fixtureId = ? ORDER BY playerId ASC";
+    public List<PlayerStatistics> findByResultId(UUID resultId) {
+        return findMany(SELECT_COLUMNS + " WHERE resultId = ? ORDER BY teamId, playerId", resultId);
+    }
 
+    @Override
+    public List<PlayerStatistics> findByResultIdAndTeamId(UUID resultId, UUID teamId) {
         List<PlayerStatistics> statistics = new ArrayList<>();
+        String sql = SELECT_COLUMNS + " WHERE resultId = ? AND teamId = ? ORDER BY playerId";
 
-        try (Connection con = getConnection();
-             PreparedStatement ps = con.prepareStatement(query)) {
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            ps.setString(1, fixtureId.toString());
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    statistics.add(mapPlayerStatistics(rs));
+            statement.setString(1, resultId.toString());
+            statement.setString(2, teamId.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    statistics.add(mapRow(resultSet));
                 }
             }
-
+            return statistics;
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to retrieve player statistics by fixture ID.", e);
-            throw new DataAccessException("Unable to retrieve player statistics by fixture ID.", e);
+            LOG.log(Level.SEVERE, "Unable to retrieve player statistics for team.", e);
+            throw new DataAccessException("Unable to retrieve player statistics for team.", e);
         }
-
-        return statistics;
     }
 
     @Override
-    public Optional<PlayerStatistics> save(PlayerStatistics playerStatistics) {
-        UUID statId = playerStatistics.getStatId() != null ? playerStatistics.getStatId() : UUID.randomUUID();
-        String query = "INSERT INTO playerStatistics (statId, fixtureId, playerId, tries, assists, tackles, missedTackles, conversions, penalties, metersGained, yellowCards, redCards, captured_by_admin_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    public Optional<PlayerStatistics> findByResultIdAndTeamIdAndPlayerId(
+            UUID resultId,
+            UUID teamId,
+            UUID playerId) {
 
-        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
-            ps.setString(1, statId.toString());
-            ps.setString(2, playerStatistics.getFixture().getFixtureId().toString());
-            ps.setString(3, playerStatistics.getPlayer().getPlayerId().toString());
-            ps.setInt(4, playerStatistics.getTries());
-            ps.setInt(5, playerStatistics.getAssists());
-            ps.setInt(6, playerStatistics.getTackles());
-            ps.setInt(7, playerStatistics.getMissedTackles());
-            ps.setInt(8, playerStatistics.getConversions());
-            ps.setInt(9, playerStatistics.getPenalties());
-            ps.setInt(10, playerStatistics.getMetersGained());
-            ps.setInt(11, playerStatistics.getYellowCards());
-            ps.setInt(12, playerStatistics.getRedCards());
+        String sql = SELECT_COLUMNS + " WHERE resultId = ? AND teamId = ? AND playerId = ?";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            if (playerStatistics.getCapturedByAdmin() != null
-                    && playerStatistics.getCapturedByAdmin().getUserId() != null) {
-                ps.setString(13, playerStatistics.getCapturedByAdmin().getUserId().toString());
-            } else {
-                ps.setString(13, null);
+            statement.setString(1, resultId.toString());
+            statement.setString(2, teamId.toString());
+            statement.setString(3, playerId.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? Optional.of(mapRow(resultSet)) : Optional.empty();
             }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to retrieve player statistic.", e);
+            throw new DataAccessException("Unable to retrieve player statistic.", e);
+        }
+    }
 
-            if (ps.executeUpdate() == 1) {
-                return findByFixtureId(playerStatistics.getFixture().getFixtureId()).stream()
-                        .filter(stat -> statId.equals(stat.getStatId()))
-                        .findFirst();
+    private List<PlayerStatistics> findMany(String sql, UUID resultId) {
+        List<PlayerStatistics> statistics = new ArrayList<>();
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, resultId.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    statistics.add(mapRow(resultSet));
+                }
             }
+            return statistics;
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to retrieve player statistics.", e);
+            throw new DataAccessException("Unable to retrieve player statistics.", e);
+        }
+    }
 
+    @Override
+    public Optional<PlayerStatistics> save(PlayerStatistics statistics) {
+        UUID statId = statistics.getStatId() == null ? UUID.randomUUID() : statistics.getStatId();
+        LocalDateTime statisticDate = statistics.getStatisticDate() == null
+                ? LocalDateTime.now()
+                : statistics.getStatisticDate();
+
+        String sql = """
+                INSERT INTO playerStatistics
+                    (statId, resultId, teamId, playerId, tries, assists, tackles,
+                     missedTackles, conversions, penalties, metersGained,
+                     yellowCards, redCards, statisticDate)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, statId.toString());
+            statement.setString(2, statistics.getResultId().toString());
+            statement.setString(3, statistics.getTeamId().toString());
+            statement.setString(4, statistics.getPlayerId().toString());
+            statement.setInt(5, statistics.getTries());
+            statement.setInt(6, statistics.getAssists());
+            statement.setInt(7, statistics.getTackles());
+            statement.setInt(8, statistics.getMissedTackles());
+            statement.setInt(9, statistics.getConversions());
+            statement.setInt(10, statistics.getPenalties());
+            statement.setInt(11, statistics.getMetersGained());
+            statement.setInt(12, statistics.getYellowCards());
+            statement.setInt(13, statistics.getRedCards());
+            statement.setTimestamp(14, Timestamp.valueOf(statisticDate));
+
+            if (statement.executeUpdate() != 1) {
+                return Optional.empty();
+            }
+            return findByResultIdAndTeamIdAndPlayerId(
+                    statistics.getResultId(),
+                    statistics.getTeamId(),
+                    statistics.getPlayerId()
+            );
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to save player statistics.", e);
             throw new DataAccessException("Unable to save player statistics.", e);
         }
-
-        return Optional.empty();
     }
 }

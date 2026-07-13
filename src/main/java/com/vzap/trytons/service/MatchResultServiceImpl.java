@@ -50,7 +50,7 @@ public class MatchResultServiceImpl implements MatchResultService {
 
         int simulationRunNumber = matchResultDAO.getNextSimulationRunNumber(fixture.getFixtureId());
         matchResultDAO.markAllFixtureResultsNotCurrent(fixture.getFixtureId());
-        MatchResult saved = matchResultDAO.save(buildResult(fixture, simulationRunNumber));
+        MatchResult saved = matchResultDAO.save(buildResult(fixture, request, simulationRunNumber));
 
         if (saved == null) {
             throw new DataAccessException("Failed to persist the captured match result.", null);
@@ -76,6 +76,9 @@ public class MatchResultServiceImpl implements MatchResultService {
         if (request.getFixtureId() == null) {
             throw new ValidationException("Fixture ID is required.");
         }
+        if (request.getHomeScore() < 0 || request.getAwayScore() < 0) {
+            throw new ValidationException("Match scores cannot be negative.");
+        }
     }
 
     private void requireAdmin(UUID actorUserId) {
@@ -88,9 +91,9 @@ public class MatchResultServiceImpl implements MatchResultService {
         }
     }
 
-    private MatchResult buildResult(Fixture fixture, int simulationRunNumber) {
-        int teamAScore = 0;
-        int teamBScore = 0;
+    private MatchResult buildResult(Fixture fixture, MatchResultRequestDTO request, int simulationRunNumber) {
+        int teamAScore = request.getHomeScore();
+        int teamBScore = request.getAwayScore();
 
         return MatchResult.builder()
                 .resultId(UUID.randomUUID())
@@ -121,16 +124,10 @@ public class MatchResultServiceImpl implements MatchResultService {
         return new MatchResultResponseDTO(
                 result.getResultId(),
                 result.getFixtureId(),
-                result.getTeamAId(),
-                result.getTeamBId(),
-                result.getSimulationRunNumber(),
                 result.getTeamAScore(),
                 result.getTeamBScore(),
-                result.getWinnerSide(),
-                result.isDraw(),
-                result.isApproved(),
-                result.isCurrent(),
                 result.getResultDate(),
-                result.getApprovedAt());
+                result.isApproved(),
+                result.getSimulationRunNumber());
     }
 }

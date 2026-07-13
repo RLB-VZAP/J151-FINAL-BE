@@ -5,7 +5,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -22,4 +21,9 @@ public class Ranking {
     private int previousRanking;
     private int matchesPlayed, matchesWon, matchesDrawn, matchesLost, pointsFor, pointsAgainst, scoreDifference,leaguePoints, totalFantasyPoints;
     private LocalDateTime updatedAt;
+
+
+    public int getRankMovement() {
+        return previousRanking <= 0 ? 0 : previousRanking - currentRanking;
+    }
 }
