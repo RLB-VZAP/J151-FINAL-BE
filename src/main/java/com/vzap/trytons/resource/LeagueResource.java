@@ -22,7 +22,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
-@ApplicationPath("/api")
 @Path("/league")
 @Authenticated
 @Consumes(MediaType.APPLICATION_JSON)

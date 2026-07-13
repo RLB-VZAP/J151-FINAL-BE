@@ -94,11 +94,11 @@ public class MatchProcessingServiceImpl implements MatchProcessingService {
     }
 
     private boolean refreshLeaderboards(UUID actorUserId, Fixture fixture) {
-        if (fixture.getLeague() == null) {
+        if (fixture.getLeagueId() == null) {
             return false;
         }
         LeaderboardRefreshResultDTO refresh =
-                leaderboardService.refreshLeagueLeaderboard(actorUserId, fixture.getLeague().getLeagueId());
+                leaderboardService.refreshLeagueLeaderboard(actorUserId, fixture.getLeagueId().getLeagueId());
         return refresh != null && refresh.isSuccess();
     }
 }

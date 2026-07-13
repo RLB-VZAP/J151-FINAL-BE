@@ -72,16 +72,17 @@ public class PlayerStatisticsServiceImpl implements PlayerStatisticsService {
         MatchResult result = requireResult(request.getResultId());
         Fixture fixture = fixtureDAO.findFixtureById(result.getFixtureId()).orElseThrow(() -> new ResourceNotFoundException("Fixture was not found for the result."));
         requireTeamInFixture(fixture, request.getTeamId());
-        requirePlayerInLockedSquad(fixture.getRoundId(), request.getTeamId(), request.getPlayerId());
+        if (fixture.getRoundId() == null) {
+            throw new BusinessRuleException("The fixture is not linked to a fantasy round.");
+        }
+        requirePlayerInLockedSquad(fixture.getRoundId().getRoundId(), request.getTeamId(), request.getPlayerId());
 
         if (playerStatisticsDAO.findByResultIdAndTeamIdAndPlayerId(request.getResultId(), request.getTeamId(), request.getPlayerId()).isPresent()) {
             throw new ConflictException("Statistics have already been captured for this player in the result.");
         }
 
-        PlayerStatistics saved = playerStatisticsDAO.save(buildStatistics(request));
-        if (saved == null) {
-            throw new DataAccessException("Failed to persist the captured player statistics.", null);
-        }
+        PlayerStatistics saved = playerStatisticsDAO.save(buildStatistics(request))
+                .orElseThrow(() -> new DataAccessException("Failed to persist the captured player statistics.", null));
 
         return mapToResponse(saved);
     }

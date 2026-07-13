@@ -25,7 +25,6 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@ApplicationPath("/api")
 @Path("/fixtures")
 @Authenticated
 @Consumes(MediaType.APPLICATION_JSON)

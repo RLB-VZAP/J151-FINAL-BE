@@ -1,7 +1,6 @@
 package com.vzap.trytons.util;
 
 import com.vzap.trytons.config.DotEnvConfig;
-import io.github.cdimascio.dotenv.Dotenv;
 import org.apache.commons.dbcp2.BasicDataSource;
 
 import java.sql.Connection;
