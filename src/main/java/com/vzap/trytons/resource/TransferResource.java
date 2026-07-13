@@ -1,31 +1,36 @@
 package com.vzap.trytons.resource;
 
+import com.vzap.trytons.Annotations.Authenticated;
+import com.vzap.trytons.dto.ApiResponseDTO;
 import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.dto.TransferRequestDTO;
 import com.vzap.trytons.dto.TransferResponseDTO;
+import com.vzap.trytons.exceptions.ApplicationException;
 import com.vzap.trytons.exceptions.AuthenticationException;
-import com.vzap.trytons.exceptions.DataAccessException;
-import com.vzap.trytons.exceptions.ResourceNotFoundException;
-import com.vzap.trytons.exceptions.ValidationException;
+import com.vzap.trytons.filter.AuthFilter;
+import com.vzap.trytons.security.AuthPrincipal;
 import com.vzap.trytons.service.TransferService;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.SecurityContext;
 
-import java.security.Principal;
 import java.util.List;
-import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@Authenticated
 @Path("/transfers")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-
 public class TransferResource {
 
     private static final Logger LOGGER = Logger.getLogger(TransferResource.class.getName());
@@ -36,76 +41,75 @@ public class TransferResource {
     @POST
     public Response executeTransfer(
             @Valid TransferRequestDTO request,
-            @Context SecurityContext securityContext){
-        try{
-            UUID userId = currentUserId(securityContext);
-            TransferResponseDTO response = transferService.executeTransfer(userId, request);
-            return Response.status(Response.Status.OK).entity(response).build();
+            @Context ContainerRequestContext requestContext) {
+        try {
+            String actorUserId = currentUserId(requestContext);
 
-        }catch (AuthenticationException e){
-            return Response.status(Response.Status.UNAUTHORIZED).build();
-        }catch (ValidationException e){
-            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
-        }catch (ResourceNotFoundException e){
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }catch (DataAccessException e){
-            return serverError("Failed to execute transfer", e);
-        }catch (Exception e){
-            return unexpected(e);}
-    }
+            TransferResponseDTO response = transferService.executeTransfer(actorUserId, request);
 
-    @GET
-    @Path("/{teamId}/history")//This one has a change
-    public Response getTransferHistory(
-            @PathParam("teamId") UUID teamId,
-            @Context SecurityContext securityContext){
-        try{
-            UUID userId = currentUserId(securityContext);
-            List<TransferResponseDTO> history = transferService.getTransfersForTeam(userId, teamId);
-            //TransferDAO.getTransferByTeamId(...)
+            ApiResponseDTO<TransferResponseDTO> payload =
+                    ApiResponseDTO.success("Transfer executed successfully.", response);
 
-            return Response.status(Response.Status.OK).entity(history).build();
+            return Response.ok(payload).build();
 
-        }catch (AuthenticationException e){
-            return Response.status(Response.Status.UNAUTHORIZED).build();
-        }catch (ResourceNotFoundException e){
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }catch (DataAccessException e){
-            return serverError("Failed to retrieve transfer history", e);
-        }catch (Exception e){
+        } catch (ApplicationException e) {
+            return handledApplicationError(e);
+
+        } catch (Exception e) {
             return unexpected(e);
         }
     }
 
-    //Helper methods:
+    @GET
+    @Path("/{teamId}/history")
+    public Response listTransferHistory(
+            @PathParam("teamId") String teamId,
+            @Context ContainerRequestContext requestContext) {
+        try {
+            String actorUserId = currentUserId(requestContext);
 
-    private UUID currentUserId(SecurityContext securityContext){
-        Principal principal = securityContext.getUserPrincipal();
+            List<TransferResponseDTO> history =
+                    transferService.listTransferHistory(actorUserId, teamId);
 
-        if(principal == null || principal.getName() == null){
+            ApiResponseDTO<List<TransferResponseDTO>> payload =
+                    ApiResponseDTO.success("Transfer history retrieved successfully.", history);
+
+            return Response.ok(payload).build();
+
+        } catch (ApplicationException e) {
+            return handledApplicationError(e);
+
+        } catch (Exception e) {
+            return unexpected(e);
+        }
+    }
+
+    private String currentUserId(ContainerRequestContext requestContext) {
+        Object currentUser = requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY);
+
+        if (!(currentUser instanceof AuthPrincipal principal) || principal.getUserId() == null) {
             throw new AuthenticationException("Authentication required");
         }
 
-        try{
-            return UUID.fromString(principal.getName());
-        }catch (IllegalArgumentException e){
-            throw new AuthenticationException("Invalid authentication");
-        }
+        return principal.getUserId().toString();
     }
 
-    private Response serverError(String message, DataAccessException e){
-        LOGGER.log(Level.SEVERE, message, e);
+    private Response handledApplicationError(ApplicationException e) {
+        ErrorResponseDTO errorPayload = ErrorResponseDTO.of(e.getMessage(), e.getErrorCode());
 
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
-    }
-
-    private Response unexpected(Exception e){
-        LOGGER.log(Level.SEVERE, "Unexpected error found in Transfer Resource", e);
-
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(ErrorResponseDTO.of(
-                        "An unexpected error has occured", "INTERNAL_SERVER_ERROR"))
+        return Response.status(e.getStatusCode())
+                .entity(errorPayload)
                 .build();
     }
 
+    private Response unexpected(Exception e) {
+        LOGGER.log(Level.SEVERE, "Unexpected error in TransferResource.", e);
+
+        ErrorResponseDTO errorPayload =
+                ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR");
+
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(errorPayload)
+                .build();
+    }
 }

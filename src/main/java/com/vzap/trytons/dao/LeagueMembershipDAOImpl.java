@@ -1,10 +1,11 @@
 package com.vzap.trytons.dao;
-import com.vzap.trytons.dto.LeagueResponseDTO;
 import com.vzap.trytons.enums.LeagueMemberRole;
 import com.vzap.trytons.enums.LeagueType;
 import com.vzap.trytons.exceptions.DataAccessException;
+import com.vzap.trytons.model.FantasyTeam;
 import com.vzap.trytons.model.League;
 import com.vzap.trytons.model.LeagueMembership;
+import com.vzap.trytons.model.RegisteredUser;
 
 import java.sql.Timestamp;
 import java.sql.Connection;
@@ -23,19 +24,19 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
 
     private static final Logger LOGGER = Logger.getLogger(LeagueMembershipDAOImpl.class.getName());
     private static final String BASE_FIELDS =
-            "membershipId, leagueId, registered_user_id, teamId, isActive, joinDate, memberRole";
+            "membershipId, leagueId, registered_user_id, teamId, isActive, joinDate";
     private static final String RESPONSE_JOIN =
             " FROM leagueMembership lm JOIN league l ON l.leagueId = lm.leagueId";
     private static final String RESPONSE_FIELDS =
             "l.leagueId, l.leagueName, l.description, l.leagueType, l.creationDate";
 
     @Override
-    public LeagueMembership createMembership(UUID leagueId, UUID userId, UUID teamId, LeagueMemberRole role) {
+    public LeagueMembership createMembership(UUID leagueId, UUID userId, UUID teamId) {
         UUID newId = UUID.randomUUID();
         LocalDateTime joinDate = LocalDateTime.now();
 
         String sql = "INSERT INTO leagueMembership (membershipId, leagueId, registered_user_id, teamId, isActive, " +
-                "joinDate, memberRole)" + " VALUES (?, ?, ?, ?, TRUE, ?, ?)";
+                "joinDate)" + " VALUES (?, ?, ?, ?, TRUE, ?, ?)";
 
         try (Connection con = getConnection();
              PreparedStatement stmt = con.prepareStatement(sql)){
@@ -44,7 +45,6 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
             stmt.setString(3, userId.toString());
             stmt.setString(4, teamId.toString());
             stmt.setTimestamp(5, Timestamp.valueOf(joinDate));
-            stmt.setString(6, role.name());
             stmt.executeUpdate();
         } catch (SQLException e){
             LOGGER.log(Level.SEVERE, "Failed to create membership for league" + leagueId + " user" + userId
@@ -56,12 +56,19 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
         League league = new League();
         league.setLeagueId(leagueId);
 
+        RegisteredUser registeredUser = new RegisteredUser();
+        registeredUser.setUserId(userId);
+
+        FantasyTeam fantasyTeam = new FantasyTeam();
+        fantasyTeam.setTeamId(teamId);
+
         LeagueMembership membership = new LeagueMembership();
         membership.setMembershipId(newId);
         membership.setIsActive(true);
         membership.setJoinDate(joinDate);
-        membership.setMemberRole(role);
         membership.setLeague(league);
+        membership.setRegisteredUser(registeredUser);
+        membership.setFantasyTeam(fantasyTeam);
 
         return membership;
     }
@@ -230,28 +237,23 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
         }
     }
 
-
-    @Override
-    public boolean updateRole(UUID membershipId, LeagueMemberRole newRole) {
-        String sql = "UPDATE leagueMembership SET memberRole = ? WHERE membershipId = ?";
-
-        try (Connection con = getConnection();
-             PreparedStatement stmt = con.prepareStatement(sql)) {
-            stmt.setString(1, newRole.name());
-            stmt.setString(2, membershipId.toString());
-            return stmt.executeUpdate() > 0;
-        } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "Failed to update role for membership " + membershipId + " to  " + newRole, e);
-            throw new DataAccessException("Failed to update role for membership " + membershipId + " to  " + newRole, e);
-        }
-    }
-
     private LeagueMembership rowToMembership(ResultSet rs) throws SQLException {
         LeagueMembership mem = new LeagueMembership();
         mem.setMembershipId(parseUuid(rs.getString("membershipId"), "membershipId"));
         mem.setIsActive(rs.getBoolean("isActive"));
         mem.setJoinDate(parseTimestamp(rs.getTimestamp("joinDate"), "joinDate"));
-        mem.setMemberRole(parseRole(rs.getString("memberRole")));
+
+        League league = new League();
+        league.setLeagueId(parseUuid(rs.getString("leagueId"), "leagueId"));
+        mem.setLeague(league);
+
+        RegisteredUser registeredUser = new RegisteredUser();
+        registeredUser.setUserId(parseUuid(rs.getString("registered_user_id"), "registered_user_id"));
+        mem.setRegisteredUser(registeredUser);
+
+        FantasyTeam fantasyTeam = new FantasyTeam();
+        fantasyTeam.setTeamId(parseUuid(rs.getString("teamId"), "teamId"));
+        mem.setFantasyTeam(fantasyTeam);
         return mem;
     }
 
@@ -271,16 +273,5 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
             throw new SQLException("Unexpected null value for column " + columnName);
         }
         return ts.toLocalDateTime();
-    }
-
-    private LeagueMemberRole parseRole(String str) throws SQLException {
-        if (str == null) {
-            throw new SQLException("Unexpected null value for column memberRole");
-        }
-        try {
-            return LeagueMemberRole.valueOf(str);
-        } catch (IllegalArgumentException e) {
-            throw new SQLException("Unrecognized league member role: " + str, e);
-        }
     }
 }

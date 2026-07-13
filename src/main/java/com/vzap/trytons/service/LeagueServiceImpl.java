@@ -7,7 +7,6 @@ import com.vzap.trytons.dto.JoinLeagueRequestDTO;
 import com.vzap.trytons.dto.JoinLeagueResponseDTO;
 import com.vzap.trytons.dto.LeagueRequestDTO;
 import com.vzap.trytons.dto.LeagueResponseDTO;
-import com.vzap.trytons.enums.LeagueMemberRole;
 import com.vzap.trytons.enums.LeagueType;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
@@ -49,42 +48,61 @@ private static final Logger LOG = Logger.getLogger(LeagueServiceImpl.class.getNa
             throw new IllegalArgumentException("League name is required.");
         }
 
+        if (request.getMaxMembers() <= 1){
+            throw new  IllegalArgumentException("maxMembers must be greater than 1.");
+        }
+
         if (leagueDAO.findLeagueByName(request.getLeagueName()).isPresent()) {
             throw new IllegalArgumentException("League name already exists.");
         }
 
-        League league = new League();
-
-        league.setLeagueName(request.getLeagueName());
-        league.setLeagueType(request.getLeagueType());
-
-        League savedLeague = leagueDAO.createLeague(league);
-
-        LeagueMemberRole role;
-
-        if (request.getLeagueType() == LeagueType.PRIVATE) {
-            role = LeagueMemberRole.MANAGER;
-        } else {
-            role = LeagueMemberRole.MEMBER;
-        }
 
         List<FantasyTeam> teams = fantasyTeamDAO.findTeamsByOwner(currentUserId);
 
         if (teams.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "You must create a fantasy team before creating a league.");
+            throw new IllegalArgumentException("You must create a fantasy team before creating a league.");
         }
 
         FantasyTeam team = teams.get(0);
 
-        membershipDAO.createMembership(savedLeague.getLeagueId(), currentUserId, team.getTeamId(), role);
+        League league = new League();
 
-        LeagueResponseDTO response = new LeagueResponseDTO();
+        league.setLeagueId(UUID.randomUUID());
+        league.setLeagueName(request.getLeagueName());
+        league.setDescription(request.getDescription());
+        league.setLeagueType(request.getLeagueType());
+        league.setMaxMembers(request.getMaxMembers());
+
+        if (request.getLeagueType() == LeagueType.PRIVATE) {
+            league.setLeagueCode(generateLeagueCode());
+        }
+
+        League savedLeague = leagueDAO.createLeague(league);
+
+        membershipDAO.createMembership(savedLeague.getLeagueId(), currentUserId, team.getTeamId());
+
+        leagueDAO.assignManager(savedLeague.getLeagueId(), currentUserId);
+
+       LeagueResponseDTO response = new LeagueResponseDTO();
         response.setLeagueId(savedLeague.getLeagueId());
+        response.setManagerUserId(currentUserId);
         response.setLeagueName(savedLeague.getLeagueName());
         response.setLeagueType(savedLeague.getLeagueType());
+        response.setLeagueCode(savedLeague.getLeagueCode());
+        response.setDescription(savedLeague.getDescription());
+        response.setCreationDate(savedLeague.getCreationDate());
+        response.setIsActive(savedLeague.getIsActive());
+        response.setMaxMembers(savedLeague.getMaxMembers());
 
         return response;
+    }
+
+    private String generateLeagueCode() {
+        String code;
+        do {
+            code = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
+        } while (leagueDAO.existsByLeagueCode(code));
+        return code;
     }
 
     @Override
@@ -108,18 +126,20 @@ private static final Logger LOG = Logger.getLogger(LeagueServiceImpl.class.getNa
 
         LeagueResponseDTO response = new LeagueResponseDTO();
         response.setLeagueId(league2.getLeagueId());
+
+        if (league2.getManager() != null) {
+            response.setManagerUserId(league2.getManager().getUserId());
+        }
+
         response.setLeagueName(league2.getLeagueName());
+        response.setDescription(league2.getDescription());
         response.setLeagueType(league2.getLeagueType());
+        response.setLeagueCode(league2.getLeagueCode());
+        response.setCreationDate(league2.getCreationDate());
+        response.setIsActive(league2.getIsActive());
+        response.setMaxMembers(league2.getMaxMembers());
 
         return response;
-    }
-
-    @Override
-    public void joinLeague(UUID leagueId, UUID currentUserId, UUID fantasyTeamId) {
-
-        if (isLeagueMember(leagueId, currentUserId)) {
-            throw new IllegalArgumentException("You are already a member of this league");
-        }
     }
 
     @Override
@@ -150,6 +170,7 @@ private static final Logger LOG = Logger.getLogger(LeagueServiceImpl.class.getNa
                 response.setLeagueName(league.getLeagueName());
                 response.setDescription(league.getDescription());
                 response.setLeagueType(league.getLeagueType());
+                response.setLeagueCode(league.getLeagueCode());
                 response.setCreationDate(league.getCreationDate());
                 response.setIsActive(league.getIsActive());
                 response.setMaxMembers(league.getMaxMembers());
@@ -182,7 +203,7 @@ private static final Logger LOG = Logger.getLogger(LeagueServiceImpl.class.getNa
         if(membershipDAO.countActiveMembers(leagueId) >= league.getMaxMembers()){
             throw new ConflictException("This league is full.");
         }
-        LeagueMembership membership = membershipDAO.createMembership(leagueId,currentUserId,teamId,LeagueMemberRole.MEMBER);
+        LeagueMembership membership = membershipDAO.createMembership(leagueId,currentUserId,teamId);
         JoinLeagueResponseDTO response = new JoinLeagueResponseDTO();
         response.setLeagueId(league.getLeagueId());
         response.setLeagueName(league.getLeagueName());
