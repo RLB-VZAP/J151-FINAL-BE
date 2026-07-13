@@ -158,7 +158,7 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
     }
 
     @Override
-    public Optional<Leaderboard> getMasterLeaderboard() {
+    public Optional<Leaderboard> getMasterLeaderboard(String season) {
         return Optional.empty();
     }
 }
