@@ -6,10 +6,8 @@ import com.vzap.trytons.model.Fixture;
 import com.vzap.trytons.model.MatchResult;
 import jakarta.inject.Singleton;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -20,8 +18,45 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
 
     private static final Logger LOG = Logger.getLogger(MatchResultDAOImpl.class.getName());
 
-    private static final String MATCH_RESULT_SELECT =
-            "SELECT resultId, fixtureId, homeScore, awayScore, resultDate, approved, approved_by_admin_user_id AS approvedByAdminUserId, simulation_run_number AS simulationRunNumber FROM matchResult ";
+    @Override
+    public MatchResult save(MatchResult matchResult) {
+        String query = "INSERT INTO matchResult (resultId, fixtureId, team_a_score, team_b_score, winnerSide, isDraw, resultDate, approved, approved_by_admin_user_id, simulation_run_number, isCurrent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, matchResult.getResultId().toString());
+            ps.setString(2, matchResult.getFixtureId().toString());
+            ps.setInt(3, matchResult.getTeamAScore());
+            ps.setInt(4, matchResult.getTeamBScore());
+            ps.setString(5, matchResult.getWinnerSide());
+            ps.setBoolean(6, matchResult.isDraw());
+            ps.setTimestamp(7, Timestamp.valueOf(matchResult.getResultDate()));
+            ps.setBoolean(8, matchResult.isApproved());
+            if (matchResult.getApprovedByAdminId() != null) {
+                ps.setString(9, matchResult.getApprovedByAdminId().toString());
+            } else {
+                ps.setNull(9, Types.VARCHAR);
+            }
+            ps.setInt(10, matchResult.getSimulationRunNumber());
+            ps.setBoolean(11, matchResult.isCurrent());
+
+            ps.executeUpdate();
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to save match result.", e);
+            throw new DataAccessException("Unable to save match result.", e);
+        }
+
+        return matchResult;
+    }
+
+    @Override
+    public Optional<MatchResult> findById(UUID resultId) {
+
+
+
+        return Optional.empty();
+    }
 
     private MatchResult mapMatchResult(ResultSet result) throws SQLException {
         Fixture fixture = new Fixture();
@@ -67,36 +102,27 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
         return Optional.empty();
     }
 
+
+
+
+
     @Override
-    public Optional<MatchResult> save(MatchResult matchResult) {
-        String query = "INSERT INTO matchResult (resultId, fixtureId, homeScore, awayScore, approved, approved_by_admin_user_id, simulation_run_number) VALUES (?, ?, ?, ?, ?, ?, ?)";
-
-        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
-
-            ps.setString(1, matchResult.getResultId().toString());
-            ps.setString(2, matchResult.getFixture().getFixtureId().toString());
-            ps.setInt(3, matchResult.getHomeScore());
-            ps.setInt(4, matchResult.getAwayScore());
-            ps.setBoolean(5, matchResult.getApproved() != null && matchResult.getApproved());
-
-            if (matchResult.getApprovedByAdmin() != null
-                    && matchResult.getApprovedByAdmin().getUserId() != null) {
-                ps.setString(6, matchResult.getApprovedByAdmin().getUserId().toString());
-            } else {
-                ps.setString(6, null);
-            }
-
-            ps.setInt(7, matchResult.getSimulationRunNumber());
-
-            if (ps.executeUpdate() == 1) {
-                return findByFixtureId(matchResult.getFixture().getFixtureId());
-            }
-
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to save match result.", e);
-            throw new DataAccessException("Unable to save match result.", e);
-        }
-
+    public Optional<MatchResult> findCurrentByFixtureId(UUID fixtureId) {
         return Optional.empty();
+    }
+
+    @Override
+    public List<MatchResult> findAllByFixtureId(UUID fixtureId) {
+        return List.of();
+    }
+
+    @Override
+    public int getNextSimulationRunNumber(UUID fixtureId) {
+        return 0;
+    }
+
+    @Override
+    public int markAllFixtureResultsNotCurrent(UUID fixtureId) {
+        return 0;
     }
 }
