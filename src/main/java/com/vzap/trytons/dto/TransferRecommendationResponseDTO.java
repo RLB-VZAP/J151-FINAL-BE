@@ -1,14 +1,16 @@
 package com.vzap.trytons.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+
+import java.util.List;
+import java.util.UUID;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class TransferRecommendationResponseDTO {
-    //STUB
+    private UUID teamId;
+    private List<RecommendedPlayerDTO> recommendations;
 }
