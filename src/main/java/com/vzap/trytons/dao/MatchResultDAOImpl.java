@@ -207,53 +207,30 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
     }
 
 
-    private MatchResult mapMatchResult(ResultSet result) throws SQLException {
-        Fixture fixture = new Fixture();
-        fixture.setFixtureId(UUID.fromString(result.getString("fixtureId")));
-        MatchResult matchResult = new MatchResult();
-        matchResult.setResultId(UUID.fromString(result.getString("resultId")));
-        matchResult.setHomeScore(result.getInt("homeScore"));
-        matchResult.setAwayScore(result.getInt("awayScore"));
-        matchResult.setResultDate(result.getTimestamp("resultDate").toLocalDateTime());
-        matchResult.setApproved(result.getBoolean("approved"));
-        matchResult.setSimulationRunNumber(result.getInt("simulationRunNumber"));
-        matchResult.setFixture(fixture);
-        String approvedByAdminUserId = result.getString("approvedByAdminUserId");
-
-        if (approvedByAdminUserId != null) {
-            Administrator admin = new Administrator();
-            admin.setUserId(UUID.fromString(approvedByAdminUserId));
-            matchResult.setApprovedByAdmin(admin);
-        }
-
-        return matchResult;
-    }
-
     @Override
-    public Optional<MatchResult> findByFixtureId(UUID fixtureId) {
-        String query = MATCH_RESULT_SELECT + "WHERE fixtureId = ?";
+    public int getNextSimulationRunNumber(UUID fixtureId) {
+        String query = "SELECT simulation_run_number FROM matchResult WHERE fixtureId = ? ORDER BY simulation_run_number DESC LIMIT 1";
 
-        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
+        try(Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)){
 
             ps.setString(1, fixtureId.toString());
 
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapMatchResult(rs));
+            try(ResultSet rs = ps.executeQuery()){
+
+                if (rs.next()){
+
+                    return rs.getInt("simulation_run_number") + 1;
+
                 }
             }
 
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to retrieve match result by fixture ID.", e);
-            throw new DataAccessException("Unable to retrieve match result by fixture ID.", e);
+            LOG.log(Level.SEVERE, "Unable to get the next simulation run number for match results", e);
+            throw new DataAccessException("Unable to get the next simulation run number for match results", e);
         }
 
-        return Optional.empty();
-    }
-
-    @Override
-    public int getNextSimulationRunNumber(UUID fixtureId) {
-        return 0;
+        return 1;
     }
 
     @Override
