@@ -1,14 +1,11 @@
 package com.vzap.trytons.resource;
 
-import com.vzap.trytons.dto.ErrorResponse;
-import com.vzap.trytons.dto.PlayerRequestDTO;
+import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.dto.PositionRequestDTO;
 import com.vzap.trytons.dto.PositionResponseDTO;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
-import com.vzap.trytons.model.Player;
-import com.vzap.trytons.service.PlayerService;
 import com.vzap.trytons.service.PositionService;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -35,7 +32,7 @@ public class PositionResource {
     @GET
     public Response listPositions(){
         try{
-            return  Response.ok(positionService.getAllPositons()).build();
+            return  Response.ok(positionService.getAllPositions()).build();
         }catch(DataAccessException e){
             return serverError("Failed to load positions",e);
         }catch(Exception e){
@@ -48,7 +45,7 @@ public class PositionResource {
         try{
             return  Response.ok(positionService.getPosition(id)).build();
         }catch(ResourceNotFoundException e){
-            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponse.of(e.getMessage(), e.getErrorCode())).build();
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
         }catch(DataAccessException e){
             return serverError("Failed to load position",e);
         }catch(Exception e){
@@ -59,11 +56,11 @@ public class PositionResource {
     @POST
     public Response createPosition(@Valid PositionRequestDTO request, @Context UriInfo uriInfo){
         try{
-            PositionResponseDTO created = positionService.createPostion(request);
+            PositionResponseDTO created = positionService.createPosition(request);
             URI location = uriInfo.getAbsolutePathBuilder().path(created.getPositionId().toString()).build();
             return Response.created(location).entity(created).build();
         }catch(ConflictException e){
-            return Response.status(Response.Status.CONFLICT).entity(ErrorResponse.of(e.getMessage() , e.getErrorCode())).build();
+            return Response.status(Response.Status.CONFLICT).entity(ErrorResponseDTO.of(e.getMessage() , e.getErrorCode())).build();
         }catch(DataAccessException e){
             return serverError("Failed to create position",e);
         }catch (Exception e){
@@ -75,9 +72,9 @@ public class PositionResource {
     @Path("/{id}")
     public Response updatePosition(@PathParam("id") UUID id, @Valid PositionRequestDTO request){
         try{
-            return Response.ok(positionService.updatePlayer(id, request)).build();
+            return Response.ok(positionService.updatePosition(id, request)).build();
         }catch(ResourceNotFoundException e){
-            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponse.of(e.getMessage(), e.getErrorCode())).build();
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
         }catch(ConflictException e){
             return Response.status(Response.Status.CONFLICT).build();
         }catch(DataAccessException e){
@@ -89,11 +86,11 @@ public class PositionResource {
 
     private Response serverError(String message, DataAccessException e) {
         LOGGER.log(Level.SEVERE, message, e);
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponse.of(message, e.getErrorCode())).build();
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponseDTO.of(message, e.getErrorCode())).build();
     }
 
     private Response unexpected(Exception e) {
         LOGGER.log(Level.SEVERE, "Unexpected error in PositionResource.", e);
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponse.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR")).build();
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR")).build();
     }
 }

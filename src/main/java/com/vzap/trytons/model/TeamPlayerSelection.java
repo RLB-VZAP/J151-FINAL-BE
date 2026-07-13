@@ -1,5 +1,6 @@
 package com.vzap.trytons.model;
 
+import com.vzap.trytons.enums.SquadRole;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -11,13 +12,16 @@ import java.util.UUID;
 @Getter
 @Setter
 public class TeamPlayerSelection {
-
     private UUID selectionId;
+
     private LocalDateTime selectedDate;
+
     private Boolean isCaptain;
     private Boolean isViceCaptain;
-    private Boolean isActive;
+
+    private SquadRole squadRole;
 
     private FantasyTeam fantasyTeam;
+
     private Player player;
 }

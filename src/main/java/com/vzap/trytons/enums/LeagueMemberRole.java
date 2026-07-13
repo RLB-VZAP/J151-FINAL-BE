@@ -2,5 +2,5 @@ package com.vzap.trytons.enums;
 
 public enum LeagueMemberRole {
     MEMBER,
-    MANAGER
+    MANAGER //these are orphaned apperently
 }

@@ -9,15 +9,9 @@ import java.util.UUID;
 public interface ClubDAO {
     Optional<Club> findByClubId(UUID clubId);
     Optional<Club> findByClubName(String clubName);
-    Optional<Club>findByStrengthRating(int strengthRating);
     List<Club> findAllClubs();
-    Optional<Club> findByLocation(String location);
-    public boolean createClub(Club club);
-    public boolean updateClub(Club club);
-    public boolean existsByClubName(String clubName);
-    public boolean updateStatus(UUID clubId, boolean isActive);
-    public boolean deactivateClub(UUID clubId);
-
-
-
+    List<Club> findByLocation(String location);
+    public Optional<Club> createClub(Club club);
+    public Optional<Club> updateClub(Club club);
+    public Optional<Club> updateStatus(UUID clubId, boolean isActive);
 }

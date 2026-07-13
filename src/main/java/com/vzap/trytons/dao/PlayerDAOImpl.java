@@ -46,7 +46,6 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
                     + "c.clubName AS clubName, "
                     + "c.location AS clubLocation, "
                     + "c.homeVenue AS homeVenue, "
-                    + "c.strengthRating AS strengthRating, "
                     + "c.isActive AS clubIsActive, "
                     + "pos.positionId AS positionId, "
                     + "pos.positionName AS positionName, "
@@ -63,7 +62,6 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
         club.setClubName(rs.getString("clubName"));
         club.setLocation(rs.getString("clubLocation"));
         club.setHomeVenue(rs.getString("homeVenue"));
-        club.setStrengthRating(rs.getInt("strengthRating"));
         club.setActive(rs.getBoolean("clubIsActive"));
 
         Position position = new Position();
