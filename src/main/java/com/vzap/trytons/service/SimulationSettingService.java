@@ -8,8 +8,8 @@ import java.util.UUID;
 
 public interface SimulationSettingService {
     SimulationSettingResponseDTO createSimulationSetting(UUID actorUserId, SimulationSettingRequestDTO request);
-    SimulationSettingResponseDTO updateSimulationSetting(UUID actorUserId, UUID simulationSettingsId, SimulationSettingRequestDTO request);
-    SimulationSettingResponseDTO getSimulationSettingById(UUID simulationSettingsId);
+    SimulationSettingResponseDTO updateSimulationSetting(UUID actorUserId, UUID settingsId, SimulationSettingRequestDTO request);
+    SimulationSettingResponseDTO getSimulationSettingById(UUID settingsId);
     SimulationSettingResponseDTO getActiveSimulationSetting();
     List<SimulationSettingResponseDTO> listSimulationSettings();
 }
