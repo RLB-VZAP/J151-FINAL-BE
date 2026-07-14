@@ -5,10 +5,7 @@ import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.Leaderboard;
 import com.vzap.trytons.model.Ranking;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -149,30 +146,140 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
     public void saveRanking(Ranking ranking) {
         String query = "INSERT INTO ranking (rankingId, leaderboardId, teamId, currentRanking, previousRanking, matchesPlayed, matchesWon, matchesDrawn, matchesLost, pointsFor, pointsAgainst, scoreDifference, leaguePoints, total_fantasy_points, updatedAt)"
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)){
+            ps.setString(1, ranking.getRankingId().toString());
+            ps.setString(2, ranking.getLeaderboardId().toString());
+            ps.setString(3, ranking.getTeamId().toString());
+            ps.setInt(4, ranking.getCurrentRanking());
+            ps.setInt(5, ranking.getPreviousRanking());
+            ps.setInt(6, ranking.getMatchesPlayed());
+            ps.setInt(7, ranking.getMatchesWon());
+            ps.setInt(8, ranking.getMatchesDrawn());
+            ps.setInt(9, ranking.getMatchesLost());
+            ps.setInt(10, ranking.getPointsFor());
+            ps.setInt(11, ranking.getPointsAgainst());
+            ps.setInt(12, ranking.getScoreDifference());
+            ps.setInt(13, ranking.getLeaguePoints());
+            ps.setInt(14, ranking.getTotal_fantasy_points());
+            ps.setString(15, ranking.getUpdatedAt().toString());
+
+            if (ps.executeUpdate() > 0){
+                try (ResultSet rs = ps.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        ranking.setRankingId(UUID.fromString(rs.getString("rankingId")));
+                    }
+                }
+            }
+
+        }catch (SQLException e){
+            LOG.log(Level.SEVERE, "Unable to save ranking.", e);
+            throw new DataAccessException("Unable to save ranking.", e);
+        }
     }
 
     @Override
     public void updateRanking(Ranking ranking) {
+        String query = "UPDATE ranking SET currentRanking = ?, previousRanking = ?, matchesPlayed = ?, matchesWon = ?, matchesDrawn = ?, matchesLost = ?, pointsFor = ?, pointsAgainst = ?, scoreDifference = ?, leaguePoints = ?, total_fantasy_points = ?, updatedAt = ? WHERE rankingId = ? WHERE rankingId = ?";
+        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+            ps.setInt(1, ranking.getCurrentRanking());
+            ps.setInt(2, ranking.getPreviousRanking());
+            ps.setInt(3, ranking.getMatchesPlayed());
+            ps.setInt(4, ranking.getMatchesWon());
+            ps.setInt(5, ranking.getMatchesDrawn());
+            ps.setInt(6, ranking.getMatchesLost());
+            ps.setInt(7, ranking.getPointsFor());
+            ps.setInt(8, ranking.getPointsAgainst());
+            ps.setInt(9, ranking.getScoreDifference());
+            ps.setInt(10, ranking.getLeaguePoints());
+            ps.setInt(11, ranking.getTotal_fantasy_points());
+            ps.setString(12, ranking.getUpdatedAt().toString());
 
+            ps.executeUpdate();
+
+        }catch (SQLException e){
+            LOG.log(Level.SEVERE, "Unable to update ranking.", e);
+            throw new DataAccessException("Unable to update ranking.", e);
+        }
     }
 
     @Override
     public void deleteRankingByLeaderboardId(UUID leaderboardId) {
+        String query ="DELETE FROM ranking WHERE leaderboardId = ?";
+        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1, leaderboardId.toString());
+
+            ps.executeUpdate();
+
+        }catch (SQLException e){
+            LOG.log(Level.SEVERE, "Unable to delete ranking.", e);
+            throw new DataAccessException("Unable to delete ranking.", e);
+        }
 
     }
 
     @Override
     public void updateLeaderboard(Leaderboard leaderboard) {
+        String query = "UPDATE leaderboard SET season = ?, scope = ?, lastUpdated = ? WHERE leaderboardId = ?";
+        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1, leaderboard.getSeason());
+            ps.setString(2, leaderboard.getScope().toString());
+            ps.setString(3, leaderboard.getLastUpdated().toString());
 
+            ps.executeUpdate();
+
+        }catch (SQLException e){
+            LOG.log(Level.SEVERE, "Unable to update leaderboard.", e);
+            throw new DataAccessException("Unable to update leaderboard.", e);
+        }
     }
 
     @Override
     public void saveLeaderboard(Leaderboard leaderboard) {
+        String query = "INSERT INTO leaderboard (leaderboardId, leagueId, season, scope, lastUpdated)"
+                + "VALUES (?, ?, ?, ?, ?)";
+        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)){
+            ps.setString(1, leaderboard.getLeaderboardId().toString());
+            ps.setString(2, leaderboard.getLeagueId().toString());
+            ps.setString(3, leaderboard.getSeason());
+            ps.setString(4, leaderboard.getScope().toString());
+            ps.setString(5, leaderboard.getLastUpdated().toString());
 
+            if (ps.executeUpdate() > 0){
+                try (ResultSet rs = ps.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        leaderboard.setLeaderboardId(UUID.fromString(rs.getString("leaderboardId")));
+                    }
+                }
+            }
+        }catch (SQLException e){
+            LOG.log(Level.SEVERE, "Unable to save leaderboard.", e);
+            throw new DataAccessException("Unable to save leaderboard.", e);
+        }
     }
 
     @Override
     public Optional<Leaderboard> getMasterLeaderboard(String season) {
+        String query = "SELECT scope FROM leaderboard WHERE season = ?";
+        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1, season);
+
+            try(ResultSet rs = ps.executeQuery()){
+                if (rs.next()){
+                    Leaderboard lb = Leaderboard.builder()
+                            .leaderboardId(UUID.fromString(rs.getString("leaderboardId")))
+                            .leagueId(UUID.fromString(rs.getString("leagueId")))
+                            .season(rs.getString("season"))
+                            .scope(rs.getObject("LeaderboardScope", LeaderboardScope.class))
+                            .lastUpdated(rs.getObject("lastUpdated", LocalDateTime.class))
+                            .build();
+
+                    return Optional.of(lb);
+                }
+            }
+        }catch (SQLException e){
+            LOG.log(Level.SEVERE, "Unable to get master leaderboard by season " + season, e);
+            throw new DataAccessException("Unable to get master leaderboard by season " + season, e);
+        }
         return Optional.empty();
     }
 }
