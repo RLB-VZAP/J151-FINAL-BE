@@ -11,8 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-@ApplicationPath("/api")
-@Path("/lock-status")
+@Path("/{lock-status}")
 @Produces(MediaType.APPLICATION_JSON)
 //This is a stub
 public class LockStatusResource {
@@ -20,7 +19,7 @@ public class LockStatusResource {
     private DeadlineLockService deadlineLockService;
 
     @GET
-    @Path("{fixtureId}")
+    @Path("/{fixtureId}")
     public Response getLockStatus(@PathParam("fixtureId") UUID fixtureId) {
         Map<String,String>response = new HashMap<>();
         response.put("message","lock status endpoint is a stub");

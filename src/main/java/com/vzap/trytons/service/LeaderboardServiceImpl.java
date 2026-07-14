@@ -1,127 +1,123 @@
 package com.vzap.trytons.service;
 
-import com.vzap.trytons.dto.LeaderboardRefreshResultDTO;
-import java.util.UUID;
 import com.vzap.trytons.dao.FantasyTeamDAO;
 import com.vzap.trytons.dao.LeaderboardDAO;
-import com.vzap.trytons.dao.LeagueDAO;
 import com.vzap.trytons.dao.LeagueMembershipDAO;
 import com.vzap.trytons.dto.LeaderboardEntryResponseDTO;
+import com.vzap.trytons.dto.LeaderboardRefreshResultDTO;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.model.FantasyTeam;
 import com.vzap.trytons.model.Leaderboard;
-import com.vzap.trytons.model.League;
 import com.vzap.trytons.model.Ranking;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-public class LeaderboardServiceImpl implements LeaderboardService{
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+@ApplicationScoped
+public class LeaderboardServiceImpl implements LeaderboardService {
+
     @Inject
     private LeaderboardDAO leaderboardDAO;
+
     @Inject
     private LeagueMembershipDAO leagueMembershipDAO;
-    @Inject
-    private FantasyTeamDAO  fantasyTeamDAO;
-    @Inject
-    private LeagueDAO leagueDAO;
 
-    private static final Logger LOG = Logger.getLogger(LeaderboardServiceImpl.class.getName());
-    
+    @Inject
+    private FantasyTeamDAO fantasyTeamDAO;
+
     @Override
     public LeaderboardRefreshResultDTO refreshLeagueLeaderboard(UUID actorUserId, UUID leagueId) {
-        return null;
+        return LeaderboardRefreshResultDTO.builder()
+                .success(false)
+                .message("Leaderboard recalculation is not part of the current demo build.")
+                .teamsProcessed(0)
+                .rankingsUpdated(0)
+                .build();
     }
 
     @Override
     public LeaderboardRefreshResultDTO refreshOverallLeaderboard(UUID actorUserId) {
-        return null;
+        return LeaderboardRefreshResultDTO.builder()
+                .success(false)
+                .message("Overall leaderboard recalculation is not part of the current demo build.")
+                .teamsProcessed(0)
+                .rankingsUpdated(0)
+                .build();
     }
 
     @Override
     public List<LeaderboardEntryResponseDTO> getOverallLeaderboard(UUID actorUserId) {
-        return List.of();
+        return leaderboardDAO.getMasterLeaderboard()
+                .map(this::mapLeaderboard)
+                .orElseGet(Collections::emptyList);
     }
 
     @Override
-    public List<LeaderboardEntryResponseDTO> getLeaderboardForLeague(UUID leagueId, UUID requestingUserId) throws AuthorisationException {
-        try {
-            if (!leagueMembershipDAO.existsActiveByLeagueAndUser(leagueId, requestingUserId)){
-                throw new AuthorisationException("FORBIDDEN");
-            }
-
-            //Checks whether the league is private/may be viewed.
-            //Optional<League> league = leagueDAO.findById(leagueId);
-            //if (league.isPrivate() && !leagueMembershipDAO.existsActiveByLeagueAndUser(leagueId, requestingUserId)) {
-            //throw new AuthorisationException("FORBIDDEN")
-            //}
-
-            Optional<Leaderboard> leaderboard = leaderboardDAO.getLeaderboardByLeagueId(leagueId);
-            if (leaderboard.isEmpty()) {
-                return Collections.emptyList();
-            }
-
-            List<Ranking> rankingList = leaderboardDAO.getRankingsByLeaderboardId(leaderboard.get().getLeaderboardId());
-            List<LeaderboardEntryResponseDTO> leaderboardEntryResponseDTOList = new ArrayList<>();
-            for (Ranking ranking : rankingList) {
-                FantasyTeam team = fantasyTeamDAO.findTeamById(ranking.getTeamId());
-                if (team == null) {
-                    continue;
-                }
-                LeaderboardEntryResponseDTO dto = LeaderboardEntryResponseDTO.builder()
-                        .teamId(ranking.getTeamId())
-                        .teamName(team.getTeamName())
-                        .owner(team.getOwner().getUsername())
-                        .rank(ranking.getCurrentRanking())
-                        .weeklyPoints(team.getWeeklyPoints())
-                        .totalPoints(team.getTotalPoints())
-                        .rankMovement(ranking.getRankMovement())
-                        .build();
-
-                leaderboardEntryResponseDTOList.add(dto);
-            }
-            return leaderboardEntryResponseDTOList;
-        }catch (SQLException e){
-            LOG.log(Level.SEVERE, "Error checking league membership", e);
-            return Collections.emptyList();
+    public List<LeaderboardEntryResponseDTO> getLeaderboardForLeague(UUID leagueId, UUID requestingUserId) {
+        if (!leagueMembershipDAO.existsActiveByLeagueAndUser(leagueId, requestingUserId)) {
+            throw new AuthorisationException("You must be a member of this league to view its leaderboard.");
         }
+
+        return leaderboardDAO.getLeaderboardByLeagueId(leagueId)
+                .map(this::mapLeaderboard)
+                .orElseGet(Collections::emptyList);
     }
 
     @Override
-    public Optional<LeaderboardEntryResponseDTO> getRankingForTeam(UUID teamId, UUID leaderboardId, UUID requestingUserId) throws AuthorisationException {
-        try {
-            Optional<Leaderboard> l = leaderboardDAO.getLeaderboardById(leaderboardId);
-            if (l.isEmpty()) {
-                return Optional.empty();
-            }
-            if (!leagueMembershipDAO.existsActiveByLeagueAndUser(l.get().getLeagueId(), requestingUserId)){
-                throw new AuthorisationException("FORBIDDEN");
-            }
+    public Optional<LeaderboardEntryResponseDTO> getRankingForTeam(
+            UUID teamId,
+            UUID leaderboardId,
+            UUID requestingUserId) {
 
-            Optional<Ranking> r = leaderboardDAO.getRankingByTeamId(teamId, leaderboardId);
-            if (r.isPresent()) {
-                FantasyTeam team = fantasyTeamDAO.findTeamById(r.get().getTeamId());
-                if (team == null) {
-                    return Optional.empty();
-                }
-                LeaderboardEntryResponseDTO dto = LeaderboardEntryResponseDTO.builder()
-                        .teamId(team.getTeamId())
-                        .teamName(team.getTeamName())
-                        .owner(team.getOwner().getUsername())
-                        .rank(r.get().getCurrentRanking())
-                        .weeklyPoints(team.getWeeklyPoints())
-                        .totalPoints(team.getTotalPoints())
-                        .rankMovement(r.get().getRankMovement())
-                        .build();
-
-                return Optional.of(dto);
-            }
-        }catch (SQLException e){
-            LOG.log(Level.SEVERE, "Error checking league membership", e);
+        Optional<Leaderboard> leaderboard = leaderboardDAO.getLeaderboardById(leaderboardId);
+        if (leaderboard.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.empty();
+
+        UUID leagueId = leaderboard.get().getLeagueId();
+        if (leagueId != null && !leagueMembershipDAO.existsActiveByLeagueAndUser(leagueId, requestingUserId)) {
+            throw new AuthorisationException("You must be a member of this league to view this ranking.");
+        }
+
+        return leaderboardDAO.getRankingByTeamId(teamId, leaderboardId)
+                .flatMap(this::mapRanking);
+    }
+
+    private List<LeaderboardEntryResponseDTO> mapLeaderboard(Leaderboard leaderboard) {
+        List<LeaderboardEntryResponseDTO> entries = new ArrayList<>();
+        for (Ranking ranking : leaderboardDAO.getRankingsByLeaderboardId(leaderboard.getLeaderboardId())) {
+            mapRanking(ranking).ifPresent(entries::add);
+        }
+        return entries;
+    }
+
+    private Optional<LeaderboardEntryResponseDTO> mapRanking(Ranking ranking) {
+        FantasyTeam team = fantasyTeamDAO.findTeamById(ranking.getTeamId());
+        if (team == null) {
+            return Optional.empty();
+        }
+
+        String ownerName = team.getOwner() == null ? null : team.getOwner().getUsername();
+        return Optional.of(LeaderboardEntryResponseDTO.builder()
+                .teamId(ranking.getTeamId())
+                .teamName(team.getTeamName())
+                .owner(ownerName)
+                .rank(ranking.getCurrentRanking())
+                .previousRank(ranking.getPreviousRanking())
+                .matchesPlayed(ranking.getMatchesPlayed())
+                .matchesWon(ranking.getMatchesWon())
+                .matchesDrawn(ranking.getMatchesDrawn())
+                .matchesLost(ranking.getMatchesLost())
+                .pointsFor(ranking.getPointsFor())
+                .pointsAgainst(ranking.getPointsAgainst())
+                .scoreDifference(ranking.getScoreDifference())
+                .leaguePoints(ranking.getLeaguePoints())
+                .totalFantasyPoints(ranking.getTotalFantasyPoints())
+                .build());
     }
 }

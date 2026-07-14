@@ -1,24 +1,37 @@
 package com.vzap.trytons.resource;
 
 import com.vzap.trytons.Annotations.Authenticated;
-import com.vzap.trytons.dto.*;
-import com.vzap.trytons.exceptions.ApplicationException;
+import com.vzap.trytons.dto.AuthStatusResponseDTO;
+import com.vzap.trytons.dto.LoginRequestDTO;
+import com.vzap.trytons.dto.LoginResponseDTO;
 import com.vzap.trytons.exceptions.ValidationException;
 import com.vzap.trytons.service.AuthService;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import com.vzap.trytons.dto.RegisteredUserRequestDTO;
+import com.vzap.trytons.dto.RegisteredUserResponseDTO;
+import com.vzap.trytons.model.RegisteredUser;
+import com.vzap.trytons.service.RegisteredUserServices;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.UriInfo;
+import java.net.URI;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Path("/auth")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class AuthResource {
 
-    private static final Logger LOGGER = Logger.getLogger(AuthResource.class.getName());
+    @Inject
+    private RegisteredUserServices registeredUserServices;
 
     @Inject
     private AuthService authService;
@@ -26,89 +39,40 @@ public class AuthResource {
     @POST
     @Path("/login")
     public Response login(LoginRequestDTO request) {
-        try {
-            if (request == null) {
-                throw new ValidationException("Login request is required.");
-            }
-
-            LoginResponseDTO loginResponseDTO = authService.authenticate(
-                    request.getIdentifier(),
-                    request.getPassword()
-            );
-
-            ApiResponseDTO<LoginResponseDTO> successPayload = ApiResponseDTO.success("Login successful.", loginResponseDTO);
-
-            return Response.ok(successPayload).build();
-
-        } catch (ApplicationException e) {
-            ErrorResponseDTO handledError = ErrorResponseDTO.of(e.getMessage(), e.getErrorCode());
-
-            return Response.status(e.getStatusCode())
-                    .entity(handledError)
-                    .build();
-
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Unexpected error during user login execution", e);
-
-            ErrorResponseDTO fallbackError = ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR");
-
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(fallbackError)
-                    .build();
+        if (request == null) {
+            throw new ValidationException("Login request is required.");
         }
+        LoginResponseDTO response = authService.authenticate(request.getIdentifier(), request.getPassword());
+        return Response.ok(response).build();
     }
+
     @POST
     @Path("/logout")
     @Authenticated
     public Response logout() {
-        try {
-            String acknowledgement = authService.logout();
-
-            ApiResponseDTO<Void> successPayload =
-                    ApiResponseDTO.success(acknowledgement, null);
-
-            return Response.ok(successPayload).build();
-
-        } catch (ApplicationException e) {
-            ErrorResponseDTO handledError = ErrorResponseDTO.of(e.getMessage(), e.getErrorCode());
-            return Response.status(e.getStatusCode())
-                    .entity(handledError)
-                    .build();
-
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Unexpected error during logout acknowledgement", e);
-            ErrorResponseDTO fallbackError =
-                    ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR");
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(fallbackError)
-                    .build();
-        }
+        return Response.ok(authService.logout()).build();
     }
 
     @GET
     @Path("/status")
     public Response getAuthStatus(@QueryParam("requestingUserId") String requestingUserId) {
-        try {
-            AuthStatusResponseDTO statusResponse = authService.getAuthStatus(requestingUserId);
+        AuthStatusResponseDTO response = authService.getAuthStatus(requestingUserId);
+        return Response.ok(response).build();
+    }
 
-            ApiResponseDTO<AuthStatusResponseDTO> successPayload =
-                    ApiResponseDTO.success("Auth status retrieved.", statusResponse);
-
-            return Response.ok(successPayload).build();
-
-        } catch (ApplicationException e) {
-            ErrorResponseDTO handledError = ErrorResponseDTO.of(e.getMessage(), e.getErrorCode());
-            return Response.status(e.getStatusCode())
-                    .entity(handledError)
-                    .build();
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Unexpected error during auth-status check", e);
-            ErrorResponseDTO fallbackError =
-                    ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR");
-         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(fallbackError)
-                    .build();
-        }
+    @POST
+    @Path("/register")
+    public Response register(
+            @Valid RegisteredUserRequestDTO request,
+            @Context UriInfo uriInfo) {
+        RegisteredUser created = registeredUserServices.registerUser(request);
+        RegisteredUserResponseDTO response =
+                new RegisteredUserResponseDTO(created.getUserId(), created.getUsername(), created.getRole(), created.getRegistrationStatus());
+        URI location = uriInfo.getAbsolutePathBuilder()
+                .path(created.getUsername())
+                .build();
+        return Response.created(location)
+                .entity(response)
+                .build();
     }
 }
-
