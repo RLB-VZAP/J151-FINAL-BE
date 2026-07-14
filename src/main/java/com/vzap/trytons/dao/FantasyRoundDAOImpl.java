@@ -19,8 +19,8 @@ import java.util.logging.Logger;
 
 import static com.vzap.trytons.util.DBConnectionManager.getConnection;
 
-public class FantasyRoundDAOImpl implements FantasyRoundDAO {
-    private static final Logger LOG = Logger.getLogger(FantasyRound.class.getName());
+public class FantasyRoundDAOImpl extends BaseDAO implements FantasyRoundDAO {
+    private static final Logger LOG = Logger.getLogger(FantasyRoundDAOImpl.class.getName());
 
 
     @Override

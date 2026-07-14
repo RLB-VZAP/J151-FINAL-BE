@@ -85,19 +85,60 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
     public Optional<MatchResult> findCurrentByFixtureId(UUID fixtureId) {
         String query = MATCH_RESULT_SELECT + "WHERE mr.fixtureId = ? AND mr.isCurrent = TRUE";
 
-        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to find match result by ID.", e);
+            throw new DataAccessException("Unable to find match result by ID.", e);
+        }
+
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<MatchResult> findCurrentByFixtureId(UUID fixtureId) {
+        String query = "SELECT resultId, matchResult.fixtureId, team_a_score, team_b_score, winnerSide, isDraw, resultDate, approved, approved_by_admin_user_id, simulation_run_number, isCurrent, fixture.team_a_id, fixture.team_b_id\n" +
+                "FROM matchResult\n" +
+                "INNER JOIN fixture  \n" +
+                "  ON matchResult.fixtureId = fixture.fixtureId WHERE matchResult.fixtureId = ? AND isCurrent = TRUE";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query))   {
 
             ps.setString(1, fixtureId.toString());
 
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapMatchResult(rs));
+            try(ResultSet rs = ps.executeQuery()){
+                if (rs.next()){
+
+                    String approvedByAdminIdStr = rs.getString("approved_by_admin_user_id");
+                    UUID approvedByAdminId;
+                    if (approvedByAdminIdStr != null) {
+                        approvedByAdminId = UUID.fromString(approvedByAdminIdStr);
+                    } else {
+                        approvedByAdminId = null;
+                    }
+
+
+                    MatchResult mr = MatchResult.builder()
+                            .resultId(UUID.fromString(rs.getString("resultId")))
+                            .fixtureId(fixtureId)
+                            .teamAId(UUID.fromString(rs.getString("team_a_id")))
+                            .teamBId(UUID.fromString(rs.getString("team_b_id")))
+                            .winnerSide(rs.getString("winnerSide"))
+                            .draw(rs.getBoolean("isDraw"))
+                            .resultDate(rs.getObject("resultDate", LocalDateTime.class))
+                            .approved(rs.getBoolean("approved"))
+                            .approvedByAdminId(approvedByAdminId)
+                            .simulationRunNumber(rs.getInt("simulation_run_number"))
+                            .current(rs.getBoolean("isCurrent"))
+                            .build();
+
+                    return Optional.of(mr);
+
                 }
             }
 
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to retrieve current match result by fixture ID.", e);
-            throw new DataAccessException("Unable to retrieve current match result by fixture ID.", e);
+            LOG.log(Level.SEVERE, "Unable to find match result by fixtureId", e);
+            throw new DataAccessException("Unable to find match result by fixtureId", e);
         }
 
         return Optional.empty();
@@ -110,7 +151,8 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
 
         List<MatchResult> results = new ArrayList<>();
 
-        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query))   {
 
             ps.setString(1, fixtureId.toString());
 
@@ -172,8 +214,8 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
             }
 
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to save match result.", e);
-            throw new DataAccessException("Unable to save match result.", e);
+            LOG.log(Level.SEVERE, "Unable to get the next simulation run number for match results", e);
+            throw new DataAccessException("Unable to get the next simulation run number for match results", e);
         }
 
         throw new DataAccessException("Unable to save match result.", null);
