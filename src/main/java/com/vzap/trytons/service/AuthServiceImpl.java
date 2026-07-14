@@ -74,16 +74,14 @@ public class AuthServiceImpl implements AuthService {
             );
         }
 
-        String token =
-                AuthTokenUtil.createToken(user.getUserId());
+        String tokenCreated =AuthTokenUtil.createToken(user.getUserId());
 
         return new LoginResponseDTO(
                 user.getUserId(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getRole(),
-                token
-        );
+                tokenCreated);
     }
 
     @Override
