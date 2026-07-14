@@ -13,27 +13,19 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.*;
 import java.util.logging.Logger;
-
+@AllArgsConstructor
 @ApplicationScoped
 public class LeagueServiceImpl implements LeagueService{
-@Inject
-    private final LeagueDAO leagueDAO;
-@Inject
-    private final LeagueMembershipDAO membershipDAO;
-@Inject
-    private final FantasyTeamDAO fantasyTeamDAO;
-
     @Inject
-    NotificationService notificationService;
+    private LeagueDAO leagueDAO;
+    @Inject
+    private LeagueMembershipDAO membershipDAO;
+    @Inject
+    private FantasyTeamDAO fantasyTeamDAO;
+    @Inject
+    private NotificationService notificationService;
 
 private static final Logger LOG = Logger.getLogger(LeagueServiceImpl.class.getName());
-
-
-    public LeagueServiceImpl(LeagueDAO leagueDAO, LeagueMembershipDAO membershipDAO,  FantasyTeamDAO fantasyTeamDAO) {
-        this.leagueDAO = leagueDAO;
-        this.membershipDAO = membershipDAO;
-        this.fantasyTeamDAO = fantasyTeamDAO;
-    }
 
     @Override
     public LeagueResponseDTO createLeague(LeagueRequestDTO request, UUID currentUserId){

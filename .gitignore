@@ -37,3 +37,4 @@ database.properties
 *.tmp
 *.bak
 *.swp
+env
