@@ -1,16 +1,12 @@
 package com.vzap.trytons.dao;
 
-import com.vzap.trytons.enums.LeaderBoardScope;
+import com.vzap.trytons.enums.LeaderboardScope;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.Leaderboard;
 import com.vzap.trytons.model.Ranking;
 import jakarta.enterprise.context.ApplicationScoped;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,22 +61,22 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
 
     @Override
     public Optional<Leaderboard> getLeaderboardByLeagueId(UUID leagueId) {
-        String sql = "SELECT * FROM leaderboard WHERE leagueId = ? ORDER BY lastUpdated DESC LIMIT 1";
-        return findLeaderboard(sql, leagueId.toString());
-    }
+        String query = "SELECT * FROM leaderboard WHERE leagueId = ?";
+        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1, leagueId.toString());
 
-    @Override
-    public Optional<Leaderboard> getLeaderboardById(UUID leaderboardId) {
-        return findLeaderboard("SELECT * FROM leaderboard WHERE leaderboardId = ?", leaderboardId.toString());
-    }
+            try(ResultSet rs = ps.executeQuery()){
+                if (rs.next()){
+                    Leaderboard lb = Leaderboard.builder()
+                            .leaderboardId(UUID.fromString(rs.getString("leaderboardId")))
+                            .leagueId(UUID.fromString(rs.getString("leagueId")))
+                            .season(rs.getString("season"))
+                            .scope(LeaderboardScope.valueOf(rs.getString("scope")))
+                            .lastUpdated(rs.getObject("lastUpdated", LocalDateTime.class))
+                            .build();
 
-    private Optional<Leaderboard> findLeaderboard(String sql, String value) {
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            statement.setString(1, value);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                return resultSet.next() ? Optional.of(mapLeaderboard(resultSet)) : Optional.empty();
+                    return Optional.of(lb);
+                }
             }
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to retrieve leaderboard.", e);
@@ -91,15 +87,29 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
     @Override
     public List<Ranking> getRankingsByLeaderboardId(UUID leaderboardId) {
         List<Ranking> rankings = new ArrayList<>();
-        String sql = "SELECT * FROM ranking WHERE leaderboardId = ? ORDER BY currentRanking";
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setString(1, leaderboardId.toString());
 
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            statement.setString(1, leaderboardId.toString());
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    rankings.add(mapRanking(resultSet));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Ranking r = Ranking.builder()
+                            .rankingId(UUID.fromString(rs.getString("rankingId")))
+                            .leaderboardId(UUID.fromString(rs.getString("leaderboardId")))
+                            .teamId(UUID.fromString(rs.getString("teamId")))
+                            .currentRanking(rs.getInt("currentRanking"))
+                            .previousRanking(rs.getObject("previousRanking", Integer.class))
+                            .matchesPlayed(rs.getInt("matchesPlayed"))
+                            .matchesWon(rs.getInt("matchesWon"))
+                            .matchesDrawn(rs.getInt("matchesDrawn"))
+                            .matchesLost(rs.getInt("matchesLost"))
+                            .pointsFor(rs.getInt("pointsFor"))
+                            .pointsAgainst(rs.getInt("pointsAgainst"))
+                            .scoreDifference(rs.getInt("scoreDifference"))
+                            .leaguePoints(rs.getInt("leaguePoints"))
+                            .total_fantasy_points(rs.getInt("total_fantasy_points"))
+                            .updatedAt(rs.getObject("updatedAt", LocalDateTime.class))
+                            .build();
+                    rankings.add(r);
                 }
             }
             return rankings;
@@ -111,14 +121,59 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
 
     @Override
     public Optional<Ranking> getRankingByTeamId(UUID teamId, UUID leaderboardId) {
-        String sql = "SELECT * FROM ranking WHERE teamId = ? AND leaderboardId = ?";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        String query = "SELECT * FROM ranking WHERE teamId = ? AND leaderboardId = ?";
+        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1, teamId.toString());
+            ps.setString(2, leaderboardId.toString());
 
-            statement.setString(1, teamId.toString());
-            statement.setString(2, leaderboardId.toString());
-            try (ResultSet resultSet = statement.executeQuery()) {
-                return resultSet.next() ? Optional.of(mapRanking(resultSet)) : Optional.empty();
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Ranking r = Ranking.builder()
+                            .rankingId(UUID.fromString(rs.getString("rankingId")))
+                            .leaderboardId(UUID.fromString(rs.getString("leaderboardId")))
+                            .teamId(UUID.fromString(rs.getString("teamId")))
+                            .currentRanking(rs.getInt("currentRanking"))
+                            .previousRanking(rs.getObject("previousRanking", Integer.class))
+                            .matchesPlayed(rs.getInt("matchesPlayed"))
+                            .matchesWon(rs.getInt("matchesWon"))
+                            .matchesDrawn(rs.getInt("matchesDrawn"))
+                            .matchesLost(rs.getInt("matchesLost"))
+                            .pointsFor(rs.getInt("pointsFor"))
+                            .pointsAgainst(rs.getInt("pointsAgainst"))
+                            .scoreDifference(rs.getInt("scoreDifference"))
+                            .leaguePoints(rs.getInt("leaguePoints"))
+                            .total_fantasy_points(rs.getInt("total_fantasy_points"))
+                            .updatedAt(rs.getObject("updatedAt", LocalDateTime.class))
+                            .build();
+
+                    return Optional.of(r);
+                }
+            }
+        }catch (SQLException e){
+            LOG.log(Level.SEVERE, "Unable to get rankings by teamId.", e);
+            throw new DataAccessException("Unable to get rankings by teamId.", e);
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Leaderboard> getLeaderboardById(UUID leaderboardId) {
+        String query = "SELECT * FROM leaderboard WHERE leaderboardId = ?";
+        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1, leaderboardId.toString());
+
+            try(ResultSet rs = ps.executeQuery()){
+                if (rs.next()){
+                    Leaderboard lb = Leaderboard.builder()
+                            .leaderboardId(UUID.fromString(rs.getString("leaderboardId")))
+                            .leagueId(UUID.fromString(rs.getString("leagueId")))
+                            .season(rs.getString("season"))
+                            .scope(LeaderboardScope.valueOf(rs.getString("scope")))
+                            .lastUpdated(rs.getObject("lastUpdated", LocalDateTime.class))
+                            .build();
+
+                    return Optional.of(lb);
+                }
             }
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to retrieve team ranking.", e);
@@ -128,99 +183,83 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
 
     @Override
     public void saveRanking(Ranking ranking) {
-        String sql = """
-                INSERT INTO ranking
-                    (rankingId, leaderboardId, teamId, currentRanking, previousRanking,
-                     matchesPlayed, matchesWon, matchesDrawn, matchesLost, pointsFor,
-                     pointsAgainst, leaguePoints, total_fantasy_points, updatedAt)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """;
-        executeRankingWrite(sql, ranking, false);
-    }
+        String query = "INSERT INTO ranking (rankingId, leaderboardId, teamId, currentRanking, previousRanking, matchesPlayed, matchesWon, matchesDrawn, matchesLost, pointsFor, pointsAgainst, leaguePoints, total_fantasy_points, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1, ranking.getRankingId().toString());
+            ps.setString(2, ranking.getLeaderboardId().toString());
+            ps.setString(3, ranking.getTeamId().toString());
+            ps.setInt(4, ranking.getCurrentRanking());
+            ps.setObject(5, ranking.getPreviousRanking());
+            ps.setInt(6, ranking.getMatchesPlayed());
+            ps.setInt(7, ranking.getMatchesWon());
+            ps.setInt(8, ranking.getMatchesDrawn());
+            ps.setInt(9, ranking.getMatchesLost());
+            ps.setInt(10, ranking.getPointsFor());
+            ps.setInt(11, ranking.getPointsAgainst());
+            ps.setInt(12, ranking.getLeaguePoints());
+            ps.setInt(13, ranking.getTotal_fantasy_points());
+            ps.setString(14, ranking.getUpdatedAt().toString());
 
-    @Override
-    public void updateRanking(Ranking ranking) {
-        String sql = """
-                UPDATE ranking
-                   SET currentRanking = ?, previousRanking = ?, matchesPlayed = ?,
-                       matchesWon = ?, matchesDrawn = ?, matchesLost = ?, pointsFor = ?,
-                       pointsAgainst = ?, leaguePoints = ?, total_fantasy_points = ?, updatedAt = ?
-                 WHERE rankingId = ?
-                """;
-        executeRankingWrite(sql, ranking, true);
-    }
+            ps.executeUpdate();
 
-    private void executeRankingWrite(String sql, Ranking ranking, boolean update) {
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            LocalDateTime updatedAt = ranking.getUpdatedAt() == null ? LocalDateTime.now() : ranking.getUpdatedAt();
-            if (!update) {
-                statement.setString(1, ranking.getRankingId().toString());
-                statement.setString(2, ranking.getLeaderboardId().toString());
-                statement.setString(3, ranking.getTeamId().toString());
-                statement.setInt(4, ranking.getCurrentRanking());
-                setNullablePreviousRank(statement, 5, ranking.getPreviousRanking());
-                statement.setInt(6, ranking.getMatchesPlayed());
-                statement.setInt(7, ranking.getMatchesWon());
-                statement.setInt(8, ranking.getMatchesDrawn());
-                statement.setInt(9, ranking.getMatchesLost());
-                statement.setInt(10, ranking.getPointsFor());
-                statement.setInt(11, ranking.getPointsAgainst());
-                statement.setInt(12, ranking.getLeaguePoints());
-                statement.setInt(13, ranking.getTotalFantasyPoints());
-                statement.setTimestamp(14, Timestamp.valueOf(updatedAt));
-            } else {
-                statement.setInt(1, ranking.getCurrentRanking());
-                setNullablePreviousRank(statement, 2, ranking.getPreviousRanking());
-                statement.setInt(3, ranking.getMatchesPlayed());
-                statement.setInt(4, ranking.getMatchesWon());
-                statement.setInt(5, ranking.getMatchesDrawn());
-                statement.setInt(6, ranking.getMatchesLost());
-                statement.setInt(7, ranking.getPointsFor());
-                statement.setInt(8, ranking.getPointsAgainst());
-                statement.setInt(9, ranking.getLeaguePoints());
-                statement.setInt(10, ranking.getTotalFantasyPoints());
-                statement.setTimestamp(11, Timestamp.valueOf(updatedAt));
-                statement.setString(12, ranking.getRankingId().toString());
-            }
-            statement.executeUpdate();
-        } catch (SQLException e) {
+        }catch (SQLException e){
             LOG.log(Level.SEVERE, "Unable to save ranking.", e);
             throw new DataAccessException("Unable to save ranking.", e);
         }
     }
 
-    private void setNullablePreviousRank(PreparedStatement statement, int index, int previousRank) throws SQLException {
-        if (previousRank <= 0) {
-            statement.setNull(index, java.sql.Types.INTEGER);
-        } else {
-            statement.setInt(index, previousRank);
+    @Override
+    public void updateRanking(Ranking ranking) {
+        String query = "UPDATE ranking SET currentRanking = ?, previousRanking = ?, matchesPlayed = ?, matchesWon = ?, matchesDrawn = ?, matchesLost = ?, pointsFor = ?, pointsAgainst = ?, leaguePoints = ?, total_fantasy_points = ?, updatedAt = ? WHERE rankingId = ?";
+        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+            ps.setInt(1, ranking.getCurrentRanking());
+            ps.setObject(2, ranking.getPreviousRanking());
+            ps.setInt(3, ranking.getMatchesPlayed());
+            ps.setInt(4, ranking.getMatchesWon());
+            ps.setInt(5, ranking.getMatchesDrawn());
+            ps.setInt(6, ranking.getMatchesLost());
+            ps.setInt(7, ranking.getPointsFor());
+            ps.setInt(8, ranking.getPointsAgainst());
+            ps.setInt(9, ranking.getLeaguePoints());
+            ps.setInt(10, ranking.getTotal_fantasy_points());
+            ps.setString(11, ranking.getUpdatedAt().toString());
+            ps.setString(12, ranking.getRankingId().toString());
+
+            ps.executeUpdate();
+
+        }catch (SQLException e){
+            LOG.log(Level.SEVERE, "Unable to update ranking.", e);
+            throw new DataAccessException("Unable to update ranking.", e);
         }
     }
 
     @Override
     public void deleteRankingByLeaderboardId(UUID leaderboardId) {
-        executeUpdate("DELETE FROM ranking WHERE leaderboardId = ?", leaderboardId.toString());
+        String query ="DELETE FROM ranking WHERE leaderboardId = ?";
+        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1, leaderboardId.toString());
+
+            ps.executeUpdate();
+
+        }catch (SQLException e){
+            LOG.log(Level.SEVERE, "Unable to delete ranking.", e);
+            throw new DataAccessException("Unable to delete ranking.", e);
+        }
+
     }
 
     @Override
     public void updateLeaderboard(Leaderboard leaderboard) {
-        String sql = "UPDATE leaderboard SET leagueId = ?, season = ?, scope = ?, lastUpdated = ? WHERE leaderboardId = ?";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        String query = "UPDATE leaderboard SET season = ?, scope = ?, lastUpdated = ? WHERE leaderboardId = ?";
+        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1, leaderboard.getSeason());
+            ps.setString(2, leaderboard.getScope().toString());
+            ps.setString(3, leaderboard.getLastUpdated().toString());
+            ps.setString(4, leaderboard.getLeaderboardId().toString());
 
-            if (leaderboard.getLeagueId() == null) {
-                statement.setNull(1, java.sql.Types.VARCHAR);
-            } else {
-                statement.setString(1, leaderboard.getLeagueId().toString());
-            }
-            statement.setString(2, leaderboard.getSeason());
-            statement.setString(3, leaderboard.getScope().name());
-            statement.setTimestamp(4, Timestamp.valueOf(leaderboard.getLastUpdated() == null ? LocalDateTime.now() : leaderboard.getLastUpdated()));
-            statement.setString(5, leaderboard.getLeaderboardId().toString());
-            statement.executeUpdate();
-        } catch (SQLException e) {
+            ps.executeUpdate();
+
+        }catch (SQLException e){
             LOG.log(Level.SEVERE, "Unable to update leaderboard.", e);
             throw new DataAccessException("Unable to update leaderboard.", e);
         }
@@ -228,49 +267,44 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
 
     @Override
     public void saveLeaderboard(Leaderboard leaderboard) {
-        String sql = "INSERT INTO leaderboard (leaderboardId, leagueId, season, scope, lastUpdated) VALUES (?, ?, ?, ?, ?)";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        String query = "INSERT INTO leaderboard (leaderboardId, leagueId, season, scope, lastUpdated) VALUES (?, ?, ?, ?, ?)";
+        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1, leaderboard.getLeaderboardId().toString());
+            ps.setObject(2, leaderboard.getLeagueId());
+            ps.setString(3, leaderboard.getSeason());
+            ps.setString(4, leaderboard.getScope().toString());
+            ps.setString(5, leaderboard.getLastUpdated().toString());
 
-            statement.setString(1, leaderboard.getLeaderboardId().toString());
-            if (leaderboard.getLeagueId() == null) {
-                statement.setNull(2, java.sql.Types.VARCHAR);
-            } else {
-                statement.setString(2, leaderboard.getLeagueId().toString());
-            }
-            statement.setString(3, leaderboard.getSeason());
-            statement.setString(4, leaderboard.getScope().name());
-            statement.setTimestamp(5, Timestamp.valueOf(leaderboard.getLastUpdated() == null ? LocalDateTime.now() : leaderboard.getLastUpdated()));
-            statement.executeUpdate();
-        } catch (SQLException e) {
+            ps.executeUpdate();
+
+        }catch (SQLException e){
             LOG.log(Level.SEVERE, "Unable to save leaderboard.", e);
             throw new DataAccessException("Unable to save leaderboard.", e);
         }
     }
 
     @Override
-    public Optional<Leaderboard> getMasterLeaderboard() {
-        String sql = "SELECT * FROM leaderboard WHERE scope = 'MASTER' ORDER BY lastUpdated DESC LIMIT 1";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet resultSet = statement.executeQuery()) {
+    public Optional<Leaderboard> getMasterLeaderboard(String season) {
+        String query = "SELECT * FROM leaderboard WHERE scope = 'MASTER' AND season = ?";
+        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1, season);
 
-            return resultSet.next() ? Optional.of(mapLeaderboard(resultSet)) : Optional.empty();
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to retrieve master leaderboard.", e);
-            throw new DataAccessException("Unable to retrieve master leaderboard.", e);
+            try(ResultSet rs = ps.executeQuery()){
+                if (rs.next()){
+                    Leaderboard lb = Leaderboard.builder()
+                            .leaderboardId(UUID.fromString(rs.getString("leaderboardId")))
+                            .season(rs.getString("season"))
+                            .scope(LeaderboardScope.valueOf(rs.getString("scope")))
+                            .lastUpdated(rs.getObject("lastUpdated", LocalDateTime.class))
+                            .build();
+
+                    return Optional.of(lb);
+                }
+            }
+        }catch (SQLException e){
+            LOG.log(Level.SEVERE, "Unable to get master leaderboard by season " + season, e);
+            throw new DataAccessException("Unable to get master leaderboard by season " + season, e);
         }
-    }
-
-    private void executeUpdate(String sql, String value) {
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            statement.setString(1, value);
-            statement.executeUpdate();
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to update leaderboard data.", e);
-            throw new DataAccessException("Unable to update leaderboard data.", e);
-        }
+        return Optional.empty();
     }
 }

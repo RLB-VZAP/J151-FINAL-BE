@@ -1,6 +1,6 @@
 package com.vzap.trytons.enums;
 
-public enum LeaderBoardScope {
+public enum LeaderboardScope {
     MASTER,
     LEAGUE
 }
