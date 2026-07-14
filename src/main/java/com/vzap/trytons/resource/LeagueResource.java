@@ -2,6 +2,7 @@ package com.vzap.trytons.resource;
 
 import com.vzap.trytons.Annotations.Authenticated;
 import com.vzap.trytons.dto.*;
+import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
@@ -17,12 +18,12 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
-@ApplicationPath("/api")
 @Path("/league")
 @Authenticated
 @Consumes(MediaType.APPLICATION_JSON)
@@ -108,6 +109,57 @@ public class LeagueResource {
     private Response unexpected(Exception e) {
         LOG.log(Level.SEVERE, "Unexpected error in LeagueResource.", e);
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR")).build();
+    }
+
+    @GET
+    @Path("/{id}/members")
+    public Response listMembers(@PathParam("id") String id) {
+        try {
+            List<LeagueMemberResponseDTO> members = leagueService.listMembers(getCurrentUserId().toString(), id);
+            return Response.ok(members).build();
+        } catch (ResourceNotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
+        } catch (AuthorisationException e) {
+            return Response.status(Response.Status.FORBIDDEN).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
+        } catch (DataAccessException e) {
+            return serverError("Failed to list members", e);
+        } catch (Exception e) {
+            return unexpected(e);
+        }
+    }
+
+    @DELETE
+    @Path("/{id}/members/{membershipId}")
+    public Response removeMember(@PathParam("id") String id, @PathParam("membershipId") String membershipId) {
+        try {
+            leagueService.removeMember(getCurrentUserId().toString(), id, membershipId);
+            return Response.noContent().build();
+        } catch (ResourceNotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
+        } catch (AuthorisationException e) {
+            return Response.status(Response.Status.FORBIDDEN).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
+        } catch (DataAccessException e) {
+            return serverError("Failed to remove member", e);
+        } catch (Exception e) {
+            return unexpected(e);
+        }
+    }
+
+    @GET
+    @Path("/{id}/code")
+    public Response getLeagueCode(@PathParam("id") String id) {
+        try {
+            String code = leagueService.getLeagueCode(getCurrentUserId().toString(), id);
+            return Response.ok(java.util.Map.of("leagueCode", code)).build();
+        } catch (ResourceNotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
+        } catch (AuthorisationException e) {
+            return Response.status(Response.Status.FORBIDDEN).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
+        } catch (DataAccessException e) {
+            return serverError("Failed to get league code", e);
+        } catch (Exception e) {
+            return unexpected(e);
+        }
     }
 
 }

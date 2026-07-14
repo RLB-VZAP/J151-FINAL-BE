@@ -1,4 +1,5 @@
 package com.vzap.trytons.dao;
+
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.Club;
 import jakarta.ejb.Singleton;
@@ -16,8 +17,10 @@ import java.util.logging.Logger;
 
 @Singleton
 public class ClubDAOImpl extends BaseDAO implements ClubDAO {
+
     private static final Logger LOG = Logger.getLogger(ClubDAOImpl.class.getName());
-    public static Club mapRow(ResultSet rs) throws SQLException {
+
+    private Club mapRow(ResultSet rs) throws SQLException {
         Club club = new Club();
         club.setClubId(UUID.fromString(rs.getString("clubId")));
         club.setClubName(rs.getString("clubName"));
@@ -26,144 +29,134 @@ public class ClubDAOImpl extends BaseDAO implements ClubDAO {
         club.setActive(rs.getBoolean("isActive"));
         return club;
     }
+
     @Override
     public Optional<Club> findByClubId(UUID clubId) {
-        String query = "SELECT * FROM club WHERE clubId = ?";
-        try(Connection con = getConnection();
-            PreparedStatement ps = con.prepareStatement(query)){
-            ps.setString(1, clubId.toString());
-            try (ResultSet rs = ps.executeQuery()){
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-            }
-        }catch(SQLException e){
-            LOG.log(Level.SEVERE,"Unable to find the Club via Club ID", e);
-            throw new DataAccessException("Unable to find the Club via Club ID", e);
-        }
-        return Optional.empty();
+        return findOne("SELECT * FROM club WHERE clubId = ?", clubId.toString());
     }
+
     @Override
     public Optional<Club> findByClubName(String clubName) {
-        String query = "SELECT * FROM club WHERE clubName = ?";
-        try(Connection con = getConnection();
-            PreparedStatement ps = con.prepareStatement(query)){
-            ps.setString(1, clubName);
-            try (ResultSet rs = ps.executeQuery()){
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
+        return findOne("SELECT * FROM club WHERE clubName = ?", clubName);
+    }
+
+    private Optional<Club> findOne(String sql, String value) {
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, value);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? Optional.of(mapRow(resultSet)) : Optional.empty();
             }
-        }catch(SQLException e){
-            LOG.log(Level.SEVERE,"Unable to find the Club via Club Name", e);
-            throw new DataAccessException("Unable to find the Club via Club Name", e);
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to retrieve club.", e);
+            throw new DataAccessException("Unable to retrieve club.", e);
         }
-        return Optional.empty();
     }
 
     @Override
     public List<Club> findAllClubs() {
         List<Club> clubs = new ArrayList<>();
-        String query = "SELECT * FROM club";
-        try(Connection con = getConnection();
-            PreparedStatement ps = con.prepareStatement(query)){
-            try (ResultSet rs = ps.executeQuery()){
-                while (rs.next()) {
-                    clubs.add(mapRow(rs));
-                }
+        String sql = "SELECT * FROM club ORDER BY clubName";
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+
+            while (resultSet.next()) {
+                clubs.add(mapRow(resultSet));
             }
-        }catch(SQLException e){
-            LOG.log(Level.SEVERE,"Unable to find the Clubs", e);
-            throw new DataAccessException("Unable to find the Clubs", e);
+            return clubs;
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to retrieve clubs.", e);
+            throw new DataAccessException("Unable to retrieve clubs.", e);
         }
-        return clubs;
     }
+
     @Override
     public List<Club> findByLocation(String location) {
-        String query = "SELECT * FROM club WHERE location = ?";
         List<Club> clubs = new ArrayList<>();
-        try(Connection con = getConnection();
-            PreparedStatement ps = con.prepareStatement(query)){
-            ps.setString(1, location);
-            try (ResultSet rs = ps.executeQuery()){
-                while (rs.next()) {
-                    clubs.add(mapRow(rs));
+        String sql = "SELECT * FROM club WHERE location = ? ORDER BY clubName";
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, location);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    clubs.add(mapRow(resultSet));
                 }
-                return clubs;
             }
-        }catch(SQLException e){
-            LOG.log(Level.SEVERE,"Unable to find the Club via Location", e);
-            throw new DataAccessException("Unable to find the Club via Location", e);
+            return clubs;
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to retrieve clubs by location.", e);
+            throw new DataAccessException("Unable to retrieve clubs by location.", e);
         }
     }
+
     @Override
     public Optional<Club> createClub(Club club) {
-        String query = "INSERT INTO club (clubId, clubName,location,homeVenue,strengthRating,isActive) VALUES (?,?,?,?,?,?)";
-        try(Connection con = getConnection();
-            PreparedStatement ps = con.prepareStatement(query)){
-            ps.setString(1,club.getClubId().toString());
-            ps.setString(2,club.getClubName());
-            ps.setString(3,club.getLocation());
-            ps.setString(4,club.getHomeVenue());
-            ps.setBoolean(6,club.isActive());
-            if(!(ps.executeUpdate() >0)){
-                throw new SQLException();
+        String sql = "INSERT INTO club (clubId, clubName, location, homeVenue, isActive) VALUES (?, ?, ?, ?, ?)";
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, club.getClubId().toString());
+            statement.setString(2, club.getClubName());
+            statement.setString(3, club.getLocation());
+            statement.setString(4, club.getHomeVenue());
+            statement.setBoolean(5, club.isActive());
+
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException("Club insert affected an unexpected number of rows.");
             }
-            try (ResultSet rs = ps.executeQuery()){
-            if (rs.next()) {
-                return Optional.of(mapRow(rs));
-            }
-            }
-        }catch(SQLException e){
-            LOG.log(Level.SEVERE,"Unable to create a new Club", e);
-            throw new DataAccessException("Unable to create a new Club",e);
+            return findByClubId(club.getClubId());
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to create club.", e);
+            throw new DataAccessException("Unable to create club.", e);
         }
-        return Optional.empty();
     }
+
     @Override
     public Optional<Club> updateClub(Club club) {
-        String query = "UPDATE club SET clubName = ?, location = ?, homeVenue = ?, strengthRating = ?, isActive = ? WHERE clubId = ?";
-        try(Connection con = getConnection();
-        PreparedStatement ps = con.prepareStatement(query)){
-            ps.setString(1, club.getClubName());
-            ps.setString(2,club.getLocation());
-            ps.setString(3,club.getHomeVenue());
-            ps.setBoolean(5,club.isActive());
-            ps.setString(6,club.getClubId().toString());
-            if(!(ps.executeUpdate() >0)){
-                throw new SQLException();
+        String sql = "UPDATE club SET clubName = ?, location = ?, homeVenue = ?, isActive = ? WHERE clubId = ?";
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, club.getClubName());
+            statement.setString(2, club.getLocation());
+            statement.setString(3, club.getHomeVenue());
+            statement.setBoolean(4, club.isActive());
+            statement.setString(5, club.getClubId().toString());
+
+            if (statement.executeUpdate() == 0) {
+                return Optional.empty();
             }
-            try (ResultSet rs = ps.executeQuery()){
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-            }
-        }catch(SQLException e){
-            LOG.log(Level.SEVERE,"Unable to update the Club", e);
-            throw new DataAccessException("Unable to update the club",e);
+            return findByClubId(club.getClubId());
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to update club.", e);
+            throw new DataAccessException("Unable to update club.", e);
         }
-        return Optional.empty();
     }
 
     @Override
     public Optional<Club> updateStatus(UUID clubId, boolean isActive) {
-        String query = "UPDATE club SET isActive = ? WHERE clubId = ?";
-        try(Connection con = getConnection();
-        PreparedStatement ps = con.prepareStatement(query)){
-            ps.setBoolean(1, isActive);
-            ps.setString(2, clubId.toString());
-            if (!(ps.executeUpdate() >0)){
-                throw  new SQLException();
+        String sql = "UPDATE club SET isActive = ? WHERE clubId = ?";
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setBoolean(1, isActive);
+            statement.setString(2, clubId.toString());
+
+            if (statement.executeUpdate() == 0) {
+                return Optional.empty();
             }
-            try (ResultSet rs = ps.executeQuery()){
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-            }
-        }catch(SQLException e){
-            LOG.log(Level.SEVERE,"Unable to update the Club status", e);
-            throw new DataAccessException("Unable to update the Club status",e);
+            return findByClubId(clubId);
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to update club status.", e);
+            throw new DataAccessException("Unable to update club status.", e);
         }
-        return  Optional.empty();
     }
 }
