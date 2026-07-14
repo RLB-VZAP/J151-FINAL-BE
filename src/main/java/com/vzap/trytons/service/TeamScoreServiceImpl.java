@@ -83,6 +83,32 @@ public class TeamScoreServiceImpl implements TeamScoreService {
 
         }
 
+        //do the same for team B
+        int teamBTotal = 0;
+
+        for (FantasyTeamRoundSelection selection : teamBRoundSelection){
+
+            UUID playerId = selection.getPlayerId();
+
+            Optional<PlayerStatistics> statisticsOpt = playerStatisticsDAO.findByResultIdAndTeamIdAndPlayerId(resultId, teamBId, playerId);
+
+            if (statisticsOpt.isEmpty()){
+                continue;
+            }
+
+            Optional<FantasyPoints> finalPointsOpt = fantasyPointsDAO.findFinalByStatId(statisticsOpt.get().getStatId());
+
+            if (finalPointsOpt.isEmpty()){
+
+                throw new BusinessRuleException("Points have not been calculated for this fixture yet");
+
+            }
+
+            teamBTotal += finalPointsOpt.get().getTotalPoints();
+        }
+
+
+
 
 
         return null;
