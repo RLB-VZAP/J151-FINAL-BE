@@ -43,8 +43,11 @@ public class FantasyTeamResource {
     }
 
     @GET
-    @Path("/{teamId}")
-    public Response viewOwnTeam(@PathParam("teamId") UUID teamId, @Context SecurityContext securityContext) {
+    @Path("/own/{teamId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response viewOwnTeam(
+            @PathParam("teamId") UUID teamId,
+            @Context SecurityContext securityContext) {
             try{
                 UUID userId = currentUserId(securityContext);
                 ViewOwnTeamDTO team = fantasyTeamService.viewOwnTeam(userId, teamId);
@@ -61,8 +64,10 @@ public class FantasyTeamResource {
     }
 
     @GET
-    @Path("/{teamId}")
-    public Response viewOpponentTeam(@PathParam("teamId") UUID teamId){
+    @Path("/opponent/{teamId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response viewOpponentTeam(
+            @PathParam("teamId") UUID teamId){
         try{
             ViewOpponentTeamDTO team = fantasyTeamService.viewOpponentTeam(teamId);
             return Response.ok(team).build();
