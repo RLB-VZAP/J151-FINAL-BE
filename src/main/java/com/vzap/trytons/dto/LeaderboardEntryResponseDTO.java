@@ -15,6 +15,8 @@ public class LeaderboardEntryResponseDTO {
     private String teamName;
     private String owner;
     private int rank;
-    private int previousRank, matchesPlayed, matchesWon, matchesDrawn, matchesLost, pointsFor, pointsAgainst, scoreDifference,
+    private Integer rankMovement;
+    private Integer previousRanking;
+    private int matchesPlayed, matchesWon, matchesDrawn, matchesLost, pointsFor, pointsAgainst, scoreDifference,
     leaguePoints, totalFantasyPoints;
 }
