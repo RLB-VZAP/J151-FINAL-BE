@@ -18,5 +18,5 @@ public class LeaderboardEntryResponseDTO {
     private Integer rankMovement;
     private Integer previousRanking;
     private int matchesPlayed, matchesWon, matchesDrawn, matchesLost, pointsFor, pointsAgainst, scoreDifference,
-    leaguePoints, totalFantasyPoints;
+            leaguePoints, totalFantasyPoints;
 }
