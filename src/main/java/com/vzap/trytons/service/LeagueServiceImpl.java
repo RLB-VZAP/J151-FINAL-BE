@@ -11,6 +11,8 @@ import com.vzap.trytons.model.League;
 import com.vzap.trytons.model.LeagueMembership;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import lombok.AllArgsConstructor;
+
 import java.util.*;
 import java.util.logging.Logger;
 @AllArgsConstructor
