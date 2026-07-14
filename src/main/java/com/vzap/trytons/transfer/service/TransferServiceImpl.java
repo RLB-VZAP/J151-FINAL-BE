@@ -1,12 +1,21 @@
 package com.vzap.trytons.transfer.service;
 
-import com.vzap.trytons.dao.*;
+import com.vzap.trytons.player.dao.PlayerDAO;
+import com.vzap.trytons.player.model.Player;
+import com.vzap.trytons.roster.dao.FantasyTeamDAO;
+import com.vzap.trytons.roster.dao.FantasyTeamPlayerDAO;
 import com.vzap.trytons.roster.dto.SquadValidationResultDTO;
+import com.vzap.trytons.roster.model.FantasyTeam;
+import com.vzap.trytons.roster.model.TeamPlayerSelection;
+import com.vzap.trytons.roster.service.SquadValidationService;
+import com.vzap.trytons.transfer.dao.TransferDAO;
+import com.vzap.trytons.transfer.dao.TransferHistoryDAO;
 import com.vzap.trytons.transfer.dto.TransferRequestDTO;
 import com.vzap.trytons.transfer.dto.TransferResponseDTO;
 import com.vzap.trytons.transfer.enums.TransferWindowStatus;
 import com.vzap.trytons.shared.exceptions.*;
-import com.vzap.trytons.model.*;
+import com.vzap.trytons.transfer.model.Transfer;
+import com.vzap.trytons.transfer.model.TransferHistory;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
@@ -120,8 +129,7 @@ public class TransferServiceImpl implements TransferService {
             proposedPlayerIds.add(request.getAddedPlayerId());
         }
 
-        SquadValidationResultDTO validationResult = squadValidationService.validateSquad(
-                proposedPlayerIds, newTeamValue);
+        SquadValidationResultDTO validationResult = squadValidationService.validateSquad(proposedPlayerIds);
 
         if (validationResult.isValid()) {
             String firstError = validationResult.getErrors().get(0).getMessage();

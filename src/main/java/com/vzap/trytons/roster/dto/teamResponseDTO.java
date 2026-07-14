@@ -1,6 +1,5 @@
 package com.vzap.trytons.roster.dto;
 
-import com.vzap.trytons.auth.model.RegisteredUser;
 import com.vzap.trytons.player.dto.PlayerResponseDTO;
 
 import java.math.BigDecimal;

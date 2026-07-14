@@ -1,11 +1,8 @@
 package com.vzap.trytons.fixture.service;
 
-import com.vzap.trytons.fixture.dao.MatchResultDAO;
 import com.vzap.trytons.fixture.dto.MatchResultRequestDTO;
 import com.vzap.trytons.fixture.dto.MatchResultResponseDTO;
-import com.vzap.trytons.fixture.model.MatchResult;
 
-import java.util.Optional;
 import java.util.UUID;
 
 public class MatchResultServiceImpl implements MatchResultService {

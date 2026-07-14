@@ -1,5 +1,6 @@
 package com.vzap.trytons.roster.model;
 
+import com.vzap.trytons.player.model.Player;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

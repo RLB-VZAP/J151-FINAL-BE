@@ -1,6 +1,5 @@
 package com.vzap.trytons.roster.dao;
 
-import com.vzap.trytons.player.model.Player;
 import com.vzap.trytons.roster.model.TeamPlayerSelection;
 
 import java.util.List;

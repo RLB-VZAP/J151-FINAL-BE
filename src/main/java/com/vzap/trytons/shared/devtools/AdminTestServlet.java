@@ -1,6 +1,5 @@
-package com.vzap.trytons.servlet;
+package com.vzap.trytons.shared.devtools;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;

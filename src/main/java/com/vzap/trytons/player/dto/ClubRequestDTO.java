@@ -1,6 +1,5 @@
 package com.vzap.trytons.player.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
