@@ -4,6 +4,7 @@ import com.vzap.trytons.dao.NotificationDAO;
 import com.vzap.trytons.dao.UserDAO;
 import com.vzap.trytons.dto.NotificationCreateRequestDTO;
 import com.vzap.trytons.dto.NotificationResponseDTO;
+import com.vzap.trytons.enums.NotificationType;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.exceptions.ValidationException;
@@ -11,6 +12,7 @@ import com.vzap.trytons.model.Notification;
 import com.vzap.trytons.model.User;
 import jakarta.inject.Inject;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -70,7 +72,7 @@ public class NotificationServiceImpl implements NotificationService{
     @Override
     public int markAllAsRead(UUID actorUserId) {
         requireAuthenticated(actorUserId);
-        return notificationDAO.countUnreadByUserId(actorUserId);
+        return notificationDAO.markAllAsReadForUser(actorUserId);
     }
 
     @Override
@@ -87,6 +89,9 @@ public class NotificationServiceImpl implements NotificationService{
         if (request.getBody() == null || request.getBody().isBlank()) {
             throw new ValidationException("Notification body is required.");
         }
+        if ((request.getRelatedEntityType() == null) != (request.getRelatedEntityId() == null)) {
+            throw new ValidationException("Related entity type and related entity ID must be provided together to continue.");
+        }
 
         userDAO.getUserById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("Target user not found."));
@@ -102,6 +107,55 @@ public class NotificationServiceImpl implements NotificationService{
         Notification created = notificationDAO.create(notification);
         return mapToResponse(created);
     }
+
+    @Override
+    public NotificationResponseDTO notifyLeagueMembershipEvent(UUID recipientUserId, UUID leagueId, String body) {
+        return createNotification(buildRequest(recipientUserId, NotificationType.LEAGUE_INVITATION, body, "LEAGUE", leagueId));
+    }
+
+    @Override
+    public NotificationResponseDTO notifyLeaderboardChange(UUID recipientUserId, UUID leagueId, int newRank) {
+        String body = "Your league standing has changed! You are now ranked #" + newRank + ".";
+        return createNotification(buildRequest(recipientUserId, NotificationType.LEADERBOARD_CHANGE, body, "LEAGUE", leagueId));
+    }
+
+    @Override
+    public NotificationResponseDTO notifyPointsUpdate(UUID recipientUserId, UUID fixtureId, int pointsAwarded) {
+        String body = "Your team earned " + pointsAwarded + " points from the latest game!";
+        return createNotification(buildRequest(recipientUserId, NotificationType.POINTS_UPDATE, body, "FIXTURE", fixtureId));
+    }
+
+    @Override
+    public NotificationResponseDTO notifySimulatedResult(UUID recipientUserId, UUID fixtureId) {
+        String body = "The match is complete and the results are in!";
+        return createNotification(buildRequest(recipientUserId, NotificationType.SIMULATED_RESULT, body, "FIXTURE", fixtureId));
+    }
+
+    @Override
+    public NotificationResponseDTO notifyPlayerAvailabilityChange(UUID recipientUserId, UUID playerId, String playerName, String newAvailabilityStatus) {
+        String name = (playerName == null || playerName.isBlank()) ? "Player" : playerName;
+        String body = name + " is now " + newAvailabilityStatus + ".";
+        return createNotification(buildRequest(recipientUserId, NotificationType.PLAYER_AVAILABILITY, body, "PLAYER", playerId));
+    }
+
+    @Override
+    public NotificationResponseDTO notifyTransferDeadline(UUID recipientUserId, UUID fixtureId, LocalDateTime deadline) {
+        String body = (deadline == null)
+                ? "The deadline for transfers is almost here for your team"
+                : "Transfers close at " + deadline + " for this upcoming fixture";
+        return createNotification(buildRequest(recipientUserId, NotificationType.TRANSFER_DEADLINE, body, "FIXTURE", fixtureId));
+    }
+
+    private NotificationCreateRequestDTO buildRequest(UUID userId, NotificationType type, String body, String relatedEntityType, UUID relatedEntityId) {
+        NotificationCreateRequestDTO request = new NotificationCreateRequestDTO();
+        request.setUserId(userId);
+        request.setType(type);
+        request.setBody(body);
+        request.setRelatedEntityType(relatedEntityType);
+        request.setRelatedEntityId(relatedEntityId);
+        return request;
+    }
+
     private void requireAuthenticated(UUID actorUserId) {
         if (actorUserId == null) {
             throw new AuthorisationException("An authenticated user is required.");

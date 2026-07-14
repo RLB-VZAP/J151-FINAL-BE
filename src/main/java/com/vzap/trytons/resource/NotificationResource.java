@@ -34,6 +34,7 @@ public class NotificationResource {
 
     @GET
     public Response listNotifications(@QueryParam("unreadOnly") Boolean unreadOnly) {
+        boolean unreadOnlyFilter = Boolean.TRUE.equals(unreadOnly);
         List<NotificationResponseDTO> notifications =
                 notificationService.getNotificationsForUser(getCurrentUserId(), unreadOnly);
         return Response.ok(notifications).build();
