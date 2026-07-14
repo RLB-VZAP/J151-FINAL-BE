@@ -14,4 +14,5 @@ public interface DeadlineLockService {
     List<UUID> getLockedTeamIds(UUID roundId);
     List<UUID> getLockedPlayerIds(UUID roundId, UUID teamId);
     List<Player> getAvailableTransferPlayers(UUID roundId, UUID teamId);
+    void assertTransferAllowed(UUID roundId, UUID teamId);
 }

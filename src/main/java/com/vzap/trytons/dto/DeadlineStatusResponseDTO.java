@@ -13,7 +13,6 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class DeadlineStatusResponseDTO {
-    //STUB
     private UUID roundId;
     private FantasyRoundStatus roundStatus;
     private LocalDateTime openDate;
