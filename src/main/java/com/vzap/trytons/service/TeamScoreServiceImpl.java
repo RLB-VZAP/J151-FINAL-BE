@@ -9,7 +9,12 @@ import java.util.UUID;
 public class TeamScoreServiceImpl implements TeamScoreService {
 
     @Override
-    public TeamScoreUpdateResultDTO refreshTeamScores(UUID actorUserId, UUID fixtureId) {
-        return new TeamScoreUpdateResultDTO();
+    public TeamScoreUpdateResultDTO updateTeamScoresForFixture(String fixtureId) {
+        return null;
+    }
+
+    @Override
+    public TeamScoreUpdateResultDTO recalculateTeamTotals(String teamId, String season) {
+        return null;
     }
 }
