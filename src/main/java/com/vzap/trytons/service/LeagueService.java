@@ -1,9 +1,6 @@
 package com.vzap.trytons.service;
 
-import com.vzap.trytons.dto.JoinLeagueRequestDTO;
-import com.vzap.trytons.dto.JoinLeagueResponseDTO;
-import com.vzap.trytons.dto.LeagueRequestDTO;
-import com.vzap.trytons.dto.LeagueResponseDTO;
+import com.vzap.trytons.dto.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -14,11 +11,15 @@ public interface LeagueService {
 
     LeagueResponseDTO getLeague(UUID leagueId,UUID currentUserId);
 
-    void joinLeague(UUID leagueId, UUID currentUserId, UUID fantasyTeamId);
-
     boolean isLeagueMember(UUID leagueId, UUID userId);
 
     List<LeagueResponseDTO> getAllLeagues(UUID currentUserId);
 
     JoinLeagueResponseDTO joinLeague(JoinLeagueRequestDTO request, UUID currentUserId);
+
+    List<LeagueMemberResponseDTO> listMembers(String actorUserId, String leagueId);
+
+    void removeMember(String actorUserId, String leagueId, String membershipId);
+
+    String getLeagueCode(String actorUserId, String leagueId);
 }

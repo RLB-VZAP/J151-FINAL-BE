@@ -4,6 +4,7 @@ import com.vzap.trytons.enums.LeaderboardScope;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.Leaderboard;
 import com.vzap.trytons.model.Ranking;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -14,9 +15,49 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@ApplicationScoped
 public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
 
     private static final Logger LOG = Logger.getLogger(LeaderboardDAOImpl.class.getName());
+
+    private Leaderboard mapLeaderboard(ResultSet rs) throws SQLException {
+        String leagueId = rs.getString("leagueId");
+        Timestamp lastUpdated = rs.getTimestamp("lastUpdated");
+
+        return Leaderboard.builder()
+                .leaderboardId(UUID.fromString(rs.getString("leaderboardId")))
+                .leagueId(leagueId == null ? null : UUID.fromString(leagueId))
+                .season(rs.getString("season"))
+                .scope(LeaderBoardScope.valueOf(rs.getString("scope")))
+                .lastUpdated(lastUpdated == null ? null : lastUpdated.toLocalDateTime())
+                .build();
+    }
+
+    private Ranking mapRanking(ResultSet rs) throws SQLException {
+        int previousRanking = rs.getInt("previousRanking");
+        if (rs.wasNull()) {
+            previousRanking = 0;
+        }
+        Timestamp updatedAt = rs.getTimestamp("updatedAt");
+
+        return Ranking.builder()
+                .rankingId(UUID.fromString(rs.getString("rankingId")))
+                .leaderboardId(UUID.fromString(rs.getString("leaderboardId")))
+                .teamId(UUID.fromString(rs.getString("teamId")))
+                .currentRanking(rs.getInt("currentRanking"))
+                .previousRanking(previousRanking)
+                .matchesPlayed(rs.getInt("matchesPlayed"))
+                .matchesWon(rs.getInt("matchesWon"))
+                .matchesDrawn(rs.getInt("matchesDrawn"))
+                .matchesLost(rs.getInt("matchesLost"))
+                .pointsFor(rs.getInt("pointsFor"))
+                .pointsAgainst(rs.getInt("pointsAgainst"))
+                .scoreDifference(rs.getInt("scoreDifference"))
+                .leaguePoints(rs.getInt("leaguePoints"))
+                .totalFantasyPoints(rs.getInt("total_fantasy_points"))
+                .updatedAt(updatedAt == null ? null : updatedAt.toLocalDateTime())
+                .build();
+    }
 
     @Override
     public Optional<Leaderboard> getLeaderboardByLeagueId(UUID leagueId) {
@@ -37,16 +78,14 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
                     return Optional.of(lb);
                 }
             }
-        }catch (SQLException e){
-            LOG.log(Level.SEVERE, "Unable to get leaderboard by league id " + leagueId, e);
-            throw new DataAccessException("Unable to get leaderboard by league id " + leagueId, e);
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to retrieve leaderboard.", e);
+            throw new DataAccessException("Unable to retrieve leaderboard.", e);
         }
-        return Optional.empty();
     }
 
     @Override
     public List<Ranking> getRankingsByLeaderboardId(UUID leaderboardId) {
-        String query = "SELECT * FROM ranking WHERE leaderboardId = ?";
         List<Ranking> rankings = new ArrayList<>();
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
             ps.setString(1, leaderboardId.toString());
@@ -73,10 +112,11 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
                     rankings.add(r);
                 }
             }
+            return rankings;
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to get rankings by leaderboard id.", e);
+            LOG.log(Level.SEVERE, "Unable to retrieve leaderboard rankings.", e);
+            throw new DataAccessException("Unable to retrieve leaderboard rankings.", e);
         }
-        return rankings;
     }
 
     @Override
@@ -135,11 +175,10 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
                     return Optional.of(lb);
                 }
             }
-        }catch (SQLException e){
-            LOG.log(Level.SEVERE, "Unable to get leaderboard by leaderboard id " + leaderboardId, e);
-            throw new DataAccessException("Unable to get leaderboard by leaderboard id " + leaderboardId, e);
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to retrieve team ranking.", e);
+            throw new DataAccessException("Unable to retrieve team ranking.", e);
         }
-        return Optional.empty();
     }
 
     @Override

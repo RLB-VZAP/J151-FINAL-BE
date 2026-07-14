@@ -1,7 +1,6 @@
 package com.vzap.trytons.service;
 
 import com.vzap.trytons.dto.LeaderboardRefreshResultDTO;
-import java.util.UUID;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

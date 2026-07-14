@@ -21,4 +21,5 @@ public class LeagueResponseDTO {
     private LocalDateTime creationDate;
     private Boolean isActive;
     private int maxMembers;
+    private String leagueCode;
 }
