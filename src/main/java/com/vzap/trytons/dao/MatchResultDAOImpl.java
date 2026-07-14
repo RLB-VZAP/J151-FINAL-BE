@@ -95,15 +95,9 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
                 )
                 .approvedByAdminId(
                         approvedByAdminId == null
-                                ? null
-                                : UUID.fromString(approvedByAdminId)
-                )
-                .simulationRunNumber(
-                        resultSet.getInt("simulationRunNumber")
-                )
-                .current(
-                        resultSet.getBoolean("isCurrent")
-                )
+                                ? null: UUID.fromString(approvedByAdminId))
+                .simulationRunNumber(resultSet.getInt("simulationRunNumber"))
+          .current(resultSet.getBoolean("isCurrent"))
                 .build();
     }
 
@@ -111,17 +105,11 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
     public MatchResult save(MatchResult matchResult) {
 
         if (matchResult == null) {
-            throw new DataAccessException(
-                    "Match result cannot be null.",
-                    null
-            );
+            throw new DataAccessException("Match result cannot be null.", null);
         }
 
         if (matchResult.getFixtureId() == null) {
-            throw new DataAccessException(
-                    "Fixture ID is required when saving a match result.",
-                    null
-            );
+            throw new DataAccessException("Fixture ID is required when saving a match result.", null);
         }
 
         UUID resultId = matchResult.getResultId() == null
@@ -288,16 +276,8 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
             }
 
         } catch (SQLException e) {
-            LOG.log(
-                    Level.SEVERE,
-                    "Unable to retrieve match result by ID.",
-                    e
-            );
-
-            throw new DataAccessException(
-                    "Unable to retrieve match result by ID.",
-                    e
-            );
+            LOG.log(Level.SEVERE, "Unable to retrieve current match result by fixture ID.", e);
+            throw new DataAccessException("Unable to retrieve current match result by fixture ID.", e);
         }
 
         return Optional.empty();
@@ -445,7 +425,6 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
                     if (resultSet.wasNull()) {
                         return 1;
                     }
-
                     return currentRunNumber + 1;
                 }
             }

@@ -39,6 +39,7 @@ import java.util.logging.Logger;
 @Path("/fantasy-team")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+
 public class FantasyTeamResource {
 
     private static final Logger LOGGER =
