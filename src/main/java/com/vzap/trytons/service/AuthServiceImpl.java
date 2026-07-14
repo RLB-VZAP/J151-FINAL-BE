@@ -15,6 +15,7 @@ import jakarta.inject.Inject;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 @ApplicationScoped
 public class AuthServiceImpl implements AuthService {
@@ -23,31 +24,54 @@ public class AuthServiceImpl implements AuthService {
     private UserDAO userDAO;
 
     @Override
-    public LoginResponseDTO authenticate(String identifier, String password) {
+    public LoginResponseDTO authenticate(
+            String identifier,
+            String password) {
 
         validateCredentials(identifier, password);
+
         String cleanedIdentifier = identifier.trim();
-        Optional<User> possibleUser = userDAO.getUserByEmail(cleanedIdentifier);
+
+        Optional<User> possibleUser =
+                userDAO.getUserByEmail(cleanedIdentifier);
 
         if (possibleUser.isEmpty()) {
-            possibleUser = userDAO.getUserByUsername(cleanedIdentifier);
+            possibleUser =
+                    userDAO.getUserByUsername(cleanedIdentifier);
         }
 
         User user = possibleUser.orElseThrow(() ->
-                new AuthenticationException("Invalid email/username or password."));
+                new AuthenticationException(
+                        "Invalid email/username or password."
+                )
+        );
 
         if (!Boolean.TRUE.equals(user.getIsActive())) {
-            throw new AuthorisationException("This account is inactive.");
+            throw new AuthorisationException(
+                    "This account is inactive."
+            );
         }
 
-        boolean passwordMatches = PasswordUtil.verifyPassword(password, user.getPasswordHash());
-        if (!passwordMatches) {
-            throw new AuthenticationException("Invalid email/username or password.");
+        if (!PasswordUtil.verifyPassword(
+                password,
+                user.getPasswordHash())) {
+
+            throw new AuthenticationException(
+                    "Invalid email/username or password."
+            );
         }
 
-        boolean lastLoginUpdated = userDAO.updateLastLogin(user.getUserId(), LocalDateTime.now());
+        boolean lastLoginUpdated =
+                userDAO.updateLastLogin(
+                        user.getUserId(),
+                        LocalDateTime.now()
+                );
+
         if (!lastLoginUpdated) {
-            throw new DataAccessException("Unable to update the user's last login time.", null);
+            throw new DataAccessException(
+                    "Unable to update the user's last login time.",
+                    null
+            );
         }
 
         String tokenCreated =AuthTokenUtil.createToken(user.getUserId());
@@ -62,17 +86,79 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public String logout() {
-        return "";
+        // Authentication is stateless.
+        // The frontend removes its session and stored token.
+        return "Logout acknowledged.";
     }
 
     @Override
-    public AuthStatusResponseDTO getAuthStatus(String requestingUserId) {
-        return null;
+    public AuthStatusResponseDTO getAuthStatus(
+            String requestingUserId) {
+
+        if (requestingUserId == null
+                || requestingUserId.isBlank()) {
+
+            return new AuthStatusResponseDTO(
+                    false,
+                    null,
+                    null,
+                    null,
+                    null
+            );
+        }
+
+        final UUID userId;
+
+        try {
+            userId = UUID.fromString(
+                    requestingUserId.trim()
+            );
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException(
+                    "requestingUserId must be a valid UUID."
+            );
+        }
+
+        Optional<User> possibleUser =
+                userDAO.getUserById(userId);
+
+        if (possibleUser.isEmpty()
+                || !Boolean.TRUE.equals(
+                possibleUser.get().getIsActive()
+        )) {
+
+            return new AuthStatusResponseDTO(
+                    false,
+                    null,
+                    null,
+                    null,
+                    null
+            );
+        }
+
+        User user = possibleUser.get();
+
+        return new AuthStatusResponseDTO(
+                true,
+                user.getUserId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole()
+        );
     }
 
-    private void validateCredentials(String identifier, String password) {
-        if (identifier == null || identifier.isBlank() || password == null || password.isBlank()) {
-            throw new ValidationException("Email/username and password are required.");
+    private void validateCredentials(
+            String identifier,
+            String password) {
+
+        if (identifier == null
+                || identifier.isBlank()
+                || password == null
+                || password.isBlank()) {
+
+            throw new ValidationException(
+                    "Email/username and password are required."
+            );
         }
     }
 }

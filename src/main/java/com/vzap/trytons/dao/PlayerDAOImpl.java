@@ -40,7 +40,7 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
                     + "p.consistency AS consistency, "
                     + "p.fitness AS fitness, "
                     + "p.currentForm AS currentForm, "
-                    + "p.total_fantasy_points AS totalFantasyPoints, "
+                    + "COALESCE((SELECT SUM(fp.totalPoints) FROM playerStatistics ps_stats JOIN fantasyPoints fp ON fp.statId = ps_stats.statId AND fp.isFinal = TRUE WHERE ps_stats.playerId = p.playerId), 0) AS totalFantasyPoints, "
                     + "p.isActive AS playerIsActive, "
                     + "c.clubId AS clubId, "
                     + "c.clubName AS clubName, "
@@ -252,12 +252,12 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
         }
 
         if (minTotalFantasyPoints != null) {
-            query.append("AND p.total_fantasy_points >= ? ");
+            query.append("AND COALESCE((SELECT SUM(fp.totalPoints) FROM playerStatistics ps_stats JOIN fantasyPoints fp ON fp.statId = ps_stats.statId AND fp.isFinal = TRUE WHERE ps_stats.playerId = p.playerId), 0) >= ? ");
             parameters.add(minTotalFantasyPoints);
         }
 
         if (maxTotalFantasyPoints != null) {
-            query.append("AND p.total_fantasy_points <= ? ");
+            query.append("AND COALESCE((SELECT SUM(fp.totalPoints) FROM playerStatistics ps_stats JOIN fantasyPoints fp ON fp.statId = ps_stats.statId AND fp.isFinal = TRUE WHERE ps_stats.playerId = p.playerId), 0) <= ? ");
             parameters.add(maxTotalFantasyPoints);
         }
 

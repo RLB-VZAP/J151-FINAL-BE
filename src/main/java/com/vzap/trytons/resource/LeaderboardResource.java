@@ -72,7 +72,7 @@ public class LeaderboardResource {
     }
 
     @POST
-    @Path("/{leagueId}/refrsh")
+    @Path("/{leagueId}/refresh")
     public Response refreshLeagueLeaderboard(@PathParam("leagueId") UUID leagueId) {
         return Response.ok().build();
     }

@@ -21,7 +21,6 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@ApplicationPath("/api")
 @Path("/player")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
@@ -75,7 +74,7 @@ public class PlayerResource {
     }
 
     @PUT
-    @Path("{/id}")
+    @Path("/{id}")
     public Response updatePlayer(@PathParam("id") UUID id, @Valid PlayerRequestDTO request){
         try{
             return Response.ok(playerService.updatePlayer(id, request)).build();

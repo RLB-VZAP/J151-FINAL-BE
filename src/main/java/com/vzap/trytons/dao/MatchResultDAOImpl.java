@@ -23,82 +23,255 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
     private static final Logger LOG =
             Logger.getLogger(MatchResultDAOImpl.class.getName());
 
-    private static final String MATCH_RESULT_SELECT =
-            "SELECT mr.resultId AS resultId, "
-                    + "mr.fixtureId AS fixtureId, "
-                    + "f.team_a_id AS teamAId, "
-                    + "f.team_b_id AS teamBId, "
-                    + "mr.team_a_score AS teamAScore, "
-                    + "mr.team_b_score AS teamBScore, "
-                    + "mr.winnerSide AS winnerSide, "
-                    + "mr.isDraw AS isDraw, "
-                    + "mr.resultDate AS resultDate, "
-                    + "mr.approved AS approved, "
-                    + "mr.isCurrent AS isCurrent, "
-                    + "mr.approved_by_admin_user_id AS approvedByAdminId, "
-                    + "mr.simulation_run_number AS simulationRunNumber "
-                    + "FROM matchResult mr "
-                    + "JOIN fixture f ON f.fixtureId = mr.fixtureId ";
+    private static final String MATCH_RESULT_SELECT = """
+            SELECT
+                mr.resultId AS resultId,
+                mr.fixtureId AS fixtureId,
+                f.team_a_id AS teamAId,
+                f.team_b_id AS teamBId,
+                mr.team_a_score AS teamAScore,
+                mr.team_b_score AS teamBScore,
+                mr.winnerSide AS winnerSide,
+                mr.isDraw AS isDraw,
+                mr.resultDate AS resultDate,
+                mr.approved AS approved,
+                mr.approved_by_admin_user_id AS approvedByAdminId,
+                mr.simulation_run_number AS simulationRunNumber,
+                mr.isCurrent AS isCurrent
+            FROM matchResult mr
+            JOIN fixture f
+                ON f.fixtureId = mr.fixtureId
+            """;
 
-    private MatchResult mapMatchResult(ResultSet rs) throws SQLException {
-        MatchResult matchResult = new MatchResult();
+    private MatchResult mapMatchResult(ResultSet resultSet)
+            throws SQLException {
 
-        matchResult.setResultId(UUID.fromString(rs.getString("resultId")));
-        matchResult.setFixtureId(UUID.fromString(rs.getString("fixtureId")));
-        matchResult.setTeamAId(UUID.fromString(rs.getString("teamAId")));
-        matchResult.setTeamBId(UUID.fromString(rs.getString("teamBId")));
-        matchResult.setTeamAScore(rs.getInt("teamAScore"));
-        matchResult.setTeamBScore(rs.getInt("teamBScore"));
-        matchResult.setWinnerSide(rs.getString("winnerSide"));
-        matchResult.setDraw(rs.getBoolean("isDraw"));
-        matchResult.setApproved(rs.getBoolean("approved"));
-        matchResult.setCurrent(rs.getBoolean("isCurrent"));
-        matchResult.setSimulationRunNumber(rs.getInt("simulationRunNumber"));
+        Timestamp resultDate =
+                resultSet.getTimestamp("resultDate");
 
-        Timestamp resultDate = rs.getTimestamp("resultDate");
+        String approvedByAdminId =
+                resultSet.getString("approvedByAdminId");
 
-        matchResult.setResultDate(resultDate != null ? resultDate.toLocalDateTime() : null);
+        return MatchResult.builder()
+                .resultId(
+                        UUID.fromString(
+                                resultSet.getString("resultId")
+                        )
+                )
+                .fixtureId(
+                        UUID.fromString(
+                                resultSet.getString("fixtureId")
+                        )
+                )
+                .teamAId(
+                        UUID.fromString(
+                                resultSet.getString("teamAId")
+                        )
+                )
+                .teamBId(
+                        UUID.fromString(
+                                resultSet.getString("teamBId")
+                        )
+                )
+                .teamAScore(
+                        resultSet.getInt("teamAScore")
+                )
+                .teamBScore(
+                        resultSet.getInt("teamBScore")
+                )
+                .winnerSide(
+                        resultSet.getString("winnerSide")
+                )
+                .draw(
+                        resultSet.getBoolean("isDraw")
+                )
+                .resultDate(
+                        resultDate == null
+                                ? null
+                                : resultDate.toLocalDateTime()
+                )
+                .approved(
+                        resultSet.getBoolean("approved")
+                )
+                .approvedByAdminId(
+                        approvedByAdminId == null
+                                ? null: UUID.fromString(approvedByAdminId))
+                .simulationRunNumber(resultSet.getInt("simulationRunNumber"))
+          .current(resultSet.getBoolean("isCurrent"))
+                .build();
+    }
 
-        String approvedByAdminId = rs.getString("approvedByAdminId");
-        matchResult.setApprovedByAdminId(approvedByAdminId != null ? UUID.fromString(approvedByAdminId) : null);
-        return matchResult;
+    @Override
+    public MatchResult save(MatchResult matchResult) {
+
+        if (matchResult == null) {
+            throw new DataAccessException("Match result cannot be null.", null);
+        }
+
+        if (matchResult.getFixtureId() == null) {
+            throw new DataAccessException("Fixture ID is required when saving a match result.", null);
+        }
+
+        UUID resultId = matchResult.getResultId() == null
+                ? UUID.randomUUID()
+                : matchResult.getResultId();
+
+        String query = """
+                INSERT INTO matchResult
+                    (
+                        resultId,
+                        fixtureId,
+                        team_a_score,
+                        team_b_score,
+                        winnerSide,
+                        isDraw,
+                        resultDate,
+                        approved,
+                        approved_by_admin_user_id,
+                        simulation_run_number,
+                        isCurrent
+                    )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement =
+                     connection.prepareStatement(query)) {
+
+            statement.setString(
+                    1,
+                    resultId.toString()
+            );
+
+            statement.setString(
+                    2,
+                    matchResult.getFixtureId().toString()
+            );
+
+            statement.setInt(
+                    3,
+                    matchResult.getTeamAScore()
+            );
+
+            statement.setInt(
+                    4,
+                    matchResult.getTeamBScore()
+            );
+
+            statement.setString(
+                    5,
+                    matchResult.getWinnerSide()
+            );
+
+            statement.setBoolean(
+                    6,
+                    matchResult.isDraw()
+            );
+
+            if (matchResult.getResultDate() == null) {
+                statement.setNull(
+                        7,
+                        Types.TIMESTAMP
+                );
+            } else {
+                statement.setTimestamp(
+                        7,
+                        Timestamp.valueOf(
+                                matchResult.getResultDate()
+                        )
+                );
+            }
+
+            statement.setBoolean(
+                    8,
+                    matchResult.isApproved()
+            );
+
+            if (matchResult.getApprovedByAdminId() == null) {
+                statement.setNull(
+                        9,
+                        Types.VARCHAR
+                );
+            } else {
+                statement.setString(
+                        9,
+                        matchResult
+                                .getApprovedByAdminId()
+                                .toString()
+                );
+            }
+
+            statement.setInt(
+                    10,
+                    matchResult.getSimulationRunNumber()
+            );
+
+            statement.setBoolean(
+                    11,
+                    matchResult.isCurrent()
+            );
+
+            int affectedRows = statement.executeUpdate();
+
+            if (affectedRows != 1) {
+                throw new DataAccessException(
+                        "Unable to save match result.",
+                        null
+                );
+            }
+
+            matchResult.setResultId(resultId);
+
+            return findById(resultId)
+                    .orElseThrow(() ->
+                            new DataAccessException(
+                                    "The match result was saved "
+                                            + "but could not be retrieved.",
+                                    null
+                            )
+                    );
+
+        } catch (SQLException e) {
+            LOG.log(
+                    Level.SEVERE,
+                    "Unable to save match result.",
+                    e
+            );
+
+            throw new DataAccessException(
+                    "Unable to save match result.",
+                    e
+            );
+        }
     }
 
     @Override
     public Optional<MatchResult> findById(UUID resultId) {
-        String query = MATCH_RESULT_SELECT + "WHERE mr.resultId = ?";
 
-        try (Connection con = getConnection();
-             PreparedStatement ps = con.prepareStatement(query)) {
-
-            ps.setString(1, resultId.toString());
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapMatchResult(rs));
-                }
-            }
-
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to retrieve match result by result ID.", e);
-            throw new DataAccessException("Unable to retrieve match result by result ID.", e);
+        if (resultId == null) {
+            return Optional.empty();
         }
 
-        return Optional.empty();
-    }
+        String query =
+                MATCH_RESULT_SELECT
+                        + " WHERE mr.resultId = ?";
 
-    @Override
-    public Optional<MatchResult> findCurrentByFixtureId(UUID fixtureId) {
-        String query = MATCH_RESULT_SELECT + "WHERE mr.fixtureId = ? AND mr.isCurrent = TRUE";
+        try (Connection connection = getConnection();
+             PreparedStatement statement =
+                     connection.prepareStatement(query)) {
 
-        try (Connection con = getConnection();
-             PreparedStatement ps = con.prepareStatement(query)) {
+            statement.setString(
+                    1,
+                    resultId.toString()
+            );
 
-            ps.setString(1, fixtureId.toString());
+            try (ResultSet resultSet =
+                         statement.executeQuery()) {
 
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapMatchResult(rs));
+                if (resultSet.next()) {
+                    return Optional.of(
+                            mapMatchResult(resultSet)
+                    );
                 }
             }
 
@@ -111,119 +284,211 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
     }
 
     @Override
-    public List<MatchResult> findAllByFixtureId(UUID fixtureId) {
-        String query = MATCH_RESULT_SELECT + "WHERE mr.fixtureId = ? ORDER BY mr.simulation_run_number ASC";
+    public Optional<MatchResult> findCurrentByFixtureId(
+            UUID fixtureId) {
 
-        List<MatchResult> results = new ArrayList<>();
+        if (fixtureId == null) {
+            return Optional.empty();
+        }
 
-        try (Connection con = getConnection();
-             PreparedStatement ps = con.prepareStatement(query)) {
+        String query =
+                MATCH_RESULT_SELECT
+                        + """
+                           WHERE mr.fixtureId = ?
+                             AND mr.isCurrent = TRUE
+                           ORDER BY mr.simulation_run_number DESC
+                           LIMIT 1
+                           """;
 
-            ps.setString(1, fixtureId.toString());
+        try (Connection connection = getConnection();
+             PreparedStatement statement =
+                     connection.prepareStatement(query)) {
 
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    results.add(mapMatchResult(rs));
+            statement.setString(
+                    1,
+                    fixtureId.toString()
+            );
+
+            try (ResultSet resultSet =
+                         statement.executeQuery()) {
+
+                if (resultSet.next()) {
+                    return Optional.of(
+                            mapMatchResult(resultSet)
+                    );
                 }
             }
 
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to retrieve match results by fixture ID.", e);
-            throw new DataAccessException("Unable to retrieve match results by fixture ID.", e);
+            LOG.log(
+                    Level.SEVERE,
+                    "Unable to retrieve the current match result.",
+                    e
+            );
+
+            throw new DataAccessException(
+                    "Unable to retrieve the current match result.",
+                    e
+            );
         }
 
-        return results;
+        return Optional.empty();
     }
 
     @Override
-    public MatchResult save(MatchResult matchResult) {
-        UUID resultId = matchResult.getResultId() != null ? matchResult.getResultId() : UUID.randomUUID();
+    public List<MatchResult> findAllByFixtureId(
+            UUID fixtureId) {
 
-        String query = "INSERT INTO matchResult "
-                        + "(resultId, fixtureId, team_a_score, team_b_score, "
-                        + "winnerSide, isDraw, resultDate, approved, "
-                        + "approved_by_admin_user_id, simulation_run_number, isCurrent) "
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        List<MatchResult> results = new ArrayList<>();
 
-        try (Connection con = getConnection();
-             PreparedStatement ps = con.prepareStatement(query)) {
-
-            ps.setString(1, resultId.toString());
-            ps.setString(2, matchResult.getFixtureId().toString());
-            ps.setInt(3, matchResult.getTeamAScore());
-            ps.setInt(4, matchResult.getTeamBScore());
-            ps.setString(5, matchResult.getWinnerSide());
-            ps.setBoolean(6, matchResult.isDraw());
-
-            if (matchResult.getResultDate() != null) {
-                ps.setTimestamp(7, Timestamp.valueOf(matchResult.getResultDate()));
-            } else {
-                ps.setNull(7, Types.TIMESTAMP);
-            }
-
-            ps.setBoolean(8, matchResult.isApproved());
-
-            if (matchResult.getApprovedByAdminId() != null) {
-                ps.setString(9, matchResult.getApprovedByAdminId().toString());
-            } else {
-                ps.setNull(9, Types.VARCHAR);
-            }
-            ps.setInt(10, matchResult.getSimulationRunNumber());
-
-            ps.setBoolean(11, matchResult.isCurrent());
-            int affectedRows = ps.executeUpdate();
-            if (affectedRows != 1) {throw new DataAccessException("Unable to save match result.", null);
-            }
-            matchResult.setResultId(resultId);
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to save match result.", e);
-            throw new DataAccessException("Unable to save match result.", e);
+        if (fixtureId == null) {
+            return results;
         }
-        return findById(resultId).orElseThrow(() -> new DataAccessException("Match result was saved but could not be retrieved.", null));
-    }
 
-    @Override
-    public int getNextSimulationRunNumber(UUID fixtureId) {
         String query =
-                "SELECT MAX(simulation_run_number) FROM matchResult WHERE fixtureId = ?";
+                MATCH_RESULT_SELECT
+                        + """
+                           WHERE mr.fixtureId = ?
+                           ORDER BY mr.simulation_run_number ASC
+                           """;
 
-        try (Connection con = getConnection();
-             PreparedStatement ps = con.prepareStatement(query)) {
-            ps.setString(1, fixtureId.toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    int currentRunNumber = rs.getInt(1);
-                    if (rs.wasNull()) {
+        try (Connection connection = getConnection();
+             PreparedStatement statement =
+                     connection.prepareStatement(query)) {
+
+            statement.setString(
+                    1,
+                    fixtureId.toString()
+            );
+
+            try (ResultSet resultSet =
+                         statement.executeQuery()) {
+
+                while (resultSet.next()) {
+                    results.add(
+                            mapMatchResult(resultSet)
+                    );
+                }
+            }
+
+            return results;
+
+        } catch (SQLException e) {
+            LOG.log(
+                    Level.SEVERE,
+                    "Unable to retrieve match results "
+                            + "for the fixture.",
+                    e
+            );
+
+            throw new DataAccessException(
+                    "Unable to retrieve match results "
+                            + "for the fixture.",
+                    e
+            );
+        }
+    }
+
+    @Override
+    public int getNextSimulationRunNumber(
+            UUID fixtureId) {
+
+        if (fixtureId == null) {
+            throw new DataAccessException(
+                    "Fixture ID is required.",
+                    null
+            );
+        }
+
+        String query = """
+                SELECT MAX(simulation_run_number)
+                FROM matchResult
+                WHERE fixtureId = ?
+                """;
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement =
+                     connection.prepareStatement(query)) {
+
+            statement.setString(
+                    1,
+                    fixtureId.toString()
+            );
+
+            try (ResultSet resultSet =
+                         statement.executeQuery()) {
+
+                if (resultSet.next()) {
+                    int currentRunNumber =
+                            resultSet.getInt(1);
+
+                    if (resultSet.wasNull()) {
                         return 1;
                     }
                     return currentRunNumber + 1;
                 }
             }
 
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to get next simulation run number.", e);
-            throw new DataAccessException("Unable to get next simulation run number.", e);
-        }
+            return 1;
 
-        throw new DataAccessException("Unable to get next simulation run number.", null);
+        } catch (SQLException e) {
+            LOG.log(
+                    Level.SEVERE,
+                    "Unable to determine the next "
+                            + "simulation run number.",
+                    e
+            );
+
+            throw new DataAccessException(
+                    "Unable to determine the next "
+                            + "simulation run number.",
+                    e
+            );
+        }
     }
 
     @Override
-    public int markAllFixtureResultsNotCurrent(UUID fixtureId) {
-        String query =
-                "UPDATE matchResult SET isCurrent = FALSE WHERE fixtureId = ?";
+    public int markAllFixtureResultsNotCurrent(
+            UUID fixtureId) {
 
-        try (Connection con = getConnection();
-             PreparedStatement ps = con.prepareStatement(query)) {
+        if (fixtureId == null) {
+            throw new DataAccessException(
+                    "Fixture ID is required.",
+                    null
+            );
+        }
 
-            ps.setString(1, fixtureId.toString());
+        String query = """
+                UPDATE matchResult
+                SET isCurrent = FALSE
+                WHERE fixtureId = ?
+                  AND isCurrent = TRUE
+                """;
 
-            return ps.executeUpdate();
+        try (Connection connection = getConnection();
+             PreparedStatement statement =
+                     connection.prepareStatement(query)) {
+
+            statement.setString(
+                    1,
+                    fixtureId.toString()
+            );
+
+            return statement.executeUpdate();
 
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to mark fixture results as not current.", e);
+            LOG.log(
+                    Level.SEVERE,
+                    "Unable to mark previous fixture "
+                            + "results as not current.",
+                    e
+            );
 
-            throw new DataAccessException("Unable to mark fixture results as not current.", e);
+            throw new DataAccessException(
+                    "Unable to mark previous fixture "
+                            + "results as not current.",
+                    e
+            );
         }
     }
 }
