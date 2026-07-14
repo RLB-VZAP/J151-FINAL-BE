@@ -15,11 +15,23 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import com.vzap.trytons.dto.RegisteredUserRequestDTO;
+import com.vzap.trytons.dto.RegisteredUserResponseDTO;
+import com.vzap.trytons.model.RegisteredUser;
+import com.vzap.trytons.service.RegisteredUserServices;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.UriInfo;
+import java.net.URI;
+
 
 @Path("/auth")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class AuthResource {
+
+    @Inject
+    private RegisteredUserServices registeredUserServices;
 
     @Inject
     private AuthService authService;
@@ -30,11 +42,7 @@ public class AuthResource {
         if (request == null) {
             throw new ValidationException("Login request is required.");
         }
-
-        LoginResponseDTO response = authService.authenticate(
-                request.getIdentifier(),
-                request.getPassword()
-        );
+        LoginResponseDTO response = authService.authenticate(request.getIdentifier(), request.getPassword());
         return Response.ok(response).build();
     }
 
@@ -50,5 +58,21 @@ public class AuthResource {
     public Response getAuthStatus(@QueryParam("requestingUserId") String requestingUserId) {
         AuthStatusResponseDTO response = authService.getAuthStatus(requestingUserId);
         return Response.ok(response).build();
+    }
+
+    @POST
+    @Path("/register")
+    public Response register(
+            @Valid RegisteredUserRequestDTO request,
+            @Context UriInfo uriInfo) {
+        RegisteredUser created = registeredUserServices.registerUser(request);
+        RegisteredUserResponseDTO response =
+                new RegisteredUserResponseDTO(created.getUserId(), created.getUsername(), created.getRole(), created.getRegistrationStatus());
+        URI location = uriInfo.getAbsolutePathBuilder()
+                .path(created.getUsername())
+                .build();
+        return Response.created(location)
+                .entity(response)
+                .build();
     }
 }
