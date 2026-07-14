@@ -13,21 +13,19 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.*;
 import java.util.logging.Logger;
-
+@AllArgsConstructor
 @ApplicationScoped
 public class LeagueServiceImpl implements LeagueService{
-    private final LeagueDAO leagueDAO;
-    private final LeagueMembershipDAO membershipDAO;
-    private final FantasyTeamDAO fantasyTeamDAO;
+    @Inject
+    private LeagueDAO leagueDAO;
+    @Inject
+    private LeagueMembershipDAO membershipDAO;
+    @Inject
+    private FantasyTeamDAO fantasyTeamDAO;
+    @Inject
+    private NotificationService notificationService;
 
 private static final Logger LOG = Logger.getLogger(LeagueServiceImpl.class.getName());
-
-    @Inject
-    public LeagueServiceImpl(LeagueDAO leagueDAO, LeagueMembershipDAO membershipDAO, FantasyTeamDAO fantasyTeamDAO) {
-        this.leagueDAO = leagueDAO;
-        this.membershipDAO = membershipDAO;
-        this.fantasyTeamDAO = fantasyTeamDAO;
-    }
 
     @Override
     public LeagueResponseDTO createLeague(LeagueRequestDTO request, UUID currentUserId){
@@ -197,7 +195,15 @@ private static final Logger LOG = Logger.getLogger(LeagueServiceImpl.class.getNa
         if(membershipDAO.countActiveMembers(leagueId) >= league.getMaxMembers()){
             throw new BusinessRuleException("This league is full.");
         }
+
         LeagueMembership membership = membershipDAO.createMembership(leagueId,currentUserId,teamId);
+
+        if (league.getManager() != null && !league.getManager().getUserId().equals(currentUserId)) {
+            String joiningUserDisplayName = team.getOwner() != null ? team.getOwner().getUsername() : "A new member";
+            String body = joiningUserDisplayName + " joined " + league.getLeagueName() + ".";
+            notificationService.notifyLeagueMembershipEvent(league.getManager().getUserId(), league.getLeagueId(), body);
+        }
+
         JoinLeagueResponseDTO response = new JoinLeagueResponseDTO();
         response.setLeagueId(league.getLeagueId());
         response.setLeagueName(league.getLeagueName());
