@@ -42,17 +42,14 @@ public class MatchResultServiceImpl implements MatchResultService {
     public MatchResultResponseDTO captureResult(UUID actorUserId, MatchResultRequestDTO request) {
         validateRequest(request);
         requireAdmin(actorUserId);
-
-        Fixture fixture = fixtureDAO.findById(request.getFixtureId()).orElseThrow(() -> new ResourceNotFoundException("Fixture was not found."));
+        Fixture fixture = fixtureDAO.findFixtureById(request.getFixtureId()).orElseThrow(() -> new ResourceNotFoundException("Fixture was not found."));
 
         if (!CAPTURABLE_STATES.contains(fixture.getStatus())) {
-            throw new ConflictException("A match result cannot be captured while the fixture is " + fixture.getStatus());
+            throw new ConflictException("A match result cannot be captured while the fixture is " + fixture.getStatus() + ".");
         }
 
         int simulationRunNumber = matchResultDAO.getNextSimulationRunNumber(fixture.getFixtureId());
-
         matchResultDAO.markAllFixtureResultsNotCurrent(fixture.getFixtureId());
-
         MatchResult saved = matchResultDAO.save(buildResult(fixture, request, simulationRunNumber));
 
         if (saved == null) {
@@ -137,6 +134,7 @@ public class MatchResultServiceImpl implements MatchResultService {
                 result.isApproved(),
                 result.isCurrent(),
                 result.getResultDate(),
-                result.getApprovedAt());
+                result.getApprovedAt()
+        );
     }
 }
