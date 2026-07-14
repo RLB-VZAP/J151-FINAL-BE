@@ -49,9 +49,9 @@ public class FantasyPointCalculationServiceImpl implements FantasyPointCalculati
 
         Fixture currentFixture = fixtureDAO.findById(currentFixtureId)
                 .orElseThrow(() -> new ResourceNotFoundException("Fixture was not found"));
-        UUID leagueId = currentFixture.getLeagueId().getLeagueId();
+        String season = currentFixture.getRoundId().getSeason();
 
-        List<ScoringRule> scoringRules = scoringRuleDAO.findActiveRules(leagueId);
+        List<ScoringRule> scoringRules = scoringRuleDAO.findActiveRules(season);
 
         if (scoringRules.isEmpty()){
             throw new BusinessRuleException("no scoring rules were found");
