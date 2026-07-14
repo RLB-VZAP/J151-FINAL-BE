@@ -76,7 +76,7 @@ public class MatchResultServiceImpl implements MatchResultService {
         if (request.getFixtureId() == null) {
             throw new ValidationException("Fixture ID is required.");
         }
-        if (request.getHomeScore() < 0 || request.getAwayScore() < 0) {
+        if (request.getTeamAScore() < 0 || request.getTeamBScore() < 0) {
             throw new ValidationException("Match scores cannot be negative.");
         }
     }
@@ -92,8 +92,8 @@ public class MatchResultServiceImpl implements MatchResultService {
     }
 
     private MatchResult buildResult(Fixture fixture, MatchResultRequestDTO request, int simulationRunNumber) {
-        int teamAScore = request.getHomeScore();
-        int teamBScore = request.getAwayScore();
+        int teamAScore = request.getTeamAScore();
+        int teamBScore = request.getTeamBScore();
 
         return MatchResult.builder()
                 .resultId(UUID.randomUUID())
@@ -124,10 +124,17 @@ public class MatchResultServiceImpl implements MatchResultService {
         return new MatchResultResponseDTO(
                 result.getResultId(),
                 result.getFixtureId(),
+                result.getTeamAId(),
+                result.getTeamBId(),
+                result.getSimulationRunNumber(),
                 result.getTeamAScore(),
                 result.getTeamBScore(),
-                result.getResultDate(),
+                result.getWinnerSide(),
+                result.isDraw(),
                 result.isApproved(),
-                result.getSimulationRunNumber());
+                result.isCurrent(),
+                result.getResultDate(),
+                result.getApprovedAt()
+        );
     }
 }
