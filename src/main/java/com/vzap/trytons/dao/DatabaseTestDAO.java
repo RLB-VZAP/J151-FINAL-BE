@@ -12,20 +12,12 @@ public class DatabaseTestDAO extends BaseDAO {
     public List<String> getTableNames() throws SQLException {
         List<String> tables = new ArrayList<>();
 
-        Connection con = null;
-        Statement stmt = null;
-        ResultSet rs = null;
-
-        try {
-            con = getConnection();
-            stmt = con.createStatement();
-            rs = stmt.executeQuery("SHOW TABLES ");
+        try (Connection con = getConnection();
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery("SHOW TABLES ")) {
             while (rs.next()) {
                 tables.add(rs.getString(1));
             }
-
-        } finally {
-            closeResources(con, stmt, rs);
         }
 
         return tables;

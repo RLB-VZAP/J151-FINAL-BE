@@ -8,6 +8,7 @@ import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ValidationException;
 import com.vzap.trytons.model.User;
+import com.vzap.trytons.util.AuthTokenUtil;
 import com.vzap.trytons.util.PasswordUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -49,7 +50,12 @@ public class AuthServiceImpl implements AuthService {
             throw new DataAccessException("Unable to update the user's last login time.", null);
         }
 
-        return new LoginResponseDTO(user.getUserId(), user.getUsername(), user.getEmail(), user.getRole());
+        return new LoginResponseDTO(
+                user.getUserId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole(),
+                AuthTokenUtil.createToken(user.getUserId()));
     }
 
     @Override

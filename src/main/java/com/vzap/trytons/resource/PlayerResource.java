@@ -6,7 +6,6 @@ import com.vzap.trytons.dto.PlayerResponseDTO;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
-import com.vzap.trytons.model.Player;
 import com.vzap.trytons.service.PlayerService;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -92,14 +91,6 @@ public class PlayerResource {
     }
 
 
-
-    private PlayerResponseDTO toResponse(Player player) {
-        return new PlayerResponseDTO(
-                player.getPlayerId(), player.getPlayerName(), player.getValue(), player.getAttackingAbility(),
-                player.getDefensiveAbility(), player.getKickingAbility(), player.getDiscipline(), player.getConsistency(),
-                player.getFitness(), player.getCurrentForm(), player.getTotalFantasyPoints(), player.isActive(),
-                player.getClub(), player.getPosition());
-    }
 
     private Response serverError(String message, DataAccessException e) {
         LOGGER.log(Level.SEVERE, message, e);
