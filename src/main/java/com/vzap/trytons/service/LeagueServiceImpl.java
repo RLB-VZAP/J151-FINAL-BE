@@ -23,7 +23,11 @@ public class LeagueServiceImpl implements LeagueService{
 @Inject
     private final FantasyTeamDAO fantasyTeamDAO;
 
+    @Inject
+    NotificationService notificationService;
+
 private static final Logger LOG = Logger.getLogger(LeagueServiceImpl.class.getName());
+
 
     public LeagueServiceImpl(LeagueDAO leagueDAO, LeagueMembershipDAO membershipDAO,  FantasyTeamDAO fantasyTeamDAO) {
         this.leagueDAO = leagueDAO;
@@ -199,7 +203,15 @@ private static final Logger LOG = Logger.getLogger(LeagueServiceImpl.class.getNa
         if(membershipDAO.countActiveMembers(leagueId) >= league.getMaxMembers()){
             throw new BusinessRuleException("This league is full.");
         }
+
         LeagueMembership membership = membershipDAO.createMembership(leagueId,currentUserId,teamId);
+
+        if (league.getManager() != null && !league.getManager().getUserId().equals(currentUserId)) {
+            String joiningUserDisplayName = team.getOwner() != null ? team.getOwner().getUsername() : "A new member";
+            String body = joiningUserDisplayName + " joined " + league.getLeagueName() + ".";
+            notificationService.notifyLeagueMembershipEvent(league.getManager().getUserId(), league.getLeagueId(), body);
+        }
+
         JoinLeagueResponseDTO response = new JoinLeagueResponseDTO();
         response.setLeagueId(league.getLeagueId());
         response.setLeagueName(league.getLeagueName());
