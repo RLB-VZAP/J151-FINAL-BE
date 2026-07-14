@@ -181,8 +181,7 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
 
     @Override
     public int getNextSimulationRunNumber(UUID fixtureId) {
-        String query = "SELECT COALESCE(MAX(simulation_run_number), 0) + 1 "
-                + "FROM matchResult WHERE fixtureId = ?";
+        String query = "SELECT MAX(simulation_run_number) FROM matchResult WHERE fixtureId = ?";
 
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
 
@@ -190,7 +189,13 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getInt(1);
+                    int currentRunNumber = rs.getInt(1);
+
+                    if (rs.wasNull()) {
+                        return 1;
+                    }
+
+                    return currentRunNumber + 1;
                 }
             }
 
