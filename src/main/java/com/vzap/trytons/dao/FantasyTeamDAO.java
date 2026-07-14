@@ -11,6 +11,7 @@ public interface
 FantasyTeamDAO {
     public Optional<FantasyTeam> createTeam(FantasyTeam team);
     public Optional<FantasyTeam> getTeamById(UUID teamId);
+    public List<FantasyTeam> findTeamsByOwner(UUID ownerId);
     public FantasyTeam findTeamById(UUID teamId);
     public boolean updatePoints(UUID teamId, int totalPoints, int weeklyPoints);
     public boolean updateLockedStatus(UUID teamId, boolean isLocked);

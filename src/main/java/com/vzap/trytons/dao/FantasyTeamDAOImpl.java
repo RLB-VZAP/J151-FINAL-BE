@@ -134,6 +134,11 @@ public class FantasyTeamDAOImpl extends BaseDAO implements FantasyTeamDAO{
         return Optional.empty();
     }
 
+    @Override
+    public List<FantasyTeam> findTeamsByOwner(UUID ownerId) {
+        throw new UnsupportedOperationException();
+    }
+
     //This naming convention was used in the code - instead of redoing the code I simply mapped
     //one find method to the other, to reduce redundant code, but made both naming conventions
     //applicable and usable.

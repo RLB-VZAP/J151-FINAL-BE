@@ -3,13 +3,9 @@ package com.vzap.trytons.service;
 import com.vzap.trytons.dao.FantasyTeamDAO;
 import com.vzap.trytons.dao.LeagueDAO;
 import com.vzap.trytons.dao.LeagueMembershipDAO;
-import com.vzap.trytons.dto.JoinLeagueRequestDTO;
-import com.vzap.trytons.dto.JoinLeagueResponseDTO;
-import com.vzap.trytons.dto.LeagueRequestDTO;
-import com.vzap.trytons.dto.LeagueResponseDTO;
+import com.vzap.trytons.dto.*;
 import com.vzap.trytons.enums.LeagueType;
-import com.vzap.trytons.exceptions.ConflictException;
-import com.vzap.trytons.exceptions.ResourceNotFoundException;
+import com.vzap.trytons.exceptions.*;
 import com.vzap.trytons.model.FantasyTeam;
 import com.vzap.trytons.model.League;
 import com.vzap.trytons.model.LeagueMembership;
@@ -197,11 +193,11 @@ private static final Logger LOG = Logger.getLogger(LeagueServiceImpl.class.getNa
         if(league.getLeagueType() == LeagueType.PRIVATE){
             String leagueCode = request.getLeagueCode();
             if(leagueCode == null || !leagueCode.equals(league.getLeagueCode())){
-                throw new ConflictException("Missing or invalid league code.");
+                throw new ValidationException("Missing or invalid league code.");
             }
         }
         if(membershipDAO.countActiveMembers(leagueId) >= league.getMaxMembers()){
-            throw new ConflictException("This league is full.");
+            throw new BusinessRuleException("This league is full.");
         }
         LeagueMembership membership = membershipDAO.createMembership(leagueId,currentUserId,teamId);
         JoinLeagueResponseDTO response = new JoinLeagueResponseDTO();
@@ -210,5 +206,92 @@ private static final Logger LOG = Logger.getLogger(LeagueServiceImpl.class.getNa
         response.setMembershipId(membership.getMembershipId());
         response.setMessage("Joined the league successfully.");
         return  response;
+    }
+
+    private UUID parseUuid(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new ValidationException(fieldName + " is required.");
+        }
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException("Invalid " + fieldName + " format.");
+        }
+    }
+
+    @Override
+    public List<LeagueMemberResponseDTO> listMembers(String actorUserId, String leagueId) {
+        UUID actorId = parseUuid(actorUserId, "actorUserId");
+        UUID leagueUuid = parseUuid(leagueId, "leagueId");
+
+        League league = leagueDAO.findLeagueById(leagueUuid)
+                .orElseThrow(() -> new ResourceNotFoundException("League not found"));
+
+        boolean isManager = league.getManager() != null
+                && league.getManager().getUserId().equals(actorId);
+        boolean isMember = membershipDAO.existsActiveByLeagueAndUser(leagueUuid, actorId);
+
+        if (league.getLeagueType() == LeagueType.PRIVATE && !isMember && !isManager) {
+            throw new AuthorisationException("You are not allowed to view this league's members.");
+        }
+
+        List<LeagueMembership> memberships = membershipDAO.findActiveByLeague(leagueUuid);
+
+        List<LeagueMemberResponseDTO> result = new ArrayList<>();
+        for (LeagueMembership membership : memberships) {
+            LeagueMemberResponseDTO dto = new LeagueMemberResponseDTO();
+            dto.setMembershipId(membership.getMembershipId());
+            dto.setUserId(membership.getRegisteredUser().getUserId());
+            dto.setTeamId(membership.getFantasyTeam().getTeamId());
+            dto.setJoinDate(membership.getJoinDate());
+            dto.setIsActive(membership.getIsActive());
+            result.add(dto);
+        }
+        return result;
+    }
+
+    @Override
+    public void removeMember(String actorUserId, String leagueId, String membershipId) {
+        UUID actorId = parseUuid(actorUserId, "actorUserId");
+        UUID leagueUuid = parseUuid(leagueId, "leagueId");
+        UUID membershipUuid = parseUuid(membershipId, "membershipId");
+
+        League league = leagueDAO.findLeagueById(leagueUuid)
+                .orElseThrow(() -> new ResourceNotFoundException("League not found"));
+
+        boolean isManager = league.getManager() != null
+                && league.getManager().getUserId().equals(actorId);
+        if (!isManager) {
+            throw new AuthorisationException("Only the league manager can remove members.");
+        }
+
+        LeagueMembership membership = membershipDAO.findById(membershipUuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Membership not found"));
+
+        if (!membership.getLeague().getLeagueId().equals(leagueUuid)) {
+            throw new ResourceNotFoundException("Membership not found in this league.");
+        }
+
+        boolean removed = membershipDAO.deactivateMembership(membershipUuid);
+        if (!removed) {
+            throw new ResourceNotFoundException("Membership not found.");
+        }
+    }
+
+    @Override
+    public String getLeagueCode(String actorUserId, String leagueId) {
+        UUID actorId = parseUuid(actorUserId, "actorUserId");
+        UUID leagueUuid = parseUuid(leagueId, "leagueId");
+
+        League league = leagueDAO.findLeagueById(leagueUuid)
+                .orElseThrow(() -> new ResourceNotFoundException("League not found"));
+
+        boolean isManager = league.getManager() != null
+                && league.getManager().getUserId().equals(actorId);
+        if (!isManager) {
+            throw new AuthorisationException("Only the league manager can view the join code.");
+        }
+
+        return league.getLeagueCode();
     }
 }

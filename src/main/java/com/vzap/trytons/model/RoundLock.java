@@ -1,9 +1,7 @@
 package com.vzap.trytons.model;
 
 import com.vzap.trytons.enums.RoundLockAction;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -11,6 +9,8 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class RoundLock {
     private UUID lockId;
     private UUID roundId;
