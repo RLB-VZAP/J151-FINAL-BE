@@ -4,9 +4,9 @@ import com.vzap.trytons.dto.TransferRequestDTO;
 import com.vzap.trytons.dto.TransferResponseDTO;
 
 import java.util.List;
-import java.util.UUID;
 
 public interface TransferService {
-    TransferResponseDTO executeTransfer(UUID requestingUserId, TransferRequestDTO request);
-    List<TransferResponseDTO> getTransfersForTeam(UUID requestingUserId, UUID teamId);
+
+    TransferResponseDTO executeTransfer(String actorUserId, TransferRequestDTO request);
+    List<TransferResponseDTO> listTransferHistory(String actorUserId, String teamId);
 }

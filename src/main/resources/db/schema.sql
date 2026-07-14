@@ -1,8 +1,10 @@
-CREATE DATABASE IF NOT EXISTS `tryton_fantasy_rugby`
+CREATE
+DATABASE IF NOT EXISTS `tryton_fantasy_rugby`
     DEFAULT CHARACTER SET utf8mb4
     DEFAULT COLLATE utf8mb4_0900_ai_ci;
 
-USE `tryton_fantasy_rugby`;
+USE
+`tryton_fantasy_rugby`;
 
 /*
     CORE DOMAIN FLOW
@@ -23,7 +25,8 @@ USE `tryton_fantasy_rugby`;
     Clubs remain player metadata only. They do not participate in fixtures.
 */
 
-SET FOREIGN_KEY_CHECKS = 0;
+SET
+FOREIGN_KEY_CHECKS = 0;
 
 DROP VIEW IF EXISTS `player_round_performance`;
 
@@ -62,7 +65,8 @@ DROP TABLE IF EXISTS `administrator`;
 DROP TABLE IF EXISTS `registeredUser`;
 DROP TABLE IF EXISTS `user`;
 
-SET FOREIGN_KEY_CHECKS = 1;
+SET
+FOREIGN_KEY_CHECKS = 1;
 
 CREATE TABLE `user`
 (
@@ -164,9 +168,9 @@ CREATE TABLE `player`
     `isActive`         BOOLEAN        NOT NULL DEFAULT TRUE,
 
     PRIMARY KEY (`playerId`),
-    KEY `idx_player_club` (`clubId`),
-    KEY `idx_player_position` (`positionId`),
-    KEY `idx_player_search` (`playerName`, `value`),
+    KEY                `idx_player_club` (`clubId`),
+    KEY                `idx_player_position` (`positionId`),
+    KEY                `idx_player_search` (`playerName`, `value`),
 
     CONSTRAINT `fk_player_club`
         FOREIGN KEY (`clubId`) REFERENCES `club` (`clubId`)
@@ -190,7 +194,7 @@ CREATE TABLE `player`
                 AND `consistency` BETWEEN 0 AND 100
                 AND `fitness` BETWEEN 0 AND 100
                 AND `currentForm` BETWEEN 0 AND 100
-        )
+            )
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
@@ -205,8 +209,8 @@ CREATE TABLE `playerAvailability`
     `notes`          TEXT                 DEFAULT NULL,
 
     PRIMARY KEY (`availabilityId`),
-    KEY `idx_playerAvailability_player` (`playerId`),
-    KEY `idx_playerAvailability_status` (`status`),
+    KEY              `idx_playerAvailability_player` (`playerId`),
+    KEY              `idx_playerAvailability_status` (`status`),
 
     CONSTRAINT `fk_playerAvailability_player`
         FOREIGN KEY (`playerId`) REFERENCES `player` (`playerId`)
@@ -247,24 +251,25 @@ CREATE TABLE `fantasyTeam`
 /* Current editable squad. Historical round squads are stored separately. */
 CREATE TABLE `team_player_selection`
 (
-    `selectionId`         VARCHAR(36) NOT NULL,
-    `teamId`              VARCHAR(36) NOT NULL,
-    `playerId`            VARCHAR(36) NOT NULL,
-    `selectedDate`        DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `isCaptain`           BOOLEAN     NOT NULL DEFAULT FALSE,
-    `is_vice_captain`     BOOLEAN     NOT NULL DEFAULT FALSE,
-    `captain_team_id`     VARCHAR(36) GENERATED ALWAYS AS (
-                              CASE WHEN `isCaptain` = TRUE THEN `teamId` ELSE NULL END
-                          ) STORED,
+    `selectionId`          VARCHAR(36) NOT NULL,
+    `teamId`               VARCHAR(36) NOT NULL,
+    `playerId`             VARCHAR(36) NOT NULL,
+    `selectedDate`         DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `squadRole`            ENUM('STARTING', 'BENCH') NOT NULL DEFAULT 'STARTING',
+    `isCaptain`            BOOLEAN     NOT NULL DEFAULT FALSE,
+    `is_vice_captain`      BOOLEAN     NOT NULL DEFAULT FALSE,
+    `captain_team_id`      VARCHAR(36) GENERATED ALWAYS AS (
+        CASE WHEN `isCaptain` = TRUE THEN `teamId` ELSE NULL END
+        ) STORED,
     `vice_captain_team_id` VARCHAR(36) GENERATED ALWAYS AS (
-                               CASE WHEN `is_vice_captain` = TRUE THEN `teamId` ELSE NULL END
-                           ) STORED,
+        CASE WHEN `is_vice_captain` = TRUE THEN `teamId` ELSE NULL END
+        ) STORED,
 
     PRIMARY KEY (`selectionId`),
     UNIQUE KEY `uk_team_player_selection_team_player` (`teamId`, `playerId`),
     UNIQUE KEY `uk_team_player_selection_captain` (`captain_team_id`),
     UNIQUE KEY `uk_team_player_selection_vice_captain` (`vice_captain_team_id`),
-    KEY `idx_team_player_selection_player` (`playerId`),
+    KEY                    `idx_team_player_selection_player` (`playerId`),
 
     CONSTRAINT `fk_team_player_selection_team`
         FOREIGN KEY (`teamId`) REFERENCES `fantasyTeam` (`teamId`)
@@ -294,9 +299,9 @@ CREATE TABLE `playerRecommendation`
     `isDismissed`           BOOLEAN       NOT NULL DEFAULT FALSE,
 
     PRIMARY KEY (`recommendationId`),
-    KEY `idx_playerRecommendation_team` (`teamId`),
-    KEY `idx_playerRecommendation_current_player` (`current_player_id`),
-    KEY `idx_playerRecommendation_recommended_player` (`recommended_player_id`),
+    KEY                     `idx_playerRecommendation_team` (`teamId`),
+    KEY                     `idx_playerRecommendation_current_player` (`current_player_id`),
+    KEY                     `idx_playerRecommendation_recommended_player` (`recommended_player_id`),
 
     CONSTRAINT `fk_playerRecommendation_team`
         FOREIGN KEY (`teamId`) REFERENCES `fantasyTeam` (`teamId`)
@@ -333,8 +338,8 @@ CREATE TABLE `league`
 
     PRIMARY KEY (`leagueId`),
     UNIQUE KEY `uk_league_code` (`leagueCode`),
-    KEY `idx_league_manager` (`manager_user_id`),
-    KEY `idx_league_type_active` (`leagueType`, `isActive`),
+    KEY               `idx_league_manager` (`manager_user_id`),
+    KEY               `idx_league_type_active` (`leagueType`, `isActive`),
 
     CONSTRAINT `fk_league_manager`
         FOREIGN KEY (`manager_user_id`) REFERENCES `registeredUser` (`userId`)
@@ -348,7 +353,7 @@ CREATE TABLE `league`
         CHECK (
             (`leagueType` = 'PRIVATE' AND `leagueCode` IS NOT NULL)
                 OR (`leagueType` = 'PUBLIC')
-        )
+            )
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
@@ -365,8 +370,8 @@ CREATE TABLE `leagueMembership`
     PRIMARY KEY (`membershipId`),
     UNIQUE KEY `uk_leagueMembership_user` (`leagueId`, `registered_user_id`),
     UNIQUE KEY `uk_leagueMembership_team` (`leagueId`, `teamId`),
-    KEY `idx_leagueMembership_user` (`registered_user_id`),
-    KEY `idx_leagueMembership_team` (`teamId`),
+    KEY                  `idx_leagueMembership_user` (`registered_user_id`),
+    KEY                  `idx_leagueMembership_team` (`teamId`),
 
     CONSTRAINT `fk_leagueMembership_league`
         FOREIGN KEY (`leagueId`) REFERENCES `league` (`leagueId`)
@@ -399,9 +404,9 @@ CREATE TABLE `leagueInvitation`
     `createdAt`          DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`invitationId`),
-    KEY `idx_leagueInvitation_league` (`leagueId`),
-    KEY `idx_leagueInvitation_invited_user` (`invited_user_id`),
-    KEY `idx_leagueInvitation_status` (`status`),
+    KEY                  `idx_leagueInvitation_league` (`leagueId`),
+    KEY                  `idx_leagueInvitation_invited_user` (`invited_user_id`),
+    KEY                  `idx_leagueInvitation_status` (`status`),
 
     CONSTRAINT `fk_leagueInvitation_league`
         FOREIGN KEY (`leagueId`) REFERENCES `league` (`leagueId`)
@@ -427,8 +432,8 @@ CREATE TABLE `leagueInvitation`
                 AND `acceptedAt` IS NOT NULL
                 AND `acceptedAt` >= `createdAt`
                 AND `acceptedAt` <= `expiryDate`)
-            OR (`status` <> 'ACCEPTED' AND `acceptedAt` IS NULL)
-        )
+                OR (`status` <> 'ACCEPTED' AND `acceptedAt` IS NULL)
+            )
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
@@ -444,12 +449,12 @@ CREATE TABLE `fantasyRound`
     `roundNumber`  INT         NOT NULL,
     `openDate`     DATETIME    NOT NULL,
     `lockDeadline` DATETIME    NOT NULL,
-    `endDate`      DATETIME             DEFAULT NULL,
-    `status`       ENUM('UPCOMING', 'OPEN', 'LOCKED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'UPCOMING',
+    `endDate`      DATETIME DEFAULT NULL,
+    `status`       ENUM('UPCOMING', 'OPEN', 'LOCKED', 'IN_PROGRESS', 'COMPLETED', 'PROCESSED', 'CANCELLED') NOT NULL DEFAULT 'UPCOMING',
 
     PRIMARY KEY (`roundId`),
     UNIQUE KEY `uk_fantasyRound_season_round` (`season`, `roundNumber`),
-    KEY `idx_fantasyRound_status` (`status`),
+    KEY            `idx_fantasyRound_status` (`status`),
 
     CONSTRAINT `chk_fantasyRound_number`
         CHECK (`roundNumber` > 0),
@@ -458,7 +463,7 @@ CREATE TABLE `fantasyRound`
         CHECK (
             `lockDeadline` >= `openDate`
                 AND (`endDate` IS NULL OR `endDate` >= `lockDeadline`)
-        )
+            )
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
@@ -475,18 +480,18 @@ CREATE TABLE `transfer`
     `removed_player_value` DECIMAL(10, 2) NOT NULL,
     `added_player_value`   DECIMAL(10, 2) NOT NULL,
     `valueDifference`      DECIMAL(10, 2) GENERATED ALWAYS AS (
-                               `added_player_value` - `removed_player_value`
-                           ) STORED,
+        `added_player_value` - `removed_player_value`
+        ) STORED,
     `penaltyPoints`        INT            NOT NULL DEFAULT 0,
     `status`               ENUM('PENDING', 'CONFIRMED', 'REJECTED', 'CANCELLED') NOT NULL DEFAULT 'PENDING',
     `confirmedAt`          DATETIME                DEFAULT NULL,
     `created_by_user_id`   VARCHAR(36)    NOT NULL,
 
     PRIMARY KEY (`transferId`),
-    KEY `idx_transfer_team_round` (`teamId`, `roundId`),
-    KEY `idx_transfer_removed_player` (`removed_player_id`),
-    KEY `idx_transfer_added_player` (`added_player_id`),
-    KEY `idx_transfer_created_by` (`created_by_user_id`),
+    KEY                    `idx_transfer_team_round` (`teamId`, `roundId`),
+    KEY                    `idx_transfer_removed_player` (`removed_player_id`),
+    KEY                    `idx_transfer_added_player` (`added_player_id`),
+    KEY                    `idx_transfer_created_by` (`created_by_user_id`),
 
     CONSTRAINT `fk_transfer_team_owner`
         FOREIGN KEY (`teamId`, `created_by_user_id`)
@@ -517,13 +522,13 @@ CREATE TABLE `transfer`
             `removed_player_value` >= 0
                 AND `added_player_value` >= 0
                 AND `penaltyPoints` >= 0
-        ),
+            ),
 
     CONSTRAINT `chk_transfer_confirmation`
         CHECK (
             (`status` = 'CONFIRMED' AND `confirmedAt` IS NOT NULL)
                 OR (`status` <> 'CONFIRMED' AND `confirmedAt` IS NULL)
-        )
+            )
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
@@ -539,7 +544,7 @@ CREATE TABLE `leaderboard`
 
     PRIMARY KEY (`leaderboardId`),
     UNIQUE KEY `uk_leaderboard_scope_season` (`scopeKey`, `season`),
-    KEY `idx_leaderboard_league` (`leagueId`),
+    KEY             `idx_leaderboard_league` (`leagueId`),
 
     CONSTRAINT `fk_leaderboard_league`
         FOREIGN KEY (`leagueId`) REFERENCES `league` (`leagueId`)
@@ -550,7 +555,7 @@ CREATE TABLE `leaderboard`
         CHECK (
             (`scope` = 'MASTER' AND `leagueId` IS NULL)
                 OR (`scope` = 'LEAGUE' AND `leagueId` IS NOT NULL)
-        )
+            )
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
@@ -558,26 +563,26 @@ CREATE TABLE `leaderboard`
 /* Head-to-head standings rather than only cumulative fantasy-point rankings. */
 CREATE TABLE `ranking`
 (
-    `rankingId`           VARCHAR(36) NOT NULL,
-    `leaderboardId`       VARCHAR(36) NOT NULL,
-    `teamId`              VARCHAR(36) NOT NULL,
-    `currentRanking`      INT         NOT NULL,
-    `previousRanking`     INT                  DEFAULT NULL,
-    `matchesPlayed`       INT         NOT NULL DEFAULT 0,
-    `matchesWon`          INT         NOT NULL DEFAULT 0,
-    `matchesDrawn`        INT         NOT NULL DEFAULT 0,
-    `matchesLost`         INT         NOT NULL DEFAULT 0,
-    `pointsFor`           INT         NOT NULL DEFAULT 0,
-    `pointsAgainst`       INT         NOT NULL DEFAULT 0,
-    `scoreDifference`     INT GENERATED ALWAYS AS (`pointsFor` - `pointsAgainst`) STORED,
-    `leaguePoints`        INT         NOT NULL DEFAULT 0,
-    `total_fantasy_points` INT        NOT NULL DEFAULT 0,
-    `updatedAt`           DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `rankingId`            VARCHAR(36) NOT NULL,
+    `leaderboardId`        VARCHAR(36) NOT NULL,
+    `teamId`               VARCHAR(36) NOT NULL,
+    `currentRanking`       INT         NOT NULL,
+    `previousRanking`      INT                  DEFAULT NULL,
+    `matchesPlayed`        INT         NOT NULL DEFAULT 0,
+    `matchesWon`           INT         NOT NULL DEFAULT 0,
+    `matchesDrawn`         INT         NOT NULL DEFAULT 0,
+    `matchesLost`          INT         NOT NULL DEFAULT 0,
+    `pointsFor`            INT         NOT NULL DEFAULT 0,
+    `pointsAgainst`        INT         NOT NULL DEFAULT 0,
+    `scoreDifference`      INT GENERATED ALWAYS AS (`pointsFor` - `pointsAgainst`) STORED,
+    `leaguePoints`         INT         NOT NULL DEFAULT 0,
+    `total_fantasy_points` INT         NOT NULL DEFAULT 0,
+    `updatedAt`            DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`rankingId`),
     UNIQUE KEY `uk_ranking_leaderboard_team` (`leaderboardId`, `teamId`),
     UNIQUE KEY `uk_ranking_position` (`leaderboardId`, `currentRanking`),
-    KEY `idx_ranking_team` (`teamId`),
+    KEY                    `idx_ranking_team` (`teamId`),
 
     CONSTRAINT `fk_ranking_leaderboard`
         FOREIGN KEY (`leaderboardId`) REFERENCES `leaderboard` (`leaderboardId`)
@@ -599,12 +604,12 @@ CREATE TABLE `ranking`
                 AND `matchesDrawn` >= 0
                 AND `matchesLost` >= 0
                 AND `matchesPlayed` = `matchesWon` + `matchesDrawn` + `matchesLost`
-        ),
+            ),
 
     CONSTRAINT `chk_ranking_points`
         CHECK (
             `leaguePoints` >= 0
-        )
+            )
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
@@ -619,7 +624,7 @@ CREATE TABLE `fixture`
     `team_b_id`      VARCHAR(36) NOT NULL,
     `fixtureDate`    DATE        NOT NULL,
     `fixtureTime`    TIME        NOT NULL,
-    `status`         ENUM('UPCOMING', 'LOCKED', 'SIMULATING', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'UPCOMING',
+    `status`         ENUM('UPCOMING', 'LOCKED', 'SIMULATING', 'COMPLETED', 'PROCESSED', 'CANCELLED') NOT NULL DEFAULT 'UPCOMING',
     `simulationDate` DATETIME             DEFAULT NULL,
     `first_team_id`  VARCHAR(36) GENERATED ALWAYS AS (LEAST(`team_a_id`, `team_b_id`)) STORED,
     `second_team_id` VARCHAR(36) GENERATED ALWAYS AS (GREATEST(`team_a_id`, `team_b_id`)) STORED,
@@ -627,10 +632,10 @@ CREATE TABLE `fixture`
 
     PRIMARY KEY (`fixtureId`),
     UNIQUE KEY `uk_fixture_round_teams` (`leagueId`, `roundId`, `first_team_id`, `second_team_id`),
-    KEY `idx_fixture_round` (`roundId`),
-    KEY `idx_fixture_team_a` (`team_a_id`),
-    KEY `idx_fixture_team_b` (`team_b_id`),
-    KEY `idx_fixture_status_date` (`status`, `fixtureDate`, `fixtureTime`),
+    KEY              `idx_fixture_round` (`roundId`),
+    KEY              `idx_fixture_team_a` (`team_a_id`),
+    KEY              `idx_fixture_team_b` (`team_b_id`),
+    KEY              `idx_fixture_status_date` (`status`, `fixtureDate`, `fixtureTime`),
 
     CONSTRAINT `fk_fixture_league`
         FOREIGN KEY (`leagueId`) REFERENCES `league` (`leagueId`)
@@ -661,7 +666,7 @@ CREATE TABLE `fixture`
         CHECK (
             (`status` = 'COMPLETED' AND `simulationDate` IS NOT NULL)
                 OR (`status` <> 'COMPLETED')
-        )
+            )
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
@@ -680,14 +685,14 @@ CREATE TABLE `matchResult`
     `simulation_run_number`     INT         NOT NULL,
     `isCurrent`                 BOOLEAN     NOT NULL DEFAULT TRUE,
     `current_fixture_id`        VARCHAR(36) GENERATED ALWAYS AS (
-                                    CASE WHEN `isCurrent` = TRUE THEN `fixtureId` ELSE NULL END
-                                ) STORED,
+        CASE WHEN `isCurrent` = TRUE THEN `fixtureId` ELSE NULL END
+        ) STORED,
 
     PRIMARY KEY (`resultId`),
     UNIQUE KEY `uk_matchResult_fixture_run` (`fixtureId`, `simulation_run_number`),
     UNIQUE KEY `uk_matchResult_current_fixture` (`current_fixture_id`),
-    KEY `idx_matchResult_fixture_current` (`fixtureId`, `isCurrent`),
-    KEY `idx_matchResult_approved_by` (`approved_by_admin_user_id`),
+    KEY                         `idx_matchResult_fixture_current` (`fixtureId`, `isCurrent`),
+    KEY                         `idx_matchResult_approved_by` (`approved_by_admin_user_id`),
 
     CONSTRAINT `fk_matchResult_fixture`
         FOREIGN KEY (`fixtureId`) REFERENCES `fixture` (`fixtureId`)
@@ -710,21 +715,21 @@ CREATE TABLE `matchResult`
             (`isDraw` = TRUE
                 AND `team_a_score` = `team_b_score`
                 AND `winnerSide` IS NULL)
-            OR
+                OR
             (`isDraw` = FALSE
                 AND `team_a_score` > `team_b_score`
                 AND `winnerSide` = 'TEAM_A')
-            OR
+                OR
             (`isDraw` = FALSE
                 AND `team_b_score` > `team_a_score`
                 AND `winnerSide` = 'TEAM_B')
-        ),
+            ),
 
     CONSTRAINT `chk_matchResult_approval`
         CHECK (
             (`approved` = TRUE AND `approved_by_admin_user_id` IS NOT NULL)
                 OR (`approved` = FALSE AND `approved_by_admin_user_id` IS NULL)
-        )
+            )
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
@@ -747,7 +752,7 @@ CREATE TABLE `match_team_score`
     PRIMARY KEY (`scoreId`),
     UNIQUE KEY `uk_match_team_score_result_team` (`resultId`, `teamId`),
     UNIQUE KEY `uk_match_team_score_result_side` (`resultId`, `teamSide`),
-    KEY `idx_match_team_score_team` (`teamId`),
+    KEY               `idx_match_team_score_team` (`teamId`),
 
     CONSTRAINT `fk_match_team_score_result`
         FOREIGN KEY (`resultId`) REFERENCES `matchResult` (`resultId`)
@@ -788,9 +793,9 @@ CREATE TABLE `playerStatistics`
 
     PRIMARY KEY (`statId`),
     UNIQUE KEY `uk_playerStatistics_result_team_player` (`resultId`, `teamId`, `playerId`),
-    KEY `idx_playerStatistics_team` (`teamId`),
-    KEY `idx_playerStatistics_player` (`playerId`),
-    KEY `idx_playerStatistics_corrected_by` (`corrected_by_admin_user_id`),
+    KEY                          `idx_playerStatistics_team` (`teamId`),
+    KEY                          `idx_playerStatistics_player` (`playerId`),
+    KEY                          `idx_playerStatistics_corrected_by` (`corrected_by_admin_user_id`),
 
     CONSTRAINT `fk_playerStatistics_result`
         FOREIGN KEY (`resultId`) REFERENCES `matchResult` (`resultId`)
@@ -823,19 +828,19 @@ CREATE TABLE `playerStatistics`
                 AND `metersGained` >= 0
                 AND `yellowCards` >= 0
                 AND `redCards` >= 0
-        ),
+            ),
 
     CONSTRAINT `chk_playerStatistics_correction`
         CHECK (
             (`corrected_by_admin_user_id` IS NULL
                 AND `correctionReason` IS NULL
                 AND `correctedAt` IS NULL)
-            OR
+                OR
             (`corrected_by_admin_user_id` IS NOT NULL
                 AND `correctionReason` IS NOT NULL
                 AND CHAR_LENGTH(TRIM(`correctionReason`)) > 0
                 AND `correctedAt` IS NOT NULL)
-        )
+            )
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
@@ -852,8 +857,8 @@ CREATE TABLE `player_statistics_correction`
     `correctedAt`                DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`correctionId`),
-    KEY `idx_player_statistics_correction_stat` (`statId`),
-    KEY `idx_player_statistics_correction_admin` (`corrected_by_admin_user_id`),
+    KEY                          `idx_player_statistics_correction_stat` (`statId`),
+    KEY                          `idx_player_statistics_correction_admin` (`corrected_by_admin_user_id`),
 
     CONSTRAINT `fk_player_statistics_correction_stat`
         FOREIGN KEY (`statId`) REFERENCES `playerStatistics` (`statId`)
@@ -896,13 +901,13 @@ CREATE TABLE `fantasyPoints`
     `calculatedAt`       DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `isFinal`            BOOLEAN     NOT NULL DEFAULT FALSE,
     `final_stat_id`      VARCHAR(36) GENERATED ALWAYS AS (
-                            CASE WHEN `isFinal` = TRUE THEN `statId` ELSE NULL END
-                        ) STORED,
+        CASE WHEN `isFinal` = TRUE THEN `statId` ELSE NULL END
+        ) STORED,
 
     PRIMARY KEY (`pointsId`),
     UNIQUE KEY `uk_fantasyPoints_stat_version` (`statId`, `calculationVersion`),
     UNIQUE KEY `uk_fantasyPoints_final_stat` (`final_stat_id`),
-    KEY `idx_fantasyPoints_final` (`isFinal`),
+    KEY                  `idx_fantasyPoints_final` (`isFinal`),
 
     CONSTRAINT `fk_fantasyPoints_statistics`
         FOREIGN KEY (`statId`) REFERENCES `playerStatistics` (`statId`)
@@ -918,15 +923,15 @@ CREATE TABLE `fantasyPoints`
 /* Audit breakdown showing how the player's final fixture points were calculated. */
 CREATE TABLE `fantasy_point_breakdown`
 (
-    `breakdownId` VARCHAR(36) NOT NULL,
-    `pointsId`    VARCHAR(36) NOT NULL,
-    `ruleId`      VARCHAR(36) NOT NULL,
-    `eventCount`  INT         NOT NULL DEFAULT 0,
-    `pointsEarned` INT        NOT NULL DEFAULT 0,
+    `breakdownId`  VARCHAR(36) NOT NULL,
+    `pointsId`     VARCHAR(36) NOT NULL,
+    `ruleId`       VARCHAR(36) NOT NULL,
+    `eventCount`   INT         NOT NULL DEFAULT 0,
+    `pointsEarned` INT         NOT NULL DEFAULT 0,
 
     PRIMARY KEY (`breakdownId`),
     UNIQUE KEY `uk_fantasy_point_breakdown_rule` (`pointsId`, `ruleId`),
-    KEY `idx_fantasy_point_breakdown_rule` (`ruleId`),
+    KEY            `idx_fantasy_point_breakdown_rule` (`ruleId`),
 
     CONSTRAINT `fk_fantasy_point_breakdown_points`
         FOREIGN KEY (`pointsId`) REFERENCES `fantasyPoints` (`pointsId`)
@@ -956,18 +961,18 @@ CREATE TABLE `fantasy_team_round_selection`
     `is_vice_captain`      BOOLEAN     NOT NULL DEFAULT FALSE,
     `lockedAt`             DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `captain_team_id`      VARCHAR(36) GENERATED ALWAYS AS (
-                               CASE WHEN `isCaptain` = TRUE THEN `teamId` ELSE NULL END
-                           ) STORED,
+        CASE WHEN `isCaptain` = TRUE THEN `teamId` ELSE NULL END
+        ) STORED,
     `vice_captain_team_id` VARCHAR(36) GENERATED ALWAYS AS (
-                               CASE WHEN `is_vice_captain` = TRUE THEN `teamId` ELSE NULL END
-                           ) STORED,
+        CASE WHEN `is_vice_captain` = TRUE THEN `teamId` ELSE NULL END
+        ) STORED,
 
     PRIMARY KEY (`selectionId`),
     UNIQUE KEY `uk_fantasy_team_round_selection_player` (`roundId`, `teamId`, `playerId`),
     UNIQUE KEY `uk_fantasy_team_round_selection_captain` (`roundId`, `captain_team_id`),
     UNIQUE KEY `uk_fantasy_team_round_selection_vice_captain` (`roundId`, `vice_captain_team_id`),
-    KEY `idx_fantasy_team_round_selection_team` (`teamId`),
-    KEY `idx_fantasy_team_round_selection_player` (`playerId`),
+    KEY                    `idx_fantasy_team_round_selection_team` (`teamId`),
+    KEY                    `idx_fantasy_team_round_selection_player` (`playerId`),
 
     CONSTRAINT `fk_fantasy_team_round_selection_round`
         FOREIGN KEY (`roundId`) REFERENCES `fantasyRound` (`roundId`)
@@ -1001,9 +1006,9 @@ CREATE TABLE `chatMessage`
     `removed_by_user_id` VARCHAR(36)          DEFAULT NULL,
 
     PRIMARY KEY (`messageId`),
-    KEY `idx_chatMessage_league_sent` (`leagueId`, `sentDate`),
-    KEY `idx_chatMessage_sender` (`sender_user_id`),
-    KEY `idx_chatMessage_removed_by` (`removed_by_user_id`),
+    KEY                  `idx_chatMessage_league_sent` (`leagueId`, `sentDate`),
+    KEY                  `idx_chatMessage_sender` (`sender_user_id`),
+    KEY                  `idx_chatMessage_removed_by` (`removed_by_user_id`),
 
     CONSTRAINT `fk_chatMessage_league`
         FOREIGN KEY (`leagueId`) REFERENCES `league` (`leagueId`)
@@ -1037,8 +1042,8 @@ CREATE TABLE `privateMessage`
     `isRead`           BOOLEAN     NOT NULL DEFAULT FALSE,
 
     PRIMARY KEY (`messageId`),
-    KEY `idx_privateMessage_sender` (`sender_user_id`),
-    KEY `idx_privateMessage_receiver` (`receiver_user_id`),
+    KEY                `idx_privateMessage_sender` (`sender_user_id`),
+    KEY                `idx_privateMessage_receiver` (`receiver_user_id`),
 
     CONSTRAINT `fk_privateMessage_sender`
         FOREIGN KEY (`sender_user_id`) REFERENCES `user` (`userId`)
@@ -1069,10 +1074,10 @@ CREATE TABLE `report`
     `resolved_by_admin_user_id` VARCHAR(36)          DEFAULT NULL,
 
     PRIMARY KEY (`reportId`),
-    KEY `idx_report_reporter` (`reporter_user_id`),
-    KEY `idx_report_message` (`messageId`),
-    KEY `idx_report_reported_user` (`reported_user_id`),
-    KEY `idx_report_status` (`status`),
+    KEY                         `idx_report_reporter` (`reporter_user_id`),
+    KEY                         `idx_report_message` (`messageId`),
+    KEY                         `idx_report_reported_user` (`reported_user_id`),
+    KEY                         `idx_report_status` (`status`),
 
     CONSTRAINT `fk_report_reporter`
         FOREIGN KEY (`reporter_user_id`) REFERENCES `user` (`userId`)
@@ -1101,7 +1106,7 @@ CREATE TABLE `report`
         CHECK (
             (`status` NOT IN ('RESOLVED', 'REJECTED'))
                 OR (`resolution` IS NOT NULL AND `resolved_by_admin_user_id` IS NOT NULL)
-        )
+            )
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
@@ -1130,7 +1135,7 @@ CREATE TABLE `notification`
     `related_entity_id`   VARCHAR(36)          DEFAULT NULL,
 
     PRIMARY KEY (`notificationId`),
-    KEY `idx_notification_user_read` (`userId`, `isRead`, `createdAt`),
+    KEY                   `idx_notification_user_read` (`userId`, `isRead`, `createdAt`),
 
     CONSTRAINT `fk_notification_user`
         FOREIGN KEY (`userId`) REFERENCES `user` (`userId`)
@@ -1141,7 +1146,7 @@ CREATE TABLE `notification`
         CHECK (
             (`related_entity_type` IS NULL AND `related_entity_id` IS NULL)
                 OR (`related_entity_type` IS NOT NULL AND `related_entity_id` IS NOT NULL)
-        )
+            )
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
@@ -1160,11 +1165,11 @@ CREATE TABLE `log`
     `ipAddress`      VARCHAR(45)          DEFAULT NULL,
 
     PRIMARY KEY (`logId`),
-    KEY `idx_log_user` (`userId`),
-    KEY `idx_log_transfer` (`transferId`),
-    KEY `idx_log_notification` (`notificationId`),
-    KEY `idx_log_entity` (`entityType`, `entityId`),
-    KEY `idx_log_createdAt` (`createdAt`),
+    KEY              `idx_log_user` (`userId`),
+    KEY              `idx_log_transfer` (`transferId`),
+    KEY              `idx_log_notification` (`notificationId`),
+    KEY              `idx_log_entity` (`entityType`, `entityId`),
+    KEY              `idx_log_createdAt` (`createdAt`),
 
     CONSTRAINT `fk_log_user`
         FOREIGN KEY (`userId`) REFERENCES `user` (`userId`)
@@ -1195,8 +1200,8 @@ CREATE TABLE `roundLock`
     `reason`                  TEXT                 DEFAULT NULL,
 
     PRIMARY KEY (`lockId`),
-    KEY `idx_roundLock_round_action` (`roundId`, `actionAt`),
-    KEY `idx_roundLock_admin` (`action_by_admin_user_id`),
+    KEY                       `idx_roundLock_round_action` (`roundId`, `actionAt`),
+    KEY                       `idx_roundLock_admin` (`action_by_admin_user_id`),
 
     CONSTRAINT `fk_roundLock_round`
         FOREIGN KEY (`roundId`) REFERENCES `fantasyRound` (`roundId`)
@@ -1237,10 +1242,10 @@ CREATE TABLE `simulationSettings`
                 AND `team_balance_weight` >= 0
                 AND `random_variation_weight` >= 0
                 AND `player_ability_weight`
-                    + `player_form_weight`
-                    + `team_balance_weight`
-                    + `random_variation_weight` = 100.00
-        ),
+                        + `player_form_weight`
+                        + `team_balance_weight`
+                        + `random_variation_weight` = 100.00
+            ),
 
     CONSTRAINT `chk_simulationSettings_resimulations`
         CHECK (`maxResimulations` >= 0),
@@ -1249,7 +1254,7 @@ CREATE TABLE `simulationSettings`
         CHECK (
             (`allowResimulation` = TRUE AND `maxResimulations` > 0)
                 OR (`allowResimulation` = FALSE AND `maxResimulations` = 0)
-        )
+            )
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
@@ -1277,8 +1282,8 @@ CREATE TABLE `systemReport`
     `generatedAt`                DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`reportId`),
-    KEY `idx_systemReport_generated_by` (`generated_by_admin_user_id`),
-    KEY `idx_systemReport_type_date` (`reportType`, `generatedAt`),
+    KEY                          `idx_systemReport_generated_by` (`generated_by_admin_user_id`),
+    KEY                          `idx_systemReport_type_date` (`reportType`, `generatedAt`),
 
     CONSTRAINT `fk_systemReport_generated_by_admin`
         FOREIGN KEY (`generated_by_admin_user_id`) REFERENCES `administrator` (`userId`)
@@ -1297,11 +1302,13 @@ CREATE TABLE `systemReport`
     confirmed fantasy-team-versus-fantasy-team model.
 */
 
-DELIMITER $$
+DELIMITER
+$$
 
 CREATE TRIGGER `trg_registeredUser_role_insert`
-BEFORE INSERT ON `registeredUser`
-FOR EACH ROW
+    BEFORE INSERT
+    ON `registeredUser`
+    FOR EACH ROW
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM `user`
@@ -1310,20 +1317,22 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'registeredUser requires a REGISTERED_USER base user';
-    END IF;
+END IF;
 
-    IF EXISTS (
+IF
+EXISTS (
         SELECT 1 FROM `administrator`
         WHERE `userId` = NEW.`userId`
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'A user cannot be both registeredUser and administrator';
-    END IF;
+END IF;
 END$$
 
 CREATE TRIGGER `trg_administrator_role_insert`
-BEFORE INSERT ON `administrator`
-FOR EACH ROW
+    BEFORE INSERT
+    ON `administrator`
+    FOR EACH ROW
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM `user`
@@ -1332,20 +1341,22 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'administrator requires an ADMINISTRATOR base user';
-    END IF;
+END IF;
 
-    IF EXISTS (
+IF
+EXISTS (
         SELECT 1 FROM `registeredUser`
         WHERE `userId` = NEW.`userId`
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'A user cannot be both administrator and registeredUser';
-    END IF;
+END IF;
 END$$
 
 CREATE TRIGGER `trg_user_role_update`
-BEFORE UPDATE ON `user`
-FOR EACH ROW
+    BEFORE UPDATE
+    ON `user`
+    FOR EACH ROW
 BEGIN
     IF NEW.`role` <> OLD.`role` THEN
         IF EXISTS (
@@ -1354,31 +1365,34 @@ BEGIN
         ) AND NEW.`role` <> 'REGISTERED_USER' THEN
             SIGNAL SQLSTATE '45000'
                 SET MESSAGE_TEXT = 'Remove the registeredUser subtype before changing the base role';
-        END IF;
+END IF;
 
-        IF EXISTS (
+IF
+EXISTS (
             SELECT 1 FROM `administrator`
             WHERE `userId` = OLD.`userId`
         ) AND NEW.`role` <> 'ADMINISTRATOR' THEN
             SIGNAL SQLSTATE '45000'
                 SET MESSAGE_TEXT = 'Remove the administrator subtype before changing the base role';
-        END IF;
-    END IF;
+END IF;
+END IF;
 END$$
 
 CREATE TRIGGER `trg_league_manager_insert`
-BEFORE INSERT ON `league`
-FOR EACH ROW
+    BEFORE INSERT
+    ON `league`
+    FOR EACH ROW
 BEGIN
     IF NEW.`manager_user_id` IS NOT NULL THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Create the league, add its manager membership, then assign manager_user_id';
-    END IF;
+END IF;
 END$$
 
 CREATE TRIGGER `trg_league_manager_update`
-BEFORE UPDATE ON `league`
-FOR EACH ROW
+    BEFORE UPDATE
+    ON `league`
+    FOR EACH ROW
 BEGIN
     IF NEW.`manager_user_id` IS NOT NULL
        AND NOT (NEW.`manager_user_id` <=> OLD.`manager_user_id`)
@@ -1391,21 +1405,23 @@ BEGIN
        ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'League manager must be an active member of the league';
-    END IF;
+END IF;
 END$$
 
 CREATE TRIGGER `trg_leagueMembership_manager_update`
-BEFORE UPDATE ON `leagueMembership`
-FOR EACH ROW
+    BEFORE UPDATE
+    ON `leagueMembership`
+    FOR EACH ROW
 BEGIN
     IF NEW.`leagueId` <> OLD.`leagueId`
        OR NEW.`registered_user_id` <> OLD.`registered_user_id`
        OR NEW.`teamId` <> OLD.`teamId` THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'League membership identity fields are immutable';
-    END IF;
+END IF;
 
-    IF OLD.`isActive` = TRUE
+IF
+OLD.`isActive` = TRUE
        AND NEW.`isActive` = FALSE
        AND EXISTS (
             SELECT 1 FROM `league`
@@ -1414,12 +1430,13 @@ BEGIN
        ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Assign a new league manager before deactivating the current manager';
-    END IF;
+END IF;
 END$$
 
 CREATE TRIGGER `trg_leagueMembership_manager_delete`
-BEFORE DELETE ON `leagueMembership`
-FOR EACH ROW
+    BEFORE DELETE
+    ON `leagueMembership`
+    FOR EACH ROW
 BEGIN
     IF EXISTS (
         SELECT 1 FROM `league`
@@ -1428,12 +1445,13 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Assign a new league manager before deleting the current manager membership';
-    END IF;
+END IF;
 END$$
 
 CREATE TRIGGER `trg_fixture_integrity_insert`
-BEFORE INSERT ON `fixture`
-FOR EACH ROW
+    BEFORE INSERT
+    ON `fixture`
+    FOR EACH ROW
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM `leagueMembership`
@@ -1448,9 +1466,10 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Both fixture teams must be active league members';
-    END IF;
+END IF;
 
-    IF EXISTS (
+IF
+EXISTS (
         SELECT 1 FROM `fixture`
         WHERE `leagueId` = NEW.`leagueId`
           AND `roundId` = NEW.`roundId`
@@ -1462,12 +1481,13 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'A fantasy team can only appear once per league round';
-    END IF;
+END IF;
 END$$
 
 CREATE TRIGGER `trg_fixture_integrity_update`
-BEFORE UPDATE ON `fixture`
-FOR EACH ROW
+    BEFORE UPDATE
+    ON `fixture`
+    FOR EACH ROW
 BEGIN
     IF EXISTS (
         SELECT 1 FROM `matchResult`
@@ -1480,9 +1500,10 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Fixture participants, league, and round cannot change after simulation history exists';
-    END IF;
+END IF;
 
-    IF NOT EXISTS (
+IF
+NOT EXISTS (
         SELECT 1 FROM `leagueMembership`
         WHERE `leagueId` = NEW.`leagueId`
           AND `teamId` = NEW.`team_a_id`
@@ -1495,9 +1516,10 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Both fixture teams must be active league members';
-    END IF;
+END IF;
 
-    IF EXISTS (
+    IF
+EXISTS (
         SELECT 1 FROM `fixture`
         WHERE `leagueId` = NEW.`leagueId`
           AND `roundId` = NEW.`roundId`
@@ -1510,12 +1532,13 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'A fantasy team can only appear once per league round';
-    END IF;
+END IF;
 END$$
 
 CREATE TRIGGER `trg_match_team_score_insert`
-BEFORE INSERT ON `match_team_score`
-FOR EACH ROW
+    BEFORE INSERT
+    ON `match_team_score`
+    FOR EACH ROW
 BEGIN
     IF NOT EXISTS (
         SELECT 1
@@ -1532,19 +1555,21 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Match score must belong to a fixture participant and match the stored result score';
-    END IF;
+END IF;
 END$$
 
 CREATE TRIGGER `trg_match_team_score_update`
-BEFORE UPDATE ON `match_team_score`
-FOR EACH ROW
+    BEFORE UPDATE
+    ON `match_team_score`
+    FOR EACH ROW
 BEGIN
     IF NEW.`resultId` <> OLD.`resultId` OR NEW.`teamId` <> OLD.`teamId` THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Match score result and team identity are immutable';
-    END IF;
+END IF;
 
-    IF NOT EXISTS (
+IF
+NOT EXISTS (
         SELECT 1
         FROM `matchResult` mr
         JOIN `fixture` f ON f.`fixtureId` = mr.`fixtureId`
@@ -1559,12 +1584,13 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Updated score breakdown must match the stored result score';
-    END IF;
+END IF;
 END$$
 
 CREATE TRIGGER `trg_matchResult_score_update`
-BEFORE UPDATE ON `matchResult`
-FOR EACH ROW
+    BEFORE UPDATE
+    ON `matchResult`
+    FOR EACH ROW
 BEGIN
     IF EXISTS (
         SELECT 1 FROM `match_team_score`
@@ -1585,21 +1611,23 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Result scores must match their existing score breakdown records';
-    END IF;
+END IF;
 
-    IF NEW.`approved` = TRUE AND OLD.`approved` = FALSE
+IF
+NEW.`approved` = TRUE AND OLD.`approved` = FALSE
        AND (
             SELECT COUNT(*) FROM `match_team_score`
             WHERE `resultId` = NEW.`resultId`
        ) <> 2 THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'A result requires exactly two team score breakdowns before approval';
-    END IF;
+END IF;
 END$$
 
 CREATE TRIGGER `trg_playerStatistics_integrity_insert`
-BEFORE INSERT ON `playerStatistics`
-FOR EACH ROW
+    BEFORE INSERT
+    ON `playerStatistics`
+    FOR EACH ROW
 BEGIN
     IF NOT EXISTS (
         SELECT 1
@@ -1610,9 +1638,10 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Statistics team must participate in the result fixture';
-    END IF;
+END IF;
 
-    IF NOT EXISTS (
+IF
+NOT EXISTS (
         SELECT 1
         FROM `matchResult` mr
         JOIN `fixture` f ON f.`fixtureId` = mr.`fixtureId`
@@ -1624,21 +1653,23 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Statistics player must belong to the team locked squad for the fixture round';
-    END IF;
+END IF;
 END$$
 
 CREATE TRIGGER `trg_playerStatistics_integrity_update`
-BEFORE UPDATE ON `playerStatistics`
-FOR EACH ROW
+    BEFORE UPDATE
+    ON `playerStatistics`
+    FOR EACH ROW
 BEGIN
     IF NEW.`resultId` <> OLD.`resultId`
        OR NEW.`teamId` <> OLD.`teamId`
        OR NEW.`playerId` <> OLD.`playerId` THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Statistics result, team, and player identity are immutable';
-    END IF;
+END IF;
 
-    IF NOT (
+IF
+NOT (
         NEW.`tries` <=> OLD.`tries`
         AND NEW.`assists` <=> OLD.`assists`
         AND NEW.`tackles` <=> OLD.`tackles`
@@ -1656,13 +1687,14 @@ BEGIN
            OR (OLD.`correctedAt` IS NOT NULL AND NEW.`correctedAt` <= OLD.`correctedAt`) THEN
             SIGNAL SQLSTATE '45000'
                 SET MESSAGE_TEXT = 'Statistic changes require a new administrator, reason, and correction timestamp';
-        END IF;
-    END IF;
+END IF;
+END IF;
 END$$
 
 CREATE TRIGGER `trg_playerStatistics_correction_history`
-AFTER UPDATE ON `playerStatistics`
-FOR EACH ROW
+    AFTER UPDATE
+    ON `playerStatistics`
+    FOR EACH ROW
 BEGIN
     IF NOT (
         NEW.`tries` <=> OLD.`tries`
@@ -1715,12 +1747,13 @@ BEGIN
             ),
             NEW.`correctedAt`
         );
-    END IF;
+END IF;
 END$$
 
 CREATE TRIGGER `trg_round_selection_insert`
-BEFORE INSERT ON `fantasy_team_round_selection`
-FOR EACH ROW
+    BEFORE INSERT
+    ON `fantasy_team_round_selection`
+    FOR EACH ROW
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM `fantasyRound`
@@ -1729,9 +1762,10 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Round selections may only be captured while the fantasy round is locked';
-    END IF;
+END IF;
 
-    IF EXISTS (
+IF
+EXISTS (
         SELECT 1
         FROM `fixture` f
         JOIN `matchResult` mr ON mr.`fixtureId` = f.`fixtureId`
@@ -1740,30 +1774,33 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'A locked squad cannot be extended after simulation history exists';
-    END IF;
+END IF;
 END$$
 
 CREATE TRIGGER `trg_round_selection_immutable_update`
-BEFORE UPDATE ON `fantasy_team_round_selection`
-FOR EACH ROW
+    BEFORE UPDATE
+    ON `fantasy_team_round_selection`
+    FOR EACH ROW
 BEGIN
     SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Locked fantasy-team round selections are immutable';
 END$$
 
-CREATE TRIGGER `trg_round_selection_immutable_delete`
-BEFORE DELETE ON `fantasy_team_round_selection`
-FOR EACH ROW
-BEGIN
-    SIGNAL SQLSTATE '45000'
+    CREATE TRIGGER `trg_round_selection_immutable_delete`
+        BEFORE DELETE
+        ON `fantasy_team_round_selection`
+        FOR EACH ROW
+    BEGIN
+        SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Locked fantasy-team round selections cannot be deleted';
 END$$
 
-CREATE TRIGGER `trg_ranking_membership_insert`
-BEFORE INSERT ON `ranking`
-FOR EACH ROW
-BEGIN
-    IF EXISTS (
+        CREATE TRIGGER `trg_ranking_membership_insert`
+            BEFORE INSERT
+            ON `ranking`
+            FOR EACH ROW
+        BEGIN
+            IF EXISTS (
         SELECT 1 FROM `leaderboard`
         WHERE `leaderboardId` = NEW.`leaderboardId`
           AND `scope` = 'LEAGUE'
@@ -1777,14 +1814,15 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'League ranking team must belong to the league';
-    END IF;
-END$$
+        END IF;
+        END$$
 
-CREATE TRIGGER `trg_ranking_membership_update`
-BEFORE UPDATE ON `ranking`
-FOR EACH ROW
-BEGIN
-    IF EXISTS (
+        CREATE TRIGGER `trg_ranking_membership_update`
+            BEFORE UPDATE
+            ON `ranking`
+            FOR EACH ROW
+        BEGIN
+            IF EXISTS (
         SELECT 1 FROM `leaderboard`
         WHERE `leaderboardId` = NEW.`leaderboardId`
           AND `scope` = 'LEAGUE'
@@ -1798,14 +1836,15 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'League ranking team must belong to the league';
-    END IF;
-END$$
+        END IF;
+        END$$
 
-CREATE TRIGGER `trg_fantasy_point_breakdown_season_insert`
-BEFORE INSERT ON `fantasy_point_breakdown`
-FOR EACH ROW
-BEGIN
-    IF NOT EXISTS (
+        CREATE TRIGGER `trg_fantasy_point_breakdown_season_insert`
+            BEFORE INSERT
+            ON `fantasy_point_breakdown`
+            FOR EACH ROW
+        BEGIN
+            IF NOT EXISTS (
         SELECT 1
         FROM `scoringRule` sr
         JOIN `fantasyPoints` fp ON fp.`pointsId` = NEW.`pointsId`
@@ -1818,51 +1857,50 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Scoring rule season must match the fixture round season';
-    END IF;
-END$$
+        END IF;
+        END$$
 
-CREATE TRIGGER `trg_fantasy_point_breakdown_season_update`
-BEFORE UPDATE ON `fantasy_point_breakdown`
-FOR EACH ROW
-BEGIN
-    IF NEW.`pointsId` <> OLD.`pointsId` OR NEW.`ruleId` <> OLD.`ruleId` THEN
+        CREATE TRIGGER `trg_fantasy_point_breakdown_season_update`
+            BEFORE UPDATE
+            ON `fantasy_point_breakdown`
+            FOR EACH ROW
+        BEGIN
+            IF NEW.`pointsId` <> OLD.`pointsId` OR NEW.`ruleId` <> OLD.`ruleId` THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Fantasy point breakdown source identities are immutable';
-    END IF;
-END$$
+        END IF;
+        END$$
 
-DELIMITER ;
+        DELIMITER ;
 
-/*
-    Derived replacement for the old performanceHistory table.
-    A row describes one player's simulated performance for one fantasy team
-    during one round. Keeping teamId prevents unrelated fantasy-team
-    appearances from being mixed together.
-*/
-CREATE VIEW `player_round_performance` AS
-SELECT
-    ps.`teamId`                          AS `teamId`,
-    ps.`playerId`                        AS `playerId`,
-    fr.`season`                          AS `season`,
-    fr.`roundNumber`                     AS `roundNumber`,
-    COUNT(DISTINCT mr.`fixtureId`)        AS `matchesPlayed`,
-    SUM(ps.`tries`)                      AS `tries`,
-    SUM(ps.`assists`)                    AS `assists`,
-    SUM(ps.`tackles`)                    AS `tackles`,
-    COALESCE(SUM(fp.`totalPoints`), 0)   AS `fantasyPoints`
-FROM `playerStatistics` ps
-JOIN `matchResult` mr
-    ON mr.`resultId` = ps.`resultId`
-    AND mr.`isCurrent` = TRUE
-JOIN `fixture` f
-    ON f.`fixtureId` = mr.`fixtureId`
-JOIN `fantasyRound` fr
-    ON fr.`roundId` = f.`roundId`
-LEFT JOIN `fantasyPoints` fp
-    ON fp.`statId` = ps.`statId`
-    AND fp.`isFinal` = TRUE
-GROUP BY
-    ps.`teamId`,
-    ps.`playerId`,
-    fr.`season`,
-    fr.`roundNumber`;
+        /*
+            Derived replacement for the old performanceHistory table.
+            A row describes one player's simulated performance for one fantasy team
+            during one round. Keeping teamId prevents unrelated fantasy-team
+            appearances from being mixed together.
+        */
+        CREATE VIEW `player_round_performance` AS
+        SELECT ps.`teamId`                        AS `teamId`,
+               ps.`playerId`                      AS `playerId`,
+               fr.`season`                        AS `season`,
+               fr.`roundNumber`                   AS `roundNumber`,
+               COUNT(DISTINCT mr.`fixtureId`)     AS `matchesPlayed`,
+               SUM(ps.`tries`)                    AS `tries`,
+               SUM(ps.`assists`)                  AS `assists`,
+               SUM(ps.`tackles`)                  AS `tackles`,
+               COALESCE(SUM(fp.`totalPoints`), 0) AS `fantasyPoints`
+        FROM `playerStatistics` ps
+                 JOIN `matchResult` mr
+                      ON mr.`resultId` = ps.`resultId`
+                          AND mr.`isCurrent` = TRUE
+                 JOIN `fixture` f
+                      ON f.`fixtureId` = mr.`fixtureId`
+                 JOIN `fantasyRound` fr
+                      ON fr.`roundId` = f.`roundId`
+                 LEFT JOIN `fantasyPoints` fp
+                           ON fp.`statId` = ps.`statId`
+                               AND fp.`isFinal` = TRUE
+        GROUP BY ps.`teamId`,
+                 ps.`playerId`,
+                 fr.`season`,
+                 fr.`roundNumber`;

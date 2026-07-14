@@ -11,5 +11,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class MatchResultRequestDTO {
     private UUID fixtureId;
-    private String simulationReason;
+    private int teamAScore;
+    private int teamBScore;
 }

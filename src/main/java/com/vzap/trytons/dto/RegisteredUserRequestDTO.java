@@ -5,8 +5,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
+import  lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
+@Setter
 @Getter
+@NoArgsConstructor
+@AllArgsConstructor
+
 public class RegisteredUserRequestDTO {
     @NotBlank(message = "Email can not be blank")
     @Pattern(regexp = "\\S+", message = "Email cannot contain spaces")
