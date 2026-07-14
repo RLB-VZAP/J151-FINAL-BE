@@ -69,7 +69,7 @@ public class MatchProcessingServiceImpl implements MatchProcessingService {
         if (statistics == null || statistics.isEmpty()) {
             throw new BusinessRuleException("Fixture " + fixtureId + " has no player statistics captured for its result.");
         }
-        fantasyPointCalculationService.calculateForFixture(actorUserId, fixtureId);
+        fantasyPointCalculationService.calculateForFixture(fixtureId.toString());
         teamScoreService.refreshTeamScores(actorUserId, fixtureId);
         boolean leaderboardsRefreshed = refreshLeaderboards(actorUserId, fixture);
         fixture.setStatus(FixtureStatus.PROCESSED);
