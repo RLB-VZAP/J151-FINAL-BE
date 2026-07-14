@@ -50,12 +50,14 @@ public class AuthServiceImpl implements AuthService {
             throw new DataAccessException("Unable to update the user's last login time.", null);
         }
 
+        String tokenCreated =AuthTokenUtil.createToken(user.getUserId());
+
         return new LoginResponseDTO(
                 user.getUserId(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getRole(),
-                AuthTokenUtil.createToken(user.getUserId()));
+                tokenCreated);
     }
 
     @Override
