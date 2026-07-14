@@ -51,7 +51,7 @@ public class MatchProcessingServiceImpl implements MatchProcessingService {
             throw new BusinessRuleException("Actor and fixture identifiers are required to process a fixture.");
         }
         requireAdmin(actorUserId);
-        Fixture fixture = fixtureDAO.findFixtureById(fixtureId)
+        Fixture fixture = fixtureDAO.findById(fixtureId)
                 .orElseThrow(() -> new ResourceNotFoundException("Fixture " + fixtureId + " was not found."));
         if (fixture.getStatus() == FixtureStatus.PROCESSED) {
             throw new ConflictException("Fixture " + fixtureId + " has already been processed.");
@@ -75,8 +75,7 @@ public class MatchProcessingServiceImpl implements MatchProcessingService {
         fixture.setStatus(FixtureStatus.PROCESSED);
         fixtureDAO.updateFixture(fixture);
 
-        LOG.log(Level.INFO, "Processed fixture {0}: {1} statistics scored, {2} team scores refreshed.",
-                new Object[]{fixtureId, statistics.size(), TEAMS_PER_FIXTURE});
+        LOG.log(Level.INFO, "Processed fixture {0}: {1} statistics scored, {2} team scores refreshed.", new Object[]{fixtureId, statistics.size(), TEAMS_PER_FIXTURE});
 
         return MatchProcessingResultDTO.builder()
                 .fixtureId(fixtureId)
@@ -94,11 +93,11 @@ public class MatchProcessingServiceImpl implements MatchProcessingService {
     }
 
     private boolean refreshLeaderboards(UUID actorUserId, Fixture fixture) {
-        if (fixture.getLeague() == null) {
+        if (fixture.getLeagueId() == null) {
             return false;
         }
         LeaderboardRefreshResultDTO refresh =
-                leaderboardService.refreshLeagueLeaderboard(actorUserId, fixture.getLeague().getLeagueId());
+                leaderboardService.refreshLeagueLeaderboard(actorUserId, fixture.getLeagueId().getLeagueId());
         return refresh != null && refresh.isSuccess();
     }
 }

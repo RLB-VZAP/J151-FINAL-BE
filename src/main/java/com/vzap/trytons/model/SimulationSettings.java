@@ -12,7 +12,9 @@ import java.util.UUID;
 @Getter
 @Setter
 public class SimulationSettings {
-    private UUID simulationSettingsId;
+    private UUID settingsId;
+    private String season;
+    private BigDecimal playerAbilityWeight;
     private BigDecimal playerFormWeight;
     private BigDecimal teamBalanceWeight;
     private BigDecimal randomVariationWeight;
