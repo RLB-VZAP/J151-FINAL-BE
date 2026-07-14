@@ -1,64 +1,45 @@
 package com.vzap.trytons.service;
 
+import com.vzap.trytons.dto.LeaderboardRefreshResultDTO;
+import java.util.UUID;
 import com.vzap.trytons.dao.FantasyTeamDAO;
 import com.vzap.trytons.dao.LeaderboardDAO;
+import com.vzap.trytons.dao.LeagueDAO;
 import com.vzap.trytons.dao.LeagueMembershipDAO;
 import com.vzap.trytons.dto.LeaderboardEntryResponseDTO;
-import com.vzap.trytons.dto.LeaderboardRefreshResultDTO;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.model.FantasyTeam;
 import com.vzap.trytons.model.Leaderboard;
 import com.vzap.trytons.model.Ranking;
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-@ApplicationScoped
-public class LeaderboardServiceImpl implements LeaderboardService {
-
+public class LeaderboardServiceImpl implements LeaderboardService{
     @Inject
     private LeaderboardDAO leaderboardDAO;
-
     @Inject
     private LeagueMembershipDAO leagueMembershipDAO;
-
     @Inject
-    private FantasyTeamDAO fantasyTeamDAO;
+    private FantasyTeamDAO  fantasyTeamDAO;
+    @Inject
+    private LeagueDAO leagueDAO;
 
     //New added methods
     //================================================================================================================================================
 
     @Override
     public LeaderboardRefreshResultDTO refreshLeagueLeaderboard(UUID actorUserId, UUID leagueId) {
-        return LeaderboardRefreshResultDTO.builder()
-                .success(false)
-                .message("Leaderboard recalculation is not part of the current demo build.")
-                .teamsProcessed(0)
-                .rankingsUpdated(0)
-                .build();
+        return null;
     }
 
     @Override
     public LeaderboardRefreshResultDTO refreshOverallLeaderboard(UUID actorUserId) {
-        return LeaderboardRefreshResultDTO.builder()
-                .success(false)
-                .message("Overall leaderboard recalculation is not part of the current demo build.")
-                .teamsProcessed(0)
-                .rankingsUpdated(0)
-                .build();
+        return null;
     }
 
     @Override
     public List<LeaderboardEntryResponseDTO> getOverallLeaderboard(UUID actorUserId) {
-        return leaderboardDAO.getMasterLeaderboard()
-                .map(this::mapLeaderboard)
-                .orElseGet(Collections::emptyList);
+        return List.of();
     }
 
     //================================================================================================================================================
@@ -141,7 +122,7 @@ public class LeaderboardServiceImpl implements LeaderboardService {
 
             return Optional.of(dto);
         }
-    return Optional.empty();
+        return Optional.empty();
     }
 
     //Small private helper method for calculating the rank movement:
