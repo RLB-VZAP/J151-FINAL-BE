@@ -7,20 +7,20 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class DatabaseTestDAO extends BaseDAO {
+
     public List<String> getTableNames() throws SQLException {
         List<String> tables = new ArrayList<>();
 
-        try (Connection con = getConnection();
-             Statement stmt = con.createStatement();
-             ResultSet rs = stmt.executeQuery("SHOW TABLES ")) {
-            while (rs.next()) {
-                tables.add(rs.getString(1));
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery("SHOW TABLES")) {
+
+            while (resultSet.next()) {
+                tables.add(resultSet.getString(1));
             }
         }
 
         return tables;
     }
 }
-

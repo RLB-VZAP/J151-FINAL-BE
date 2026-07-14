@@ -16,16 +16,14 @@ import java.util.logging.Logger;
 
 @ApplicationScoped
 public class LeagueServiceImpl implements LeagueService{
-@Inject
     private final LeagueDAO leagueDAO;
-@Inject
     private final LeagueMembershipDAO membershipDAO;
-@Inject
     private final FantasyTeamDAO fantasyTeamDAO;
 
 private static final Logger LOG = Logger.getLogger(LeagueServiceImpl.class.getName());
 
-    public LeagueServiceImpl(LeagueDAO leagueDAO, LeagueMembershipDAO membershipDAO,  FantasyTeamDAO fantasyTeamDAO) {
+    @Inject
+    public LeagueServiceImpl(LeagueDAO leagueDAO, LeagueMembershipDAO membershipDAO, FantasyTeamDAO fantasyTeamDAO) {
         this.leagueDAO = leagueDAO;
         this.membershipDAO = membershipDAO;
         this.fantasyTeamDAO = fantasyTeamDAO;

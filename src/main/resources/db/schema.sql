@@ -450,7 +450,7 @@ CREATE TABLE `fantasyRound`
     `openDate`     DATETIME    NOT NULL,
     `lockDeadline` DATETIME    NOT NULL,
     `endDate`      DATETIME DEFAULT NULL,
-    `status`       ENUM('UPCOMING', 'OPEN', 'LOCKED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'UPCOMING',
+    `status`       ENUM('UPCOMING', 'OPEN', 'LOCKED', 'IN_PROGRESS', 'COMPLETED', 'PROCESSED', 'CANCELLED') NOT NULL DEFAULT 'UPCOMING',
 
     PRIMARY KEY (`roundId`),
     UNIQUE KEY `uk_fantasyRound_season_round` (`season`, `roundNumber`),
@@ -624,7 +624,7 @@ CREATE TABLE `fixture`
     `team_b_id`      VARCHAR(36) NOT NULL,
     `fixtureDate`    DATE        NOT NULL,
     `fixtureTime`    TIME        NOT NULL,
-    `status`         ENUM('UPCOMING', 'LOCKED', 'SIMULATING', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'UPCOMING',
+    `status`         ENUM('UPCOMING', 'LOCKED', 'SIMULATING', 'COMPLETED', 'PROCESSED', 'CANCELLED') NOT NULL DEFAULT 'UPCOMING',
     `simulationDate` DATETIME             DEFAULT NULL,
     `first_team_id`  VARCHAR(36) GENERATED ALWAYS AS (LEAST(`team_a_id`, `team_b_id`)) STORED,
     `second_team_id` VARCHAR(36) GENERATED ALWAYS AS (GREATEST(`team_a_id`, `team_b_id`)) STORED,
