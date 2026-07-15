@@ -34,24 +34,15 @@ public class UserHistoryServiceImpl implements UserHistoryService {
     private MatchTeamScoreDAO matchTeamScoreDAO;
 
     @Override
-    public UserPointsHistoryResponseDTO getUserPointsHistory(String actorUserId) {
+    public UserPointsHistoryResponseDTO getUserPointsHistory(UUID actorUserId) {
 
-        UUID ownerID;
-        try {
-            ownerID = UUID.fromString(actorUserId);
-        } catch (IllegalArgumentException e) {
-            throw new AuthorisationException("No UserId found");
-        }
+        validateActorUserId(actorUserId);
+        FantasyTeam fantasyTeam = fantasyTeamDAO.getTeamByOwner(actorUserId).orElseThrow(() -> new ResourceNotFoundException("No fantasy team was found for this user."));
+        List<WeeklyPerformanceResponseDTO> rounds = buildWeeklyPerformance(fantasyTeam);
 
-        List<FantasyTeam> fantasyTeams = fantasyTeamDAO.findTeamsByOwner(ownerID);
-
-        if (fantasyTeams.isEmpty()){
-            throw new ResourceNotFoundException("No Fantasy Teams were found");
-        }
-
-        List<WeeklyPerformanceResponseDTO> rounds = getWeeklyPerformance(actorUserId);
-
-        int totals = fantasyTeams.get(0).getTotalPoints();
+        int totals = rounds.stream()
+                .mapToInt(WeeklyPerformanceResponseDTO::getPointsScored)
+                .sum();
 
         return UserPointsHistoryResponseDTO.builder()
                 .totals(totals)
@@ -61,105 +52,79 @@ public class UserHistoryServiceImpl implements UserHistoryService {
     }
 
     @Override
-    public List<WeeklyPerformanceResponseDTO> getWeeklyPerformance(String actorUserId) {
+    public List<WeeklyPerformanceResponseDTO> getWeeklyPerformance(UUID actorUserId) {
 
-        UUID ownerID;
-        try {
-            ownerID = UUID.fromString(actorUserId);
-        } catch (IllegalArgumentException e) {
-            throw new AuthorisationException("No UserId found");
+        validateActorUserId(actorUserId);
+        FantasyTeam fantasyTeam = fantasyTeamDAO.getTeamByOwner(actorUserId).orElseThrow(() -> new ResourceNotFoundException("No fantasy team was found for this user."));
+        return buildWeeklyPerformance(fantasyTeam);
+    }
+
+
+    private List<WeeklyPerformanceResponseDTO> buildWeeklyPerformance(FantasyTeam fantasyTeam) {
+
+        if (fantasyTeam == null || fantasyTeam.getTeamId() == null) {
+            throw new ResourceNotFoundException("A valid fantasy team is required.");
         }
+
+        UUID teamId = fantasyTeam.getTeamId();
+
+        List<Fixture> fixtures = fixtureDAO.findByTeamId(teamId);
 
         List<WeeklyPerformanceResponseDTO> weeklyPerformance = new ArrayList<>();
 
-        List<FantasyTeam> fantasyTeams = fantasyTeamDAO.findTeamsByOwner(ownerID);
+        for (Fixture fixture : fixtures) {
 
-        for(FantasyTeam ft : fantasyTeams){
-            List<Fixture> fixtures = fixtureDAO.findByTeamId(ft.getTeamId());
+            Optional<MatchResult> resultOptional = matchResultDAO.findCurrentByFixtureId(fixture.getFixtureId());
+            if (resultOptional.isPresent()) {
 
-            UUID teamId = ft.getTeamId();
+                MatchResult result = resultOptional.get();
+                MatchTeamSide teamSide = resolveTeamSide(fixture, teamId);
+                Optional<MatchTeamScore> scoreOptional = matchTeamScoreDAO.findByResultIdAndTeamSide(result.getResultId(), teamSide);
+                if (scoreOptional.isPresent()) {
 
-            for(Fixture fixture : fixtures){
-
-                // TODO: Fixture.leagueId/roundId renamed to league/round — model now mirrors schema.sql
-                UUID roundId = fixture.getRoundId().getRoundId();
-
-                Optional<MatchResult> resultOpt = matchResultDAO.findCurrentByFixtureId(fixture.getFixtureId());
-
-                if (resultOpt.isEmpty()){
-
-                    continue;
-
-                }
-                MatchResult result = resultOpt.get();
-
-                MatchTeamSide side = MatchTeamSide.TEAM_A;
-
-                // TODO: Fixture.teamA removed (now teamAId UUID field) — getTeamA() no longer exists — model now mirrors schema.sql
-                if (fixture.getTeamA().getTeamId().equals(teamId)){
-
-                    side = MatchTeamSide.TEAM_A;
-
-                } else {
-
-                    side = MatchTeamSide.TEAM_B;
-                }
-
-                if (result.isDraw()){
-
-                    Optional<MatchTeamScore> pointsScored = matchTeamScoreDAO.findByResultIdAndTeamSide(result.getResultId(), side);
-
-                    if (pointsScored.isEmpty()){
-                        continue;
-                    } else {
-
-                        // TODO: MatchTeamScore.score replaced by playerPoints/captainBonus/transferPenalty/totalScore — model now mirrors schema.sql
-                        WeeklyPerformanceResponseDTO wpr = WeeklyPerformanceResponseDTO.builder()
-                                .roundId(roundId)
-                                .fixtureId(fixture.getFixtureId())
-                                .pointsScored(pointsScored.get().getScore())
-                                .result("DRAW")
-                                .build();
-
-                        weeklyPerformance.add(wpr);
-
-                    }
-
-                } else {
-
-                    Optional<MatchTeamScore> pointsScored = matchTeamScoreDAO.findByResultIdAndTeamSide(result.getResultId(), side);
-
-                    if (pointsScored.isEmpty()){
-                        continue;
-                    }
-
-                    // TODO: MatchResult.winnerSide retyped String -> MatchTeamSide — model now mirrors schema.sql
-                    String outcome = result.getWinnerSide();
-
-                    if (side.name().equals(outcome)){
-
-                        outcome = "WIN";
-                    } else {
-                        outcome = "LOSS";
-                    }
-
-                    // TODO: MatchTeamScore.score replaced by playerPoints/captainBonus/transferPenalty/totalScore — model now mirrors schema.sql
-                    WeeklyPerformanceResponseDTO wpr = WeeklyPerformanceResponseDTO.builder()
-                            .roundId(roundId)
+                    MatchTeamScore teamScore = scoreOptional.get();
+                    String outcome = resolveOutcome(result, teamSide);
+                    WeeklyPerformanceResponseDTO performance = WeeklyPerformanceResponseDTO.builder()
+                            .roundId(fixture.getRoundId())
                             .fixtureId(fixture.getFixtureId())
-                            .pointsScored(pointsScored.get().getScore())
+                            .pointsScored(teamScore.getTotalScore())
                             .result(outcome)
                             .build();
 
-                    weeklyPerformance.add(wpr);
-
+                    weeklyPerformance.add(performance);
                 }
-
-
             }
-
         }
-
         return weeklyPerformance;
     }
+
+
+    private void validateActorUserId(UUID actorUserId) {
+        if (actorUserId == null) {
+            throw new AuthorisationException("An authenticated user ID is required.");
+        }
+    }
+    private MatchTeamSide resolveTeamSide(Fixture fixture, UUID teamId) {
+        if (teamId.equals(fixture.getTeamAId())) {
+            return MatchTeamSide.TEAM_A;
+        }
+
+        if (teamId.equals(fixture.getTeamBId())) {
+            return MatchTeamSide.TEAM_B;
+        }
+        throw new ResourceNotFoundException("The fantasy team does not belong to this fixture.");
+    }
+
+    private String resolveOutcome(MatchResult result, MatchTeamSide teamSide) {
+
+        if (result.isDraw()) {
+            return "DRAW";
+        }
+        MatchTeamSide winnerSide = result.getWinnerSide();
+        if (winnerSide == null) {
+            throw new ResourceNotFoundException("The match result does not have a winning side.");
+        }
+        return winnerSide == teamSide ? "WIN" : "LOSS";
+    }
 }
+

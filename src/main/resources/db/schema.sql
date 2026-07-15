@@ -29,7 +29,6 @@ SET
 FOREIGN_KEY_CHECKS = 0;
 
 DROP VIEW IF EXISTS `player_round_performance`;
-
 DROP TABLE IF EXISTS `systemReport`;
 DROP TABLE IF EXISTS `simulationSettings`;
 DROP TABLE IF EXISTS `roundLock`;
@@ -51,7 +50,6 @@ DROP TABLE IF EXISTS `ranking`;
 DROP TABLE IF EXISTS `leaderboard`;
 DROP TABLE IF EXISTS `transfer`;
 DROP TABLE IF EXISTS `fantasyRound`;
-DROP TABLE IF EXISTS `leagueInvitation`;
 DROP TABLE IF EXISTS `leagueMembership`;
 DROP TABLE IF EXISTS `league`;
 DROP TABLE IF EXISTS `playerRecommendation`;
@@ -388,52 +386,6 @@ CREATE TABLE `leagueMembership`
             REFERENCES `fantasyTeam` (`teamId`, `owner_user_id`)
             ON DELETE RESTRICT
             ON UPDATE CASCADE
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_0900_ai_ci;
-
-CREATE TABLE `leagueInvitation`
-(
-    `invitationId`       VARCHAR(36) NOT NULL,
-    `leagueId`           VARCHAR(36) NOT NULL,
-    `invited_user_id`    VARCHAR(36)          DEFAULT NULL,
-    `created_by_user_id` VARCHAR(36)          DEFAULT NULL,
-    `expiryDate`         DATETIME    NOT NULL,
-    `status`             ENUM('PENDING', 'ACCEPTED', 'DECLINED', 'EXPIRED', 'CANCELLED') NOT NULL DEFAULT 'PENDING',
-    `acceptedAt`         DATETIME             DEFAULT NULL,
-    `createdAt`          DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    PRIMARY KEY (`invitationId`),
-    KEY                  `idx_leagueInvitation_league` (`leagueId`),
-    KEY                  `idx_leagueInvitation_invited_user` (`invited_user_id`),
-    KEY                  `idx_leagueInvitation_status` (`status`),
-
-    CONSTRAINT `fk_leagueInvitation_league`
-        FOREIGN KEY (`leagueId`) REFERENCES `league` (`leagueId`)
-            ON DELETE CASCADE
-            ON UPDATE CASCADE,
-
-    CONSTRAINT `fk_leagueInvitation_invited_user`
-        FOREIGN KEY (`invited_user_id`) REFERENCES `registeredUser` (`userId`)
-            ON DELETE SET NULL
-            ON UPDATE CASCADE,
-
-    CONSTRAINT `fk_leagueInvitation_created_by`
-        FOREIGN KEY (`created_by_user_id`) REFERENCES `registeredUser` (`userId`)
-            ON DELETE SET NULL
-            ON UPDATE CASCADE,
-
-    CONSTRAINT `chk_leagueInvitation_expiry`
-        CHECK (`expiryDate` > `createdAt`),
-
-    CONSTRAINT `chk_leagueInvitation_acceptance`
-        CHECK (
-            (`status` = 'ACCEPTED'
-                AND `acceptedAt` IS NOT NULL
-                AND `acceptedAt` >= `createdAt`
-                AND `acceptedAt` <= `expiryDate`)
-                OR (`status` <> 'ACCEPTED' AND `acceptedAt` IS NULL)
-            )
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
