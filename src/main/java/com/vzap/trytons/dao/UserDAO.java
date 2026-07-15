@@ -20,4 +20,5 @@ public interface UserDAO {
     boolean usernameExists(String username);
 
     boolean updateLastLogin(UUID userId, LocalDateTime lastLoginAt);
+
 }
