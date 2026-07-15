@@ -10,6 +10,8 @@ import com.vzap.trytons.exceptions.*;
 import com.vzap.trytons.model.*;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -60,6 +62,7 @@ public class FixtureServiceImpl implements FixtureService {
 
     @Override
     public FixtureResponseDTO createFixture(UUID actorUserId, FixtureRequestDTO request) {
+
         requireAdmin(actorUserId);
         validateCreateRequest(request);
         if(request.getTeamAId().equals(request.getTeamBId())){
@@ -105,10 +108,12 @@ public class FixtureServiceImpl implements FixtureService {
             throw new DataAccessException("Failed to create Fixture.",null);
         }
         return mapToResponse(createdFixture, teamA.getTeamName(),  teamB.getTeamName());
+
     }
 
     @Override
     public FixtureResponseDTO updateFixtureStatus(UUID actorUserId, UUID fixtureId, FixtureStatus status) {
+
         requireAdmin(actorUserId);
         if(fixtureId == null){
             throw new ValidationException("Fixture ID is required");
@@ -120,39 +125,69 @@ public class FixtureServiceImpl implements FixtureService {
         if(fixtureOptional.isEmpty()){
             throw new ResourceNotFoundException("Fixture not found");
         }
+
         Fixture fixture = fixtureOptional.get();
-        if(!isValidStatusTransition(fixture.getStatus(), status)){
-            throw new BusinessRuleException("Cannot change fixture status from " + fixture.getStatus() + " to " + status +".");
+        if (!isValidStatusTransition(fixture.getStatus(), status)) {
+            throw new BusinessRuleException("Cannot change fixture status.");
         }
-        boolean updated = fixtureDAO.updateStatus(fixture, status);
-        if(!updated){
-            throw new ResourceNotFoundException("Fixture not found");
-        }
+
         fixture.setStatus(status);
+
+        if (status == FixtureStatus.COMPLETED) {
+            fixture.setSimulationDate(LocalDateTime.now());
+        }
+
+        boolean updated = fixtureDAO.updateFixture(fixture);
+
+        if (!updated) {
+            throw new DataAccessException("Failed to update fixture status.", null);
+        }
+
         return mapToResponse(fixture);
+
     }
-    private boolean isValidStatusTransition(FixtureStatus currentStatus, FixtureStatus newStatus){
-        if(currentStatus == FixtureStatus.UPCOMING){
-            return newStatus == FixtureStatus.LOCKED || newStatus == FixtureStatus.CANCELLED;
+
+    private boolean isValidStatusTransition(
+            FixtureStatus currentStatus,
+            FixtureStatus newStatus) {
+
+        if (currentStatus == null || newStatus == null) {
+            return false;
         }
-        if(currentStatus == FixtureStatus.LOCKED){
-            return newStatus == FixtureStatus.SIMULATING || newStatus == FixtureStatus.CANCELLED;
+
+        if (currentStatus == FixtureStatus.UPCOMING) {
+            return ((newStatus == FixtureStatus.LOCKED) || (newStatus == FixtureStatus.CANCELLED));
         }
+
+        if (currentStatus == FixtureStatus.LOCKED) {
+            return ((newStatus == FixtureStatus.SIMULATING) || (newStatus == FixtureStatus.CANCELLED));
+        }
+
+        if (currentStatus == FixtureStatus.SIMULATING) {
+            return ((newStatus == FixtureStatus.COMPLETED) || (newStatus == FixtureStatus.CANCELLED));
+        }
+
+        if (currentStatus == FixtureStatus.COMPLETED) {
+            return newStatus == FixtureStatus.PROCESSED;
+        }
+
         return false;
     }
+
     private void  requireAdmin(UUID actorUserId) {
         if(actorUserId == null){
             throw new ValidationException("An authenticated administrator is required.");
         }
         Optional<User> userOptional = userDAO.getUserById(actorUserId);
         if(userOptional.isEmpty()){
-            throw new AuthenticationException("An authenticated administrator is required.");
+            throw new AuthorisationException("An authenticated administrator is required.");
         }
         User user = userOptional.get();
         if(user.getRole() != UserRole.ADMINISTRATOR){
-            throw new AuthenticationException("Only admins can perform this action.");
+            throw new AuthorisationException("Only admins can perform this action.");
         }
     }
+
     private void validateCreateRequest(FixtureRequestDTO request) {
         if(request == null){
             throw new ValidationException("Fixture details are required.");
@@ -189,6 +224,7 @@ public class FixtureServiceImpl implements FixtureService {
             throw new ValidationException(teamName + " is not an active member of this league.");
         }
     }
+
     private void assertNoDuplicatePairing(UUID roundId, UUID teamAId, UUID teamBId){
         List<Fixture> fixtures = fixtureDAO.findByRoundId(roundId);
         for(Fixture existingFixture : fixtures){
@@ -197,11 +233,12 @@ public class FixtureServiceImpl implements FixtureService {
             }
             UUID existingTeamAId = existingFixture.getTeamAId();
             UUID existingTeamBId = existingFixture.getTeamBId();
-            if(existingTeamAId.equals(teamBId) || existingTeamBId.equals(teamAId) || existingTeamBId.equals(teamBId)){
+            if(existingTeamAId.equals(teamBId) || existingTeamBId.equals(teamAId) || existingTeamBId.equals(teamBId) ||existingTeamAId.equals(teamAId)){
                 throw new ConflictException("One of the teams already has a fixture in this round.");
             }
         }
     }
+
     private FixtureResponseDTO mapToResponse(Fixture fixture){
         String teamAName = null;
         String teamBName = null;
@@ -215,6 +252,7 @@ public class FixtureServiceImpl implements FixtureService {
         }
         return mapToResponse(fixture,teamAName,teamBName);
     }
+
     private FixtureResponseDTO mapToResponse(Fixture fixture, String teamAName, String teamBName){
         FixtureResponseDTO response = new FixtureResponseDTO();
         response.setFixtureId(fixture.getFixtureId());
