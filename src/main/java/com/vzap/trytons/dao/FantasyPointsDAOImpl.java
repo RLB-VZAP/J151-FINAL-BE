@@ -22,7 +22,6 @@ public class FantasyPointsDAOImpl extends BaseDAO implements FantasyPointsDAO {
 
     private static final Logger LOG = Logger.getLogger(FantasyPointsDAOImpl.class.getName());
 
-    // TODO: FantasyPoints.finalVersion/calculationDate renamed to isFinal/calculatedAt — model now mirrors schema.sql
     private FantasyPoints mapRow(ResultSet rs) throws SQLException {
         Timestamp calculatedAt = rs.getTimestamp("calculatedAt");
         return FantasyPoints.builder()
@@ -30,19 +29,17 @@ public class FantasyPointsDAOImpl extends BaseDAO implements FantasyPointsDAO {
                 .statId(UUID.fromString(rs.getString("statId")))
                 .totalPoints(rs.getInt("totalPoints"))
                 .calculationVersion(rs.getInt("calculationVersion"))
-                // TODO: Schema alignment: use FantasyPoints.isFinal and calculatedAt.
-                .finalVersion(rs.getBoolean("isFinal"))
-                .calculationDate(calculatedAt == null ? null : calculatedAt.toLocalDateTime())
+                .isFinal(rs.getBoolean("isFinal"))
+                .calculatedAt(calculatedAt == null ? null : calculatedAt.toLocalDateTime())
                 .build();
     }
 
     @Override
     public FantasyPoints save(FantasyPoints points) {
         UUID pointsId = points.getPointsId() == null ? UUID.randomUUID() : points.getPointsId();
-        // TODO: FantasyPoints.calculationDate renamed to calculatedAt — model now mirrors schema.sql
-        LocalDateTime calculatedAt = points.getCalculationDate() == null
+        LocalDateTime calculatedAt = points.getCalculatedAt() == null
                 ? LocalDateTime.now()
-                : points.getCalculationDate();
+                : points.getCalculatedAt();
 
         String sql = """
                 INSERT INTO fantasyPoints
@@ -58,13 +55,11 @@ public class FantasyPointsDAOImpl extends BaseDAO implements FantasyPointsDAO {
             statement.setInt(3, points.getTotalPoints());
             statement.setInt(4, points.getCalculationVersion());
             statement.setTimestamp(5, Timestamp.valueOf(calculatedAt));
-            // TODO: FantasyPoints.finalVersion/calculationDate renamed to isFinal/calculatedAt — model now mirrors schema.sql
-            statement.setBoolean(6, points.isFinalVersion());
+            statement.setBoolean(6, points.isFinal());
             statement.executeUpdate();
 
             points.setPointsId(pointsId);
-            // TODO: FantasyPoints.calculationDate renamed to calculatedAt — model now mirrors schema.sql
-            points.setCalculationDate(calculatedAt);
+            points.setCalculatedAt(calculatedAt);
             return points;
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to save fantasy points.", e);
