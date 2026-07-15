@@ -69,7 +69,7 @@ public class FixtureServiceImpl implements FixtureService {
         if(leagueOptional.isEmpty()){
             throw new ResourceNotFoundException("League not found");
         }
-        League league1 = leagueOptional.get();
+        League league = leagueOptional.get();
         Optional<FantasyRound>roundOptional = fantasyRoundDAO.getRoundById(request.getRoundId());
         if(roundOptional.isEmpty()){
             throw new ResourceNotFoundException("Round not found");
@@ -88,17 +88,15 @@ public class FixtureServiceImpl implements FixtureService {
             throw new ResourceNotFoundException("Team B not found");
         }
         FantasyTeam teamB = optionalTeamB.get();
-        assertActiveLeagueMember(league1.getLeagueId(), teamA.getTeamId(),"Team A");
-        assertActiveLeagueMember(league1.getLeagueId(), teamB.getTeamId(),"Team B");
+        assertActiveLeagueMember(league.getLeagueId(), teamA.getTeamId(),"Team A");
+        assertActiveLeagueMember(league.getLeagueId(), teamB.getTeamId(),"Team B");
         assertNoDuplicatePairing(round.getRoundId(), teamA.getTeamId(), teamB.getTeamId());
         Fixture fixture = new Fixture();
         fixture.setFixtureId(UUID.randomUUID());
-        // TODO: Fixture.leagueId/roundId renamed to league/round — model now mirrors schema.sql
-        fixture.setLeagueId(league1);
-        fixture.setRoundId(round);
-        // TODO: Fixture.teamA/teamB removed (now teamAId/teamBId UUID fields) — setTeamA(FantasyTeam)/setTeamB(FantasyTeam) no longer exist — model now mirrors schema.sql
-        fixture.setTeamA(teamA);
-        fixture.setTeamB(teamB);
+        fixture.setLeagueId(league.getLeagueId());
+        fixture.setRoundId(round.getRoundId());
+        fixture.setTeamAId(teamA.getTeamId());
+        fixture.setTeamBId(teamB.getTeamId());
         fixture.setFixtureDate(request.getFixtureDate());
         fixture.setFixtureTime(request.getFixtureTime());
         fixture.setStatus(FixtureStatus.UPCOMING);
@@ -182,8 +180,7 @@ public class FixtureServiceImpl implements FixtureService {
         List<LeagueMembership> memberships = leagueMembershipDAO.findActiveByLeague(leagueId);
         boolean found = false;
         for(LeagueMembership membership : memberships){
-            // TODO: LeagueMembership.fantasyTeam renamed to teamId (UUID) — getFantasyTeam() no longer exists — model now mirrors schema.sql
-            if(membership.getFantasyTeam().getTeamId().equals(teamId)){
+            if(membership.getTeamId().equals(teamId)){
                 found = true;
                 break;
             }
@@ -198,9 +195,8 @@ public class FixtureServiceImpl implements FixtureService {
             if(existingFixture.getStatus() == FixtureStatus.CANCELLED){
                 continue;
             }
-            // TODO: Fixture.teamA/teamB removed (now teamAId/teamBId UUID fields) — getTeamA()/getTeamB() no longer exist — model now mirrors schema.sql
-            UUID existingTeamAId = existingFixture.getTeamA().getTeamId();
-            UUID existingTeamBId = existingFixture.getTeamB().getTeamId();
+            UUID existingTeamAId = existingFixture.getTeamAId();
+            UUID existingTeamBId = existingFixture.getTeamBId();
             if(existingTeamAId.equals(teamBId) || existingTeamBId.equals(teamAId) || existingTeamBId.equals(teamBId)){
                 throw new ConflictException("One of the teams already has a fixture in this round.");
             }
@@ -209,13 +205,11 @@ public class FixtureServiceImpl implements FixtureService {
     private FixtureResponseDTO mapToResponse(Fixture fixture){
         String teamAName = null;
         String teamBName = null;
-        // TODO: Fixture.teamA removed (now teamAId UUID field) — getTeamA() no longer exists — model now mirrors schema.sql
-        Optional<FantasyTeam> optionalTeamA = fantasyTeamDAO.getTeamById(fixture.getTeamA().getTeamId());
+        Optional<FantasyTeam> optionalTeamA = fantasyTeamDAO.getTeamById(fixture.getTeamAId());
         if(optionalTeamA.isPresent()){
             teamAName = optionalTeamA.get().getTeamName();
         }
-        // TODO: Fixture.teamB removed (now teamBId UUID field) — getTeamB() no longer exists — model now mirrors schema.sql
-        Optional<FantasyTeam> optionalTeamB = fantasyTeamDAO.getTeamById(fixture.getTeamB().getTeamId());
+        Optional<FantasyTeam> optionalTeamB = fantasyTeamDAO.getTeamById(fixture.getTeamBId());
         if(optionalTeamB.isPresent()){
             teamBName = optionalTeamB.get().getTeamName();
         }
@@ -224,19 +218,16 @@ public class FixtureServiceImpl implements FixtureService {
     private FixtureResponseDTO mapToResponse(Fixture fixture, String teamAName, String teamBName){
         FixtureResponseDTO response = new FixtureResponseDTO();
         response.setFixtureId(fixture.getFixtureId());
-        // TODO: Fixture.leagueId/roundId renamed to league/round — model now mirrors schema.sql
-        response.setLeagueId(fixture.getLeagueId().getLeagueId());
-        response.setRoundId(fixture.getRoundId().getRoundId());
-        // TODO: Fixture.teamA/teamB removed (now teamAId/teamBId UUID fields) — getTeamA()/getTeamB() no longer exist — model now mirrors schema.sql
-        response.setTeamAId(fixture.getTeamA().getTeamId());
+        response.setLeagueId(fixture.getLeagueId());
+        response.setRoundId(fixture.getRoundId());
+        response.setTeamAId(fixture.getTeamAId());
         response.setTeamAName(teamAName);
-        response.setTeamBId(fixture.getTeamB().getTeamId());
+        response.setTeamBId(fixture.getTeamBId());
         response.setTeamBName(teamBName);
         response.setFixtureDate(fixture.getFixtureDate());
         response.setFixtureTime(fixture.getFixtureTime());
         response.setFixtureStatus(fixture.getStatus());
         response.setSimulationDate(fixture.getSimulationDate());
-        response.setCreatedAt(fixture.getCreatedAt());
         return response;
     }
 }
