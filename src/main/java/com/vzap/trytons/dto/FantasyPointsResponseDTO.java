@@ -16,6 +16,6 @@ public class FantasyPointsResponseDTO {
     private UUID statId;
     private int totalPoints;
     private int calculationVersion;
-    private boolean finalVersion;
-    private LocalDateTime calculationDate;
+    private boolean isFinal;
+    private LocalDateTime calculatedAt;
 }
