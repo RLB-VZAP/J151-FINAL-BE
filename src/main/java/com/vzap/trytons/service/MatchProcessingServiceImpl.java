@@ -112,14 +112,11 @@ public class MatchProcessingServiceImpl implements MatchProcessingService {
         }
     }
 
-    // TODO: Fixture.leagueId renamed to league — model now mirrors schema.sql
     private boolean refreshLeaderboards(UUID actorUserId, Fixture fixture) {
         if (fixture.getLeagueId() == null) {
             return false;
         }
-        // TODO: Fixture.getLeagueId() now returns UUID directly (League FK object removed) — chained .getLeagueId() no longer exists on UUID — model now mirrors schema.sql
-        LeaderboardRefreshResultDTO refresh =
-                leaderboardService.refreshLeagueLeaderboard(actorUserId, fixture.getLeagueId().getLeagueId());
+        LeaderboardRefreshResultDTO refresh = leaderboardService.refreshLeagueLeaderboard(actorUserId, fixture.getLeagueId());
         return refresh != null && refresh.isSuccess();
     }
 }
