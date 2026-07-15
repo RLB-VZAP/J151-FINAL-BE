@@ -19,18 +19,13 @@ public class MatchResult {
 
     private UUID resultId;
     private UUID fixtureId;
-
     private int simulationRunNumber;
     private int teamAScore;
     private int teamBScore;
-
     private MatchTeamSide winnerSide;
-
     private boolean isDraw;
     private boolean approved;
     private boolean isCurrent;
-
     private LocalDateTime resultDate;
-
     private UUID approvedByAdminUserId;
 }
