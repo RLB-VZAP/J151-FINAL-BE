@@ -15,7 +15,7 @@ public interface FantasyTeamPlayerDAO {
     boolean removePlayerFromSquad(UUID teamId, UUID playerId);
     boolean updateSquadRole(UUID teamId, UUID playerId, SquadRole squadRole);
     boolean setCaptain(UUID teamId, UUID playerId);
-    boolean setIsViceCaptain(UUID teamId, UUID playerId);
+    boolean setViceCaptain(UUID teamId, UUID playerId);
     boolean clearCaptain(UUID teamId);
     boolean clearViceCaptain(UUID teamId);
 }
