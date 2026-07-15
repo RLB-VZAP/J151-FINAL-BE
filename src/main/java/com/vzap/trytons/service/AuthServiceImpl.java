@@ -24,57 +24,36 @@ public class AuthServiceImpl implements AuthService {
     private UserDAO userDAO;
 
     @Override
-    public LoginResponseDTO authenticate(
-            String identifier,
-            String password) {
+    public LoginResponseDTO authenticate(String identifier, String password) {
 
         validateCredentials(identifier, password);
 
         String cleanedIdentifier = identifier.trim();
 
-        Optional<User> possibleUser =
-                userDAO.getUserByEmail(cleanedIdentifier);
+        Optional<User> possibleUser = userDAO.getUserByEmail(cleanedIdentifier);
 
         if (possibleUser.isEmpty()) {
-            possibleUser =
-                    userDAO.getUserByUsername(cleanedIdentifier);
+            possibleUser = userDAO.getUserByUsername(cleanedIdentifier);
         }
 
-        User user = possibleUser.orElseThrow(() ->
-                new AuthenticationException(
-                        "Invalid email/username or password."
-                )
-        );
+        User user = possibleUser.orElseThrow(() -> new AuthenticationException("Invalid email/username or password."));
 
         if (!Boolean.TRUE.equals(user.getIsActive())) {
-            throw new AuthorisationException(
-                    "This account is inactive."
-            );
+            throw new AuthorisationException("This account is inactive.");
         }
 
-        if (!PasswordUtil.verifyPassword(
-                password,
-                user.getPasswordHash())) {
+        if (!PasswordUtil.verifyPassword(password, user.getPasswordHash())) {
 
-            throw new AuthenticationException(
-                    "Invalid email/username or password."
-            );
+            throw new AuthenticationException("Invalid email/username or password.");
         }
 
-        boolean lastLoginUpdated =
-                userDAO.updateLastLogin(
-                        user.getUserId(),
-                        LocalDateTime.now()
-                );
+        boolean lastLoginUpdated = userDAO.updateLastLogin(user.getUserId(), LocalDateTime.now());
 
         if (!lastLoginUpdated) {
-            throw new DataAccessException(
-                    "Unable to update the user's last login time.",
-                    null
-            );
+            throw new DataAccessException("Unable to update the user's last login time.", null);
         }
 
-        String tokenCreated =AuthTokenUtil.createToken(user.getUserId());
+        String tokenCreated = AuthTokenUtil.createToken(user.getUserId());
 
         return new LoginResponseDTO(
                 user.getUserId(),
@@ -92,73 +71,39 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthStatusResponseDTO getAuthStatus(
-            String requestingUserId) {
+    public AuthStatusResponseDTO getAuthStatus(String authenticatedUserId) {
+        UUID userId;
 
-        if (requestingUserId == null
-                || requestingUserId.isBlank()) {
-
-            return new AuthStatusResponseDTO(
-                    false,
-                    null,
-                    null,
-                    null,
-                    null
-            );
+        if (authenticatedUserId == null || authenticatedUserId.isBlank()) {
+            throw new AuthenticationException("Authenticated user identity is unavailable.");
         }
 
-        final UUID userId;
 
         try {
-            userId = UUID.fromString(
-                    requestingUserId.trim()
-            );
+            userId = UUID.fromString(authenticatedUserId.trim());
         } catch (IllegalArgumentException e) {
-            throw new ValidationException(
-                    "requestingUserId must be a valid UUID."
-            );
+            throw new ValidationException("requestingUserId must be a valid UUID.");
         }
 
-        Optional<User> possibleUser =
-                userDAO.getUserById(userId);
+        User User = userDAO.getUserById(userId).orElseThrow(() -> new AuthenticationException("User not found."));
 
-        if (possibleUser.isEmpty()
-                || !Boolean.TRUE.equals(
-                possibleUser.get().getIsActive()
-        )) {
-
-            return new AuthStatusResponseDTO(
-                    false,
-                    null,
-                    null,
-                    null,
-                    null
-            );
+        if (!Boolean.TRUE.equals(User.getIsActive())) {
+            throw new AuthenticationException("User is no longer active.");
         }
-
-        User user = possibleUser.get();
-
-        return new AuthStatusResponseDTO(
-                true,
-                user.getUserId(),
-                user.getUsername(),
-                user.getEmail(),
-                user.getRole()
-        );
+        return AuthStatusResponseDTO.builder()
+                .authenticated(true)
+                .userId(User.getUserId())
+                .username(User.getUsername())
+                .email(User.getEmail())
+                .role(User.getRole())
+                .build();
     }
 
-    private void validateCredentials(
-            String identifier,
-            String password) {
+    private void validateCredentials(String identifier, String password) {
 
-        if (identifier == null
-                || identifier.isBlank()
-                || password == null
-                || password.isBlank()) {
-
-            throw new ValidationException(
-                    "Email/username and password are required."
-            );
+        if (identifier == null || identifier.isBlank() || password == null || password.isBlank()) {
+            throw new ValidationException("Email/username and password are required.");
         }
+
     }
 }
