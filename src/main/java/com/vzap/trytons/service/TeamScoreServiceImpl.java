@@ -206,14 +206,11 @@ public class TeamScoreServiceImpl implements TeamScoreService {
         List<Fixture> currentSeasonFixtures = new ArrayList<>();
 
         for (Fixture fixture : allFixtures){
-            fixture.getRoundId();
 
             FantasyRound currentRound = fantasyRoundDAO.getRoundById(fixture.getRoundId().getRoundId()).orElseThrow(() -> new ResourceNotFoundException("no round found"));
 
             if (currentRound.getSeason().equals(season)){
                 currentSeasonFixtures.add(fixture);
-            } else {
-                continue;
             }
         }
 
