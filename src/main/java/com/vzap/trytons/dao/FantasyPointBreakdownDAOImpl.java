@@ -14,10 +14,8 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.vzap.trytons.util.DBConnectionManager.getConnection;
-
-public class FantasyPointBreakdownDAOImpl implements FantasyPointBreakdownDAO {
-    private static final Logger LOG = Logger.getLogger(FantasyPointsDAOImpl.class.getName());
+public class FantasyPointBreakdownDAOImpl extends BaseDAO implements FantasyPointBreakdownDAO {
+    private static final Logger LOG = Logger.getLogger(FantasyPointBreakdownDAOImpl.class.getName());
 
     @Override
     public FantasyPointBreakdown save(FantasyPointBreakdown fantasyPointBreakdown) {
