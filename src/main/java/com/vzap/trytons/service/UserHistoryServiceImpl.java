@@ -81,8 +81,7 @@ public class UserHistoryServiceImpl implements UserHistoryService {
 
             for(Fixture fixture : fixtures){
 
-                // TODO: Fixture.leagueId/roundId renamed to league/round — model now mirrors schema.sql
-                UUID roundId = fixture.getRoundId().getRoundId();
+                UUID roundId = fixture.getRoundId();
 
                 Optional<MatchResult> resultOpt = matchResultDAO.findCurrentByFixtureId(fixture.getFixtureId());
 
@@ -95,19 +94,12 @@ public class UserHistoryServiceImpl implements UserHistoryService {
 
                 MatchTeamSide side = MatchTeamSide.TEAM_A;
 
-                // TODO: Fixture.teamA removed (now teamAId UUID field) — getTeamA() no longer exists — model now mirrors schema.sql
-                if (fixture.getTeamA().getTeamId().equals(teamId)){
-
-                    side = MatchTeamSide.TEAM_A;
-
-                } else {
-
+                if (!fixture.getTeamAId().equals(teamId)){
                     side = MatchTeamSide.TEAM_B;
                 }
 
+                Optional<MatchTeamScore> pointsScored = matchTeamScoreDAO.findByResultIdAndTeamSide(result.getResultId(), side);
                 if (result.isDraw()){
-
-                    Optional<MatchTeamScore> pointsScored = matchTeamScoreDAO.findByResultIdAndTeamSide(result.getResultId(), side);
 
                     if (pointsScored.isEmpty()){
                         continue;
@@ -126,8 +118,6 @@ public class UserHistoryServiceImpl implements UserHistoryService {
                     }
 
                 } else {
-
-                    Optional<MatchTeamScore> pointsScored = matchTeamScoreDAO.findByResultIdAndTeamSide(result.getResultId(), side);
 
                     if (pointsScored.isEmpty()){
                         continue;
