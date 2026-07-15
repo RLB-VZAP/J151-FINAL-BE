@@ -56,7 +56,7 @@ public class MatchResultServiceImpl implements MatchResultService {
             throw new DataAccessException("Failed to persist the captured match result.", null);
         }
 
-        return mapToResponse(saved);
+        return mapToResponse(saved, fixture);
     }
 
     @Override
@@ -66,7 +66,10 @@ public class MatchResultServiceImpl implements MatchResultService {
         }
 
         MatchResult result = matchResultDAO.findCurrentByFixtureId(fixtureId).orElseThrow(() -> new ResourceNotFoundException("No match result exists for the fixture."));
-        return mapToResponse(result);
+
+        Fixture fixture = fixtureDAO.findFixtureById(fixtureId).orElseThrow(() -> new ResourceNotFoundException("Fixture was not found"));
+
+        return mapToResponse(result, fixture);
     }
 
     private void validateRequest(MatchResultRequestDTO request) {
@@ -117,10 +120,12 @@ public class MatchResultServiceImpl implements MatchResultService {
         return teamAScore > teamBScore ? MatchTeamSide.TEAM_A : MatchTeamSide.TEAM_B;
     }
 
-    private MatchResultResponseDTO mapToResponse(MatchResult result) {
+    private MatchResultResponseDTO mapToResponse(MatchResult result, Fixture fixture) {
         return new MatchResultResponseDTO(
                 result.getResultId(),
                 result.getFixtureId(),
+                fixture.getTeamAId(),
+                fixture.getTeamBId(),
                 result.getSimulationRunNumber(),
                 result.getTeamAScore(),
                 result.getTeamBScore(),
@@ -129,7 +134,6 @@ public class MatchResultServiceImpl implements MatchResultService {
                 result.isApproved(),
                 result.isCurrent(),
                 result.getResultDate(),
-                // TODO: MatchResult.approvedAt removed (no column, never populated) — model now mirrors schema.sql
                 result.getApprovedByAdminUserId()
         );
     }
