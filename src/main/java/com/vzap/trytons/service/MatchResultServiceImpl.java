@@ -98,40 +98,29 @@ public class MatchResultServiceImpl implements MatchResultService {
         return MatchResult.builder()
                 .resultId(UUID.randomUUID())
                 .fixtureId(fixture.getFixtureId())
-                // TODO: Fixture.teamA/teamB removed (now teamAId/teamBId UUID fields) — getTeamA()/getTeamB() no longer exist — model now mirrors schema.sql
-                .teamAId(fixture.getTeamA() != null ? fixture.getTeamA().getTeamId() : null)
-                // TODO: Schema alignment: MatchResult derives team IDs from fixtureId.
-                .teamBId(fixture.getTeamB() != null ? fixture.getTeamB().getTeamId() : null)
                 .simulationRunNumber(simulationRunNumber)
                 .teamAScore(teamAScore)
                 .teamBScore(teamBScore)
-                // TODO: MatchResult.winnerSide retyped String -> MatchTeamSide; MatchResult.approvedAt removed (no column, never populated) — model now mirrors schema.sql
                 .winnerSide(resolveWinnerSide(teamAScore, teamBScore))
-                .draw(teamAScore == teamBScore)
+                .isDraw(teamAScore == teamBScore)
                 .approved(false)
-                .current(true)
+                .isCurrent(true)
                 .resultDate(LocalDateTime.now())
-                .approvedAt(null)
-                .approvedByAdminId(null)
-                // TODO: Schema alignment: use MatchResult.approvedByAdminUserId.
+                .approvedByAdminUserId(null)
                 .build();
     }
 
-    // TODO: MatchResult.winnerSide retyped String -> MatchTeamSide — model now mirrors schema.sql
-    private String resolveWinnerSide(int teamAScore, int teamBScore) {
+    private MatchTeamSide resolveWinnerSide(int teamAScore, int teamBScore) {
         if (teamAScore == teamBScore) {
             return null;
         }
-        return teamAScore > teamBScore ? MatchTeamSide.TEAM_A.name() : MatchTeamSide.TEAM_B.name();
+        return teamAScore > teamBScore ? MatchTeamSide.TEAM_A : MatchTeamSide.TEAM_B;
     }
 
     private MatchResultResponseDTO mapToResponse(MatchResult result) {
         return new MatchResultResponseDTO(
                 result.getResultId(),
                 result.getFixtureId(),
-                result.getTeamAId(),
-                // TODO: Schema alignment: MatchResult derives team IDs from fixtureId.
-                result.getTeamBId(),
                 result.getSimulationRunNumber(),
                 result.getTeamAScore(),
                 result.getTeamBScore(),
@@ -141,7 +130,7 @@ public class MatchResultServiceImpl implements MatchResultService {
                 result.isCurrent(),
                 result.getResultDate(),
                 // TODO: MatchResult.approvedAt removed (no column, never populated) — model now mirrors schema.sql
-                result.getApprovedAt()
+                result.getApprovedByAdminUserId()
         );
     }
 }
