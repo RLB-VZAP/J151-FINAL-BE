@@ -1,8 +1,6 @@
 package com.vzap.trytons.model;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,9 +16,8 @@ public class ChatMessage {
     private LocalDateTime sentDate;
     private Boolean removed;
 
-    private League league;
-    private List<Report> reports = new ArrayList<>();
+    private UUID leagueId;
 
-    private User sender;
-    private User removedByUser;
+    private UUID senderUserId;
+    private UUID removedByUserId;
 }

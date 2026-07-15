@@ -20,8 +20,6 @@ public class FantasyTeam {
     private BigDecimal remainingBudget;
     private LocalDateTime creationDate;
     private int totalPoints;
-    private int weeklyPoints;
     private Boolean isValid;
-    private Boolean isLocked;
-    private RegisteredUser owner;
+    private UUID ownerUserId;
 }

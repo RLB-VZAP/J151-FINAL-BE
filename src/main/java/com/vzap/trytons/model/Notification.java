@@ -21,5 +21,5 @@ public class Notification {
     private String relatedEntityType;
     private UUID relatedEntityId;
 
-    private User user;
+    private UUID userId;
 }

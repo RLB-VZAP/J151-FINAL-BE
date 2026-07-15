@@ -49,6 +49,7 @@ public class FantasyPointCalculationServiceImpl implements FantasyPointCalculati
 
         Fixture currentFixture = fixtureDAO.findById(currentFixtureId)
                 .orElseThrow(() -> new ResourceNotFoundException("Fixture was not found"));
+        // TODO: Fixture.leagueId/roundId renamed to league/round — model now mirrors schema.sql
         String season = currentFixture.getRoundId().getSeason();
 
         List<ScoringRule> scoringRules = scoringRuleDAO.findActiveRules(season);
@@ -110,6 +111,7 @@ public class FantasyPointCalculationServiceImpl implements FantasyPointCalculati
                                 .statId(statId)
                                 .totalPoints(total)
                                 .calculationVersion(nextVersion)
+                                // TODO: FantasyPoints.finalVersion/calculationDate renamed to isFinal/calculatedAt — model now mirrors schema.sql
                                 .finalVersion(true)
                                 .calculationDate(LocalDateTime.now())
                                 .build()

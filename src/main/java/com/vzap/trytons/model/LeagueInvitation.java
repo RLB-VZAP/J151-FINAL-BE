@@ -1,5 +1,6 @@
 package com.vzap.trytons.model;
 
+import com.vzap.trytons.enums.InvitationStatus;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,10 +15,11 @@ public class LeagueInvitation {
 
     private UUID invitationId;
     private LocalDateTime expiryDate;
-    private Boolean expired;
+    private InvitationStatus status;
     private LocalDateTime acceptedAt;
+    private LocalDateTime createdAt;
 
-    private League league;
-    private RegisteredUser invitedUser;
-    private RegisteredUser createdByUser;
+    private UUID leagueId;
+    private UUID invitedUserId;
+    private UUID createdByUserId;
 }

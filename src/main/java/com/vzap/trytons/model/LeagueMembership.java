@@ -1,6 +1,5 @@
 package com.vzap.trytons.model;
 
-import com.vzap.trytons.enums.LeagueMemberRole;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -17,7 +16,7 @@ public class LeagueMembership {
     private Boolean isActive;
     private LocalDateTime joinDate;
 
-    private League league;
-    private RegisteredUser registeredUser;
-    private FantasyTeam fantasyTeam;
+    private UUID leagueId;
+    private UUID registeredUserId;
+    private UUID teamId;
 }

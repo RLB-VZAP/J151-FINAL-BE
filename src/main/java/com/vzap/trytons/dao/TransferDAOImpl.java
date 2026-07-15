@@ -47,22 +47,26 @@ public class TransferDAOImpl extends BaseDAO implements TransferDAO {
              PreparedStatement ps = con.prepareStatement(query)) {
 
             ps.setString(1, transfer.getTransferId().toString());
+            // TODO: Transfer.fantasyTeam/round/removedPlayer/addedPlayer renamed to teamId/roundId/removedPlayerId/addedPlayerId (UUID) — model now mirrors schema.sql
             ps.setString(2, transfer.getFantasyTeam().getTeamId().toString());
             ps.setString(3, transfer.getRound().getRoundId().toString());
             ps.setString(4, transfer.getRemovedPlayer().getPlayerId().toString());
             ps.setString(5, transfer.getAddedPlayer().getPlayerId().toString());
             ps.setTimestamp(6, Timestamp.valueOf(transfer.getTransferDate()));
+            // TODO: Transfer.removed_player_value/added_player_value renamed to removedPlayerValue/addedPlayerValue — model now mirrors schema.sql
             ps.setBigDecimal(7, transfer.getRemoved_player_value());
             ps.setBigDecimal(8, transfer.getAdded_player_value());
             ps.setInt(9, transfer.getPenaltyPoints());
             ps.setString(10, transfer.getStatus().name());
 
+            // TODO: Transfer.confirmationDate renamed to confirmedAt — model now mirrors schema.sql
             if (transfer.getConfirmationDate() != null) {
                 ps.setTimestamp(11, Timestamp.valueOf(transfer.getConfirmationDate()));
             } else {
                 ps.setNull(11, Types.TIMESTAMP);
             }
 
+            // TODO: Transfer.createdBy renamed to createdByUserId (UUID) — model now mirrors schema.sql
             ps.setString(12, transfer.getCreatedBy().getUserId().toString());
 
             if (ps.executeUpdate() == 1) {
@@ -246,6 +250,7 @@ public class TransferDAOImpl extends BaseDAO implements TransferDAO {
 
         transfer.setTransferId(UUID.fromString(rs.getString("transferId")));
         transfer.setTransferDate(rs.getTimestamp("transferDate").toLocalDateTime());
+        // TODO: Transfer.removed_player_value/added_player_value renamed to removedPlayerValue/addedPlayerValue — model now mirrors schema.sql
         transfer.setRemoved_player_value(rs.getBigDecimal("removed_player_value"));
         transfer.setAdded_player_value(rs.getBigDecimal("added_player_value"));
         transfer.setValueDifference(rs.getBigDecimal("valueDifference"));
@@ -253,28 +258,34 @@ public class TransferDAOImpl extends BaseDAO implements TransferDAO {
         transfer.setStatus(TransferStatus.valueOf(rs.getString("status")));
 
         Timestamp confirmedAt = rs.getTimestamp("confirmedAt");
+        // TODO: Transfer.confirmationDate renamed to confirmedAt — model now mirrors schema.sql
         transfer.setConfirmationDate(confirmedAt != null ? confirmedAt.toLocalDateTime() : null);
 
         FantasyTeam team = new FantasyTeam();
         team.setTeamId(UUID.fromString(rs.getString("teamId")));
+        // TODO: Transfer.fantasyTeam renamed to teamId (UUID) — model now mirrors schema.sql
         transfer.setFantasyTeam(team);
 
         FantasyRound round = new FantasyRound();
         round.setRoundId(UUID.fromString(rs.getString("roundId")));
+        // TODO: Transfer.round renamed to roundId (UUID) — model now mirrors schema.sql
         transfer.setRound(round);
 
         Player removed = new Player();
         removed.setPlayerId(UUID.fromString(rs.getString("removed_player_id")));
         removed.setPlayerName(rs.getString("removed_player_name"));
+        // TODO: Transfer.removedPlayer renamed to removedPlayerId (UUID) — model now mirrors schema.sql
         transfer.setRemovedPlayer(removed);
 
         Player added = new Player();
         added.setPlayerId(UUID.fromString(rs.getString("added_player_id")));
         added.setPlayerName(rs.getString("added_player_name"));
+        // TODO: Transfer.addedPlayer renamed to addedPlayerId (UUID) — model now mirrors schema.sql
         transfer.setAddedPlayer(added);
 
         RegisteredUser createdBy = new RegisteredUser();
         createdBy.setUserId(UUID.fromString(rs.getString("created_by_user_id")));
+        // TODO: Transfer.createdBy renamed to createdByUserId (UUID) — model now mirrors schema.sql
         transfer.setCreatedBy(createdBy);
 
         return transfer;

@@ -17,12 +17,11 @@ public class Report {
     private String reportReason;
     private LocalDateTime reportDate;
     private ReportStatus status;
-    private Boolean resolved;
     private String resolution;
 
-    private ChatMessage chatMessage;
+    private UUID messageId;
 
-    private User reporter;
-    private User reportedUser;
-    private Administrator resolvedByAdmin;
+    private UUID reporterUserId;
+    private UUID reportedUserId;
+    private UUID resolvedByAdminUserId;
 }
