@@ -123,11 +123,13 @@ public class SquadValidationServiceImpl implements SquadValidationService {
         int fullbackCount = 0;
         int invalidCount = 0;
         for (Player player : players) {
+            // TODO: Player.position replaced by positionId (UUID FK) — model now mirrors schema.sql
             if (player.getPosition() == null || player.getPosition().getPositionName() == null) {
                 invalidCount++;
                 continue;
             }
 
+            // TODO: Player.position replaced by positionId (UUID FK) — model now mirrors schema.sql
             switch (player.getPosition().getPositionName()) {
                 case "Prop":
                     propCount++;

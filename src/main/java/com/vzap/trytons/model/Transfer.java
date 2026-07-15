@@ -1,7 +1,6 @@
 package com.vzap.trytons.model;
 
 import com.vzap.trytons.enums.TransferStatus;
-import com.vzap.trytons.enums.TransferWindowStatus;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -15,15 +14,18 @@ import java.util.UUID;
 @Setter
 public class Transfer {
     private UUID transferId;
-    private LocalDateTime transferDate, confirmationDate;
+    private LocalDateTime transferDate;
+    private LocalDateTime confirmedAt;
     private int penaltyPoints;
-    private BigDecimal removed_player_value, added_player_value, valueDifference;
+    private BigDecimal removedPlayerValue;
+    private BigDecimal addedPlayerValue;
+    private BigDecimal valueDifference;
     private TransferStatus status;
-    private FantasyRound round;
-    private FantasyTeam fantasyTeam;
-    private Player removedPlayer;
-    private Player addedPlayer;
-    private RegisteredUser createdBy;
+    private UUID roundId;
+    private UUID teamId;
+    private UUID removedPlayerId;
+    private UUID addedPlayerId;
+    private UUID createdByUserId;
 
 
 

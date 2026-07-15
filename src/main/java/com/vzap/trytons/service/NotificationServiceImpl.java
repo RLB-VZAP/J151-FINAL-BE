@@ -60,6 +60,7 @@ public class NotificationServiceImpl implements NotificationService{
         Notification notification = notificationDAO.findById(notificationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
 
+        // TODO: Notification.user removed (now userId UUID field) — getUser() no longer exists — model now mirrors schema.sql
         if(notification.getUser() == null || !actorUserId.equals(notification.getUser().getUserId())){
             throw new AuthorisationException("User may only mark their own messages as read");
         }
@@ -97,6 +98,7 @@ public class NotificationServiceImpl implements NotificationService{
                 .orElseThrow(() -> new ResourceNotFoundException("Target user not found."));
 
         Notification notification = new Notification();
+        // TODO: Notification.user removed (now userId UUID field) — setUser(User) no longer exists — model now mirrors schema.sql
         notification.setUser(User.builder().userId(request.getUserId()).build());
         notification.setType(request.getType());
         notification.setBody(request.getBody());

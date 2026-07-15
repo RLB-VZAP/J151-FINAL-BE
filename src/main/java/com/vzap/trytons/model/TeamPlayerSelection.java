@@ -21,7 +21,7 @@ public class TeamPlayerSelection {
 
     private SquadRole squadRole;
 
-    private FantasyTeam fantasyTeam;
+    private UUID teamId;
 
-    private Player player;
+    private UUID playerId;
 }

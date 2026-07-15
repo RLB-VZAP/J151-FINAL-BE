@@ -19,6 +19,14 @@ public class Ranking {
     private UUID teamId;
     private int currentRanking;
     private Integer previousRanking;
-    private int matchesPlayed, matchesWon, matchesDrawn, matchesLost, pointsFor, pointsAgainst, scoreDifference,leaguePoints, total_fantasy_points;
+    private int matchesPlayed;
+    private int matchesWon;
+    private int matchesDrawn;
+    private int matchesLost;
+    private int pointsFor;
+    private int pointsAgainst;
+    private int scoreDifference;
+    private int leaguePoints;
+    private int totalFantasyPoints;
     private LocalDateTime updatedAt;
 }

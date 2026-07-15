@@ -24,6 +24,7 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
             Logger.getLogger(MatchResultDAOImpl.class.getName());
 
     private static final String MATCH_RESULT_SELECT = """
+    // TODO: Schema alignment: MatchResult derives teams from fixtureId; do not project team IDs onto the model.
             SELECT
                 mr.resultId AS resultId,
                 mr.fixtureId AS fixtureId,
@@ -63,6 +64,7 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
                                 resultSet.getString("fixtureId")
                         )
                 )
+                // TODO: Schema alignment: MatchResult derives team IDs from fixtureId and uses isDraw/isCurrent.
                 .teamAId(
                         UUID.fromString(
                                 resultSet.getString("teamAId")
@@ -79,6 +81,7 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
                 .teamBScore(
                         resultSet.getInt("teamBScore")
                 )
+                // TODO: MatchResult.winnerSide retyped String -> MatchTeamSide — model now mirrors schema.sql
                 .winnerSide(
                         resultSet.getString("winnerSide")
                 )
@@ -94,6 +97,7 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
                         resultSet.getBoolean("approved")
                 )
                 .approvedByAdminId(
+                // TODO: Schema alignment: use MatchResult.approvedByAdminUserId.
                         approvedByAdminId == null
                                 ? null: UUID.fromString(approvedByAdminId))
                 .simulationRunNumber(resultSet.getInt("simulationRunNumber"))
@@ -158,6 +162,7 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
                     matchResult.getTeamBScore()
             );
 
+            // TODO: MatchResult.winnerSide retyped String -> MatchTeamSide — model now mirrors schema.sql
             statement.setString(
                     5,
                     matchResult.getWinnerSide()
@@ -188,6 +193,7 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
             );
 
             if (matchResult.getApprovedByAdminId() == null) {
+            // TODO: Schema alignment: use MatchResult.approvedByAdminUserId.
                 statement.setNull(
                         9,
                         Types.VARCHAR

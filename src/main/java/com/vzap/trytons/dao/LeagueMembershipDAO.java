@@ -1,6 +1,5 @@
 package com.vzap.trytons.dao;
 
-import com.vzap.trytons.enums.LeagueMemberRole;
 import com.vzap.trytons.model.League;
 import com.vzap.trytons.model.LeagueMembership;
 

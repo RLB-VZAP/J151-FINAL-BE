@@ -117,6 +117,7 @@ public class TransferServiceImpl implements TransferService {
             throw new BusinessRuleException("You cannot afford this transfer. Insufficient remaining budget.");
         }
 
+        // TODO: TeamPlayerSelection.player replaced by playerId (UUID FK) — model now mirrors schema.sql
         List<UUID> proposedPlayerIds = currentSquad.stream()
                 .filter(selection -> selection != null && selection.getPlayer() != null)
                 .map(selection -> selection.getPlayer().getPlayerId())
@@ -164,16 +165,20 @@ public class TransferServiceImpl implements TransferService {
         Transfer transfer = new Transfer();
         transfer.setTransferId(UUID.randomUUID());
         transfer.setTransferDate(LocalDateTime.now());
+        // TODO: Transfer.round/fantasyTeam/removedPlayer/addedPlayer are now UUID FKs (roundId/teamId/removedPlayerId/addedPlayerId) — setRound()/setFantasyTeam()/setRemovedPlayer()/setAddedPlayer() no longer exist. Model now mirrors schema.sql
         transfer.setRound(round);
         transfer.setFantasyTeam(team);
         transfer.setRemovedPlayer(removedPlayer);
         transfer.setAddedPlayer(addedPlayer);
+        // TODO: Transfer.removed_player_value/added_player_value renamed to removedPlayerValue/addedPlayerValue — model now mirrors schema.sql
         transfer.setRemoved_player_value(removedValue);
         transfer.setAdded_player_value(addedValue);
         transfer.setValueDifference(addedValue.subtract(removedValue));
         transfer.setPenaltyPoints(penaltyPoints);
         transfer.setStatus(TransferStatus.CONFIRMED);
+        // TODO: Transfer.confirmationDate renamed to confirmedAt — model now mirrors schema.sql
         transfer.setConfirmationDate(LocalDateTime.now());
+        // TODO: Transfer.createdBy (RegisteredUser) replaced by createdByUserId (UUID) — model now mirrors schema.sql
         transfer.setCreatedBy(createdBy);
 
         Transfer savedTransfer = transferDAO.saveTransfer(transfer)
@@ -232,14 +237,17 @@ public class TransferServiceImpl implements TransferService {
     }
 
     private void validateTeamOwnership(UUID actorId, FantasyTeam team) {
+        // TODO: FantasyTeam.owner (RegisteredUser) replaced by ownerUserId (UUID) — model now mirrors schema.sql
         if (team.getOwner() == null || team.getOwner().getUserId() == null) {
             throw new BusinessRuleException("Fantasy team owner could not be verified");
         }
 
+        // TODO: FantasyTeam.owner (RegisteredUser) replaced by ownerUserId (UUID) — model now mirrors schema.sql
         if (!team.getOwner().getUserId().equals(actorId)) {
             throw new AuthorisationException("You do not own this fantasy team");
         }
 
+        // TODO: FantasyTeam.isLocked removed (no column, no derivation) — this check never fires (DAO always hardcodes false). Real lock state is fantasyRound.status/roundLock. Model now mirrors schema.sql
         if (Boolean.TRUE.equals(team.getIsLocked())) {
             throw new BusinessRuleException("This team is locked and cannot make transfers");
         }
@@ -305,6 +313,7 @@ public class TransferServiceImpl implements TransferService {
             throw new BusinessRuleException("Current squad could not be loaded");
         }
 
+        // TODO: TeamPlayerSelection.player replaced by playerId (UUID FK) — model now mirrors schema.sql
         boolean removedPlayerInSquad = currentSquad.stream()
                 .filter(selection -> selection != null && selection.getPlayer() != null)
                 .anyMatch(selection -> removedPlayerId.equals(selection.getPlayer().getPlayerId()));
@@ -313,6 +322,7 @@ public class TransferServiceImpl implements TransferService {
             throw new BusinessRuleException("The player you are trying to remove is not in your squad");
         }
 
+        // TODO: TeamPlayerSelection.player replaced by playerId (UUID FK) — model now mirrors schema.sql
         boolean addedPlayerAlreadyInSquad = currentSquad.stream()
                 .filter(selection -> selection != null && selection.getPlayer() != null)
                 .anyMatch(selection -> addedPlayerId.equals(selection.getPlayer().getPlayerId()));
@@ -357,12 +367,14 @@ public class TransferServiceImpl implements TransferService {
     private TransferResponseDTO toResponse(Transfer transfer, UUID fallbackTeamId) {
         BigDecimal valueDifference = transfer.getValueDifference();
 
+        // TODO: Transfer.removed_player_value/added_player_value renamed to removedPlayerValue/addedPlayerValue — model now mirrors schema.sql
         if (valueDifference == null
                 && transfer.getAdded_player_value() != null
                 && transfer.getRemoved_player_value() != null) {
             valueDifference = transfer.getAdded_player_value().subtract(transfer.getRemoved_player_value());
         }
 
+        // TODO: Transfer.round/fantasyTeam/removedPlayer/addedPlayer are now UUID FKs (roundId/teamId/removedPlayerId/addedPlayerId) — getRound()/getFantasyTeam()/getRemovedPlayer()/getAddedPlayer() no longer exist. Model now mirrors schema.sql
         return TransferResponseDTO.builder()
                 .transferId(transfer.getTransferId())
                 .teamId(transfer.getFantasyTeam() != null
@@ -381,12 +393,14 @@ public class TransferServiceImpl implements TransferService {
                 .added_player_name(transfer.getAddedPlayer() != null
                         ? transfer.getAddedPlayer().getPlayerName()
                         : null)
+                // TODO: Transfer.removed_player_value/added_player_value renamed to removedPlayerValue/addedPlayerValue — model now mirrors schema.sql
                 .removed_player_value(transfer.getRemoved_player_value())
                 .added_player_value(transfer.getAdded_player_value())
                 .valueDifference(valueDifference)
                 .penaltyPoints(transfer.getPenaltyPoints())
                 .status(transfer.getStatus() != null ? transfer.getStatus().name() : null)
                 .transferDate(transfer.getTransferDate())
+                // TODO: Transfer.confirmationDate renamed to confirmedAt — model now mirrors schema.sql
                 .confirmationDate(transfer.getConfirmationDate())
                 .build();
     }

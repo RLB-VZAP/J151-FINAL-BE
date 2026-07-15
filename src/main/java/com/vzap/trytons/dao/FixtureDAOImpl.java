@@ -24,6 +24,7 @@ public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
         try(Connection con = getConnection();
             PreparedStatement ps = con.prepareStatement(query)){
             ps.setString(1,fixture.getFixtureId().toString());
+            // TODO: Fixture.leagueId/roundId renamed to league/round — model now mirrors schema.sql
             ps.setString(2,fixture.getLeagueId().getLeagueId().toString());
             ps.setString(3,fixture.getRoundId().getRoundId().toString());
             ps.setString(4,fixture.getTeamA().getTeamId().toString());
@@ -162,6 +163,7 @@ public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
         String query = "UPDATE fixture SET leagueId=?, roundId=?, team_a_id=?, team_b_id=?, fixtureDate=?, fixtureTime=?, status=?, simulationDate=? WHERE fixtureId=?" ;
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query)){
+            // TODO: Fixture.leagueId/roundId renamed to league/round — model now mirrors schema.sql
             ps.setString(1,fixture.getLeagueId().getLeagueId().toString());
             ps.setString(2,fixture.getRoundId().getRoundId().toString());
             ps.setString(3,fixture.getTeamA().getTeamId().toString());
@@ -213,15 +215,19 @@ public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
         fixture.setFixtureId(UUID.fromString(rs.getString("fixtureId")));
         League league = new League();
         league.setLeagueId(UUID.fromString(rs.getString("leagueId")));
+        // TODO: Fixture.leagueId/roundId renamed to league/round — model now mirrors schema.sql
         fixture.setLeagueId(league);
         FantasyRound round = new FantasyRound();
         round.setRoundId(UUID.fromString(rs.getString("roundId")));
+        // TODO: Fixture.round renamed to roundId (UUID) — model now mirrors schema.sql
         fixture.setRoundId(round);
         FantasyTeam teamA = new FantasyTeam();
         teamA.setTeamId(UUID.fromString(rs.getString("team_a_id")));
+        // TODO: Fixture.teamA renamed to teamAId (UUID) — model now mirrors schema.sql
         fixture.setTeamA(teamA);
         FantasyTeam teamB = new FantasyTeam();
         teamB.setTeamId(UUID.fromString(rs.getString("team_b_id")));
+        // TODO: Fixture.teamB renamed to teamBId (UUID) — model now mirrors schema.sql
         fixture.setTeamB(teamB);
         fixture.setStatus(FixtureStatus.valueOf(rs.getString("status")));
         fixture.setFixtureDate(rs.getDate("fixtureDate").toLocalDate());

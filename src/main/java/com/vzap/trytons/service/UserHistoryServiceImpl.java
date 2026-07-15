@@ -81,6 +81,7 @@ public class UserHistoryServiceImpl implements UserHistoryService {
 
             for(Fixture fixture : fixtures){
 
+                // TODO: Fixture.leagueId/roundId renamed to league/round — model now mirrors schema.sql
                 UUID roundId = fixture.getRoundId().getRoundId();
 
                 Optional<MatchResult> resultOpt = matchResultDAO.findCurrentByFixtureId(fixture.getFixtureId());
@@ -94,6 +95,7 @@ public class UserHistoryServiceImpl implements UserHistoryService {
 
                 MatchTeamSide side = MatchTeamSide.TEAM_A;
 
+                // TODO: Fixture.teamA removed (now teamAId UUID field) — getTeamA() no longer exists — model now mirrors schema.sql
                 if (fixture.getTeamA().getTeamId().equals(teamId)){
 
                     side = MatchTeamSide.TEAM_A;
@@ -111,6 +113,7 @@ public class UserHistoryServiceImpl implements UserHistoryService {
                         continue;
                     } else {
 
+                        // TODO: MatchTeamScore.score replaced by playerPoints/captainBonus/transferPenalty/totalScore — model now mirrors schema.sql
                         WeeklyPerformanceResponseDTO wpr = WeeklyPerformanceResponseDTO.builder()
                                 .roundId(roundId)
                                 .fixtureId(fixture.getFixtureId())
@@ -130,6 +133,7 @@ public class UserHistoryServiceImpl implements UserHistoryService {
                         continue;
                     }
 
+                    // TODO: MatchResult.winnerSide retyped String -> MatchTeamSide — model now mirrors schema.sql
                     String outcome = result.getWinnerSide();
 
                     if (side.name().equals(outcome)){
@@ -139,6 +143,7 @@ public class UserHistoryServiceImpl implements UserHistoryService {
                         outcome = "LOSS";
                     }
 
+                    // TODO: MatchTeamScore.score replaced by playerPoints/captainBonus/transferPenalty/totalScore — model now mirrors schema.sql
                     WeeklyPerformanceResponseDTO wpr = WeeklyPerformanceResponseDTO.builder()
                             .roundId(roundId)
                             .fixtureId(fixture.getFixtureId())

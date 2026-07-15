@@ -38,6 +38,7 @@ public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlay
 
         selection.setIsCaptain(rs.getBoolean("isCaptain"));
         selection.setIsViceCaptain(rs.getBoolean("isViceCaptain"));
+        // TODO: TeamPlayerSelection.fantasyTeam/player renamed to teamId/playerId (UUID) — model now mirrors schema.sql
         selection.setFantasyTeam(team);
         selection.setPlayer(player);
 

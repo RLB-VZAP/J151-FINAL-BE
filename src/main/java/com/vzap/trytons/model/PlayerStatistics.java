@@ -31,4 +31,8 @@ public class PlayerStatistics {
     private int redCards;
 
     private LocalDateTime statisticDate;
+
+    private UUID correctedByAdminUserId;
+    private String correctionReason;
+    private LocalDateTime correctedAt;
 }
