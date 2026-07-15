@@ -6,8 +6,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @NoArgsConstructor
@@ -24,13 +22,5 @@ public class League {
     private Boolean isActive;
     private int maxMembers;
 
-    private RegisteredUser manager;
-
-    private List<LeagueMembership> memberships = new ArrayList<>();
-    private List<LeagueInvitation> invitations = new ArrayList<>();
-    private List<Leaderboard> leaderboards = new ArrayList<>();
-    private List<Fixture> fixtures = new ArrayList<>();
-    private List<ScoringRule> scoringRules = new ArrayList<>();
-    private List<ChatMessage> chatMessages = new ArrayList<>();
-    private List<SimulationSettings> simulationSettings = new ArrayList<>();
+    private UUID managerUserId;
 }

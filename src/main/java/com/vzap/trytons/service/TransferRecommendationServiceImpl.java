@@ -36,6 +36,7 @@ public class TransferRecommendationServiceImpl implements  TransferRecommendatio
         FantasyTeam team = fantasyTeamDAO.getTeamById(request.getTeamId())
                 .orElseThrow(() -> new ResourceNotFoundException("Fantasy team not found"));
 
+        // TODO: FantasyTeam.owner (RegisteredUser) replaced by ownerUserId (UUID) — model now mirrors schema.sql
         if(!team.getOwner().getUserId().equals(actorUserId)) {
             throw new AuthenticationException("You do not own this fantasy team");
         }
@@ -49,12 +50,14 @@ public class TransferRecommendationServiceImpl implements  TransferRecommendatio
                     .build();
         }
 
+        // TODO: TeamPlayerSelection.player replaced by playerId (UUID FK); cascades to a type-inference error below — model now mirrors schema.sql
         Set<UUID> squadPlayerIds = currentSquad.stream()
                 .map(s -> s.getPlayer().getPlayerId())
                 .collect(Collectors.toSet());
 
         List<Player> focusPlayers;
         if(request.getCurrentPlayerId() != null) {
+            // TODO: TeamPlayerSelection.player replaced by playerId (UUID FK) — model now mirrors schema.sql
             Player focusPlayer = currentSquad.stream()
                     .map(TeamPlayerSelection::getPlayer)
                     .filter(p -> p.getPlayerId().equals(request.getCurrentPlayerId()))
@@ -63,6 +66,7 @@ public class TransferRecommendationServiceImpl implements  TransferRecommendatio
 
             focusPlayers = List.of(focusPlayer);
         }else{
+            // TODO: TeamPlayerSelection.player replaced by playerId (UUID FK) — model now mirrors schema.sql
             focusPlayers = currentSquad.stream()
                     .map(TeamPlayerSelection::getPlayer)
                     .collect(Collectors.toList());
@@ -89,6 +93,7 @@ public class TransferRecommendationServiceImpl implements  TransferRecommendatio
 
         BigDecimal affordableBudget = team.getRemainingBudget().add(outgoing.getValue());
 
+        // TODO: Player.position replaced by positionId (UUID FK) — model now mirrors schema.sql
         List<Player> candidates = playerDAO.searchPlayers(
                 null,
                 null,
@@ -118,6 +123,7 @@ public class TransferRecommendationServiceImpl implements  TransferRecommendatio
         return RecommendedPlayerDTO.builder()
                 .playerId(candidate.getPlayerId())
                 .playerName(candidate.getPlayerName())
+                // TODO: Player.position/club replaced by positionId/clubId (UUID FK) — model now mirrors schema.sql
                 .positionName(candidate.getPosition().getPositionName())
                 .clubName(candidate.getClub().getClubName())
                 .value(candidate.getValue())

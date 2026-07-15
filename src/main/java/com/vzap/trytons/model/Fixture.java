@@ -15,14 +15,13 @@ import java.util.UUID;
 @Builder
 public class Fixture {
     private UUID fixtureId;
-    private League leagueId;
-    private FantasyRound roundId;
-    private FantasyTeam teamA;
-    private FantasyTeam teamB;
+    private UUID leagueId;
+    private UUID roundId;
+    private UUID teamAId;
+    private UUID teamBId;
     private LocalDate fixtureDate;
     private LocalTime fixtureTime;
     private FixtureStatus status;
     private LocalDateTime simulationDate;
     private LocalDateTime createdAt;
-    private MatchResult matchResult;
 }

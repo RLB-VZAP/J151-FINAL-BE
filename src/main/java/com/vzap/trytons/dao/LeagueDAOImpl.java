@@ -2,7 +2,7 @@ package com.vzap.trytons.dao;
 import com.vzap.trytons.enums.LeagueType;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.League;
-import com.vzap.trytons.model.LeagueManager;
+import com.vzap.trytons.model.RegisteredUser;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -219,7 +219,8 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
         league.setMaxMembers(rs.getInt("maxMembers"));
         String manager_user_id = rs.getString("manager_user_id");
         if(manager_user_id!=null){
-            LeagueManager manager = new LeagueManager();
+            // TODO: LeagueManager model deleted (no backing table) — model now mirrors schema.sql
+            RegisteredUser manager = new RegisteredUser();
             manager.setUserId(UUID.fromString(manager_user_id));
             league.setManager(manager);
         }

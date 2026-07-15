@@ -84,6 +84,7 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
         player.setCurrentForm(rs.getInt("currentForm"));
         player.setTotalFantasyPoints(rs.getInt("totalFantasyPoints"));
         player.setActive(rs.getBoolean("playerIsActive"));
+        // TODO: Player.club/position renamed to clubId/positionId (UUID) — model now mirrors schema.sql
         player.setClub(club);
         player.setPosition(position);
 
@@ -116,6 +117,7 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
 
         availability.setEndDate(endDate != null ? endDate.toLocalDate() : null);
         availability.setNotes(rs.getString("notes"));
+        // TODO: PlayerAvailability.player renamed to playerId (UUID) — model now mirrors schema.sql
         availability.setPlayer(player);
 
         return availability;
@@ -308,6 +310,7 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
              PreparedStatement ps = con.prepareStatement(query)) {
 
             ps.setString(1, playerId.toString());
+            // TODO: Player.club/position renamed to clubId/positionId (UUID) — model now mirrors schema.sql
             ps.setString(2, player.getClub().getClubId().toString());
             ps.setString(3, player.getPosition().getPositionId().toString());
             ps.setString(4, player.getPlayerName());
@@ -351,6 +354,7 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {
 
+            // TODO: Player.club/position renamed to clubId/positionId (UUID) — model now mirrors schema.sql
             ps.setString(1, player.getClub().getClubId().toString());
             ps.setString(2, player.getPosition().getPositionId().toString());
             ps.setString(3, player.getPlayerName());

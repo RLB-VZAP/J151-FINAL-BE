@@ -68,8 +68,10 @@ public class FantasyTeamDAOImpl extends BaseDAO implements FantasyTeamDAO {
         team.setCreationDate(creationDate == null ? null : creationDate.toLocalDateTime());
 
         team.setTotalPoints(rs.getInt("totalPoints"));
+        // TODO: FantasyTeam.weeklyPoints/isLocked removed (no column, no derivation) — model now mirrors schema.sql
         team.setWeeklyPoints(0);
         team.setIsValid(rs.getBoolean("isValid"));
+        // TODO: FantasyTeam.isLocked removed and owner renamed to ownerUserId (UUID) — model now mirrors schema.sql
         team.setIsLocked(false);
         team.setOwner(owner);
         return team;
@@ -89,6 +91,7 @@ public class FantasyTeamDAOImpl extends BaseDAO implements FantasyTeamDAO {
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setString(1, teamId.toString());
+            // TODO: FantasyTeam.owner renamed to ownerUserId (UUID) — model now mirrors schema.sql
             statement.setString(2, team.getOwner().getUserId().toString());
             statement.setString(3, team.getTeamName());
             statement.setBigDecimal(4, team.getRemainingBudget() == null ? BigDecimal.ZERO : team.getRemainingBudget());

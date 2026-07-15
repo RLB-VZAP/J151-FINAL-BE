@@ -67,6 +67,7 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
                             .pointsAgainst(rs.getInt("pointsAgainst"))
                             .scoreDifference(rs.getInt("scoreDifference"))
                             .leaguePoints(rs.getInt("leaguePoints"))
+                            // TODO: Ranking.total_fantasy_points renamed to totalFantasyPoints — model now mirrors schema.sql
                             .total_fantasy_points(rs.getInt("total_fantasy_points"))
                             .updatedAt(rs.getObject("updatedAt", LocalDateTime.class))
                             .build();
@@ -102,6 +103,7 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
                             .pointsAgainst(rs.getInt("pointsAgainst"))
                             .scoreDifference(rs.getInt("scoreDifference"))
                             .leaguePoints(rs.getInt("leaguePoints"))
+                            // TODO: Ranking.total_fantasy_points renamed to totalFantasyPoints — model now mirrors schema.sql
                             .total_fantasy_points(rs.getInt("total_fantasy_points"))
                             .updatedAt(rs.getObject("updatedAt", LocalDateTime.class))
                             .build();
@@ -158,6 +160,7 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
             ps.setInt(10, ranking.getPointsFor());
             ps.setInt(11, ranking.getPointsAgainst());
             ps.setInt(12, ranking.getLeaguePoints());
+            // TODO: Ranking.total_fantasy_points renamed to totalFantasyPoints — model now mirrors schema.sql
             ps.setInt(13, ranking.getTotal_fantasy_points());
             ps.setString(14, ranking.getUpdatedAt().toString());
 
@@ -182,6 +185,7 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
             ps.setInt(7, ranking.getPointsFor());
             ps.setInt(8, ranking.getPointsAgainst());
             ps.setInt(9, ranking.getLeaguePoints());
+            // TODO: Ranking.total_fantasy_points renamed to totalFantasyPoints — model now mirrors schema.sql
             ps.setInt(10, ranking.getTotal_fantasy_points());
             ps.setString(11, ranking.getUpdatedAt().toString());
             ps.setString(12, ranking.getRankingId().toString());
