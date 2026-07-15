@@ -10,6 +10,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -202,7 +203,7 @@ public class TeamScoreServiceImpl implements TeamScoreService {
 
         List<Fixture> allFixtures = fixtureDAO.findByTeamId(currentTeamId);
 
-        List<Fixture> currentSeasonFixtures = fixtureDAO.findByTeamId(currentTeamId);
+        List<Fixture> currentSeasonFixtures = new ArrayList<>();
 
         for (Fixture fixture : allFixtures){
             fixture.getRoundId();
@@ -216,13 +217,37 @@ public class TeamScoreServiceImpl implements TeamScoreService {
             }
         }
 
+
+
+        MatchTeamSide team;
+        int seasonTotal = 0;
+
         for (Fixture fixture : currentSeasonFixtures){
+
+            MatchResult result = matchResultDAO.findCurrentByFixtureId(fixture.getFixtureId()).orElseThrow(() -> new ResourceNotFoundException("could not find result"));
+
+            UUID resultUuid = result.getResultId();
+
+            if (fixture.getTeamA().getTeamId().equals(currentTeamId)){
+                team = MatchTeamSide.TEAM_A;
+            } else {
+                team = MatchTeamSide.TEAM_B;
+            }
+
+            Optional<MatchTeamScore> teamScore = matchTeamScoreDAO.findByResultIdAndTeamSide(resultUuid, team);
+
+            if (teamScore.isEmpty()){
+                continue;
+            }
+
+            seasonTotal += teamScore.get().getTotalScore();
 
         }
 
-
-
-        return null;
+        return TeamScoreUpdateResultDTO.builder()
+                .teamId(teamId)
+                .seasonTotal(seasonTotal)
+                .build();
     }
 }
 
