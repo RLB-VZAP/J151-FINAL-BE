@@ -16,6 +16,7 @@ public class TeamScoreUpdateResultDTO {
     private String teamId;
     private int teamATotal;
     private int teamBTotal;
+    private int seasonTotal;
     private String outcome;
 
 }
