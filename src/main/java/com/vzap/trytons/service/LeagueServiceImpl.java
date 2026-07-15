@@ -279,11 +279,9 @@ public class LeagueServiceImpl implements LeagueService {
                         )
                 );
 
-        // TODO: FantasyTeam.owner removed (now ownerUserId UUID field) — getOwner() no longer exists — model now mirrors schema.sql
-        if (team.getOwner() == null
-                || team.getOwner().getUserId() == null
+        if (team.getOwnerUserId() == null
                 || !currentUserId.equals(
-                team.getOwner().getUserId()
+                team.getOwnerUserId()
         )) {
 
             throw new ConflictException(
@@ -504,11 +502,9 @@ public class LeagueServiceImpl implements LeagueService {
             League league,
             UUID actorUserId) {
 
-        // TODO: League.manager removed (now managerUserId UUID field) — getManager() no longer exists — model now mirrors schema.sql
-        if (league.getManager() == null
-                || league.getManager().getUserId() == null
+        if (league.getManagerUserId() == null
                 || !actorUserId.equals(
-                league.getManager().getUserId()
+                league.getManagerUserId()
         )) {
 
             throw new ConflictException(
@@ -566,10 +562,9 @@ public class LeagueServiceImpl implements LeagueService {
                 league.getLeagueId()
         );
 
-        // TODO: League.manager removed (now managerUserId UUID field) — getManager() no longer exists — model now mirrors schema.sql
-        if (league.getManager() != null) {
+        if (league.getManagerUserId() != null) {
             response.setManagerUserId(
-                    league.getManager().getUserId()
+                    league.getManagerUserId()
             );
         }
 
