@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-@Path("/lock-status")
+@Path("/{lock-status}")
 @Produces(MediaType.APPLICATION_JSON)
 //This is a stub
 public class LockStatusResource {
