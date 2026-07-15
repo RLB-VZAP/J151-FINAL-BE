@@ -19,5 +19,5 @@ public class PlayerAvailability {
     private LocalDate endDate;
     private String notes;
 
-    private Player player;
+    private UUID playerId;
 }

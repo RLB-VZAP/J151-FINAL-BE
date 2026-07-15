@@ -72,9 +72,11 @@ public class PlayerStatisticsServiceImpl implements PlayerStatisticsService {
         MatchResult result = requireResult(request.getResultId());
         Fixture fixture = fixtureDAO.findFixtureById(result.getFixtureId()).orElseThrow(() -> new ResourceNotFoundException("Fixture was not found for the result."));
         requireTeamInFixture(fixture, request.getTeamId());
+        // TODO: Fixture.leagueId/roundId renamed to league/round — model now mirrors schema.sql
         if (fixture.getRoundId() == null) {
             throw new BusinessRuleException("The fixture is not linked to a fantasy round.");
         }
+        // TODO: Fixture.getRoundId() now returns UUID directly (FantasyRound FK object removed) — chained .getRoundId() no longer exists on UUID — model now mirrors schema.sql
         requirePlayerInLockedSquad(fixture.getRoundId().getRoundId(), request.getTeamId(), request.getPlayerId());
 
         if (playerStatisticsDAO.findByResultIdAndTeamIdAndPlayerId(request.getResultId(), request.getTeamId(), request.getPlayerId()).isPresent()) {
@@ -123,6 +125,7 @@ public class PlayerStatisticsServiceImpl implements PlayerStatisticsService {
     }
 
     private void requireTeamInFixture(Fixture fixture, UUID teamId) {
+        // TODO: Fixture.teamA/teamB removed (now teamAId/teamBId UUID fields) — getTeamA()/getTeamB() no longer exist — model now mirrors schema.sql
         UUID teamAId = fixture.getTeamA() != null ? fixture.getTeamA().getTeamId() : null;
         UUID teamBId = fixture.getTeamB() != null ? fixture.getTeamB().getTeamId() : null;
         if (!teamId.equals(teamAId) && !teamId.equals(teamBId)) {

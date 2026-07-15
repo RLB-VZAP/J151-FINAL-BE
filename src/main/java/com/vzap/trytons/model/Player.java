@@ -23,7 +23,7 @@ public class Player {
     private int currentForm;
     private int totalFantasyPoints;
     private boolean isActive;
-    private Club club;
-    private Position position;
+    private UUID clubId;
+    private UUID positionId;
 
 }

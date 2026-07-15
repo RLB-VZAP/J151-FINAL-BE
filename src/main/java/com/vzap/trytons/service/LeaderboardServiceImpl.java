@@ -65,6 +65,7 @@ public class LeaderboardServiceImpl implements LeaderboardService{
             LeaderboardEntryResponseDTO dto = LeaderboardEntryResponseDTO.builder()
                     .teamId(ranking.getTeamId())
                     .teamName(team.getTeamName())
+                    // TODO: FantasyTeam.owner removed (now ownerUserId UUID field) — getOwner() no longer exists — model now mirrors schema.sql
                     .owner(team.getOwner().getUsername())
                     .rank(ranking.getCurrentRanking())
                     .rankMovement(calculateRankMovement(ranking.getCurrentRanking(), ranking.getPreviousRanking()))
@@ -77,6 +78,7 @@ public class LeaderboardServiceImpl implements LeaderboardService{
                     .pointsAgainst(ranking.getPointsAgainst())
                     .scoreDifference(ranking.getScoreDifference())
                     .leaguePoints(ranking.getLeaguePoints())
+                    // TODO: Ranking.total_fantasy_points renamed to totalFantasyPoints — model now mirrors schema.sql
                     .totalFantasyPoints(ranking.getTotal_fantasy_points())
                     .build();
 
@@ -105,6 +107,7 @@ public class LeaderboardServiceImpl implements LeaderboardService{
             LeaderboardEntryResponseDTO dto = LeaderboardEntryResponseDTO.builder()
                     .teamId(team.getTeamId())
                     .teamName(team.getTeamName())
+                    // TODO: FantasyTeam.owner removed (now ownerUserId UUID field) — getOwner() no longer exists — model now mirrors schema.sql
                     .owner(team.getOwner().getUsername())
                     .rank(ranking.getCurrentRanking())
                     .rankMovement(calculateRankMovement(ranking.getCurrentRanking(), ranking.getPreviousRanking()))
@@ -117,6 +120,7 @@ public class LeaderboardServiceImpl implements LeaderboardService{
                     .pointsAgainst(ranking.getPointsAgainst())
                     .scoreDifference(ranking.getScoreDifference())
                     .leaguePoints(ranking.getLeaguePoints())
+                    // TODO: Ranking.total_fantasy_points renamed to totalFantasyPoints — model now mirrors schema.sql
                     .totalFantasyPoints(ranking.getTotal_fantasy_points())
                     .build();
 

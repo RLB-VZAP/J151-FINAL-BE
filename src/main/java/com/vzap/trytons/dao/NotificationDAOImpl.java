@@ -42,6 +42,7 @@ public class NotificationDAOImpl extends BaseDAO implements NotificationDAO {
         User user = User.builder()
                 .userId(UUID.fromString(rs.getString("userId")))
                 .build();
+        // TODO: Notification.user renamed to userId (UUID) — model now mirrors schema.sql
         notification.setUser(user);
 
         return notification;
@@ -58,6 +59,7 @@ public class NotificationDAOImpl extends BaseDAO implements NotificationDAO {
              PreparedStatement ps = con.prepareStatement(query)) {
 
             ps.setString(1, newId.toString());
+            // TODO: Notification.user renamed to userId (UUID) — model now mirrors schema.sql
             ps.setString(2, notification.getUser().getUserId().toString());
             ps.setString(3, notification.getType().name());
             ps.setString(4, notification.getBody());

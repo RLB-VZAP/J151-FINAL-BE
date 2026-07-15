@@ -11,12 +11,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 
 public class PrivateMessage {
-    private UUID privateMessageId;
+    private UUID messageId;
     private String content;
     private LocalDateTime sentDate;
     private Boolean removed;
     private Boolean isRead;
 
-    private User sender;
-    private User receiver;
+    private UUID senderUserId;
+    private UUID receiverUserId;
 }

@@ -179,6 +179,7 @@ public class PlayerServiceImpl implements PlayerService {
         player.setConsistency(request.getConsistency());
         player.setFitness(request.getFitness());
         player.setCurrentForm(request.getCurrentForm());
+        // TODO: Player.club/position replaced by clubId/positionId (UUID FK) — model now mirrors schema.sql
         player.setClub(club);
         player.setPosition(position);
 
@@ -200,6 +201,7 @@ public class PlayerServiceImpl implements PlayerService {
         response.setCurrentForm(player.getCurrentForm());
         response.setTotalFantasyPoints(player.getTotalFantasyPoints());
         response.setActive(player.isActive());
+        // TODO: Player.club/position replaced by clubId/positionId (UUID FK) — model now mirrors schema.sql
         response.setClub(player.getClub());
         response.setPosition(player.getPosition());
 

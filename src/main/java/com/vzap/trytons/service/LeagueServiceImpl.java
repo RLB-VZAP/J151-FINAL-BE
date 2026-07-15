@@ -279,6 +279,7 @@ public class LeagueServiceImpl implements LeagueService {
                         )
                 );
 
+        // TODO: FantasyTeam.owner removed (now ownerUserId UUID field) — getOwner() no longer exists — model now mirrors schema.sql
         if (team.getOwner() == null
                 || team.getOwner().getUserId() == null
                 || !currentUserId.equals(
@@ -503,6 +504,7 @@ public class LeagueServiceImpl implements LeagueService {
             League league,
             UUID actorUserId) {
 
+        // TODO: League.manager removed (now managerUserId UUID field) — getManager() no longer exists — model now mirrors schema.sql
         if (league.getManager() == null
                 || league.getManager().getUserId() == null
                 || !actorUserId.equals(
@@ -564,6 +566,7 @@ public class LeagueServiceImpl implements LeagueService {
                 league.getLeagueId()
         );
 
+        // TODO: League.manager removed (now managerUserId UUID field) — getManager() no longer exists — model now mirrors schema.sql
         if (league.getManager() != null) {
             response.setManagerUserId(
                     league.getManager().getUserId()

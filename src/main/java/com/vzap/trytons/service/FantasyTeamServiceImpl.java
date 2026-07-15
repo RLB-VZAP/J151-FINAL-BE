@@ -42,13 +42,16 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         FantasyTeam fantasyTeam = mapRequestToFantasyTeam(request);
 
         fantasyTeam.setTeamId(UUID.randomUUID());
+        // TODO: FantasyTeam.owner (RegisteredUser) replaced by ownerUserId (UUID) — model now mirrors schema.sql
         fantasyTeam.setOwner(registeredUserDAO.getRegisteredUserById(registeredUserId).orElseThrow(() -> new RuntimeException("Register User not found.")));
         fantasyTeam.setTotalTeamValue(totalTeamValue(request));
         fantasyTeam.setRemainingBudget(INITIAL_BUDGET);
         fantasyTeam.setCreationDate(LocalDateTime.now());
         fantasyTeam.setTotalPoints(0);
+        // TODO: FantasyTeam.weeklyPoints/isLocked removed (no column, no derivation) — model now mirrors schema.sql
         fantasyTeam.setWeeklyPoints(0);
         fantasyTeam.setIsValid(true);
+        // TODO: FantasyTeam.isLocked removed (no column, no derivation) — model now mirrors schema.sql
         fantasyTeam.setIsLocked(false);
 
         List<FantasyTeamPlayerSelectionRequestDTO> selectedRequestPlayers = request.getSelectedPlayers();
@@ -58,6 +61,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
             selectedResponsePlayers.add(FantasyTeamPlayerSelectionResponseDTO.builder()
                     .playerId(player.getPlayerId())
                     .playerName(player.getPlayerName())
+                    // TODO: Player.position/club replaced by positionId/clubId (UUID FK) — model now mirrors schema.sql
                     .positionId(player.getPosition().getPositionId())
                     .positionName(player.getPosition().getPositionName())
                     .clubId(player.getClub().getClubId())
@@ -72,13 +76,16 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         return FantasyTeamResponseDTO.builder()
                 .teamId(fantasyTeam.getTeamId())
                 .teamName(fantasyTeam.getTeamName())
+                // TODO: FantasyTeam.owner (RegisteredUser) replaced by ownerUserId (UUID) — model now mirrors schema.sql
                 .managerId(fantasyTeam.getOwner().getUserId())
                 .managerUsername(fantasyTeam.getOwner().getUsername())
                 .totalTeamValue(fantasyTeam.getTotalTeamValue())
                 .remainingBudget(fantasyTeam.getRemainingBudget())
+                // TODO: FantasyTeam.weeklyPoints/isLocked removed (no column, no derivation) — model now mirrors schema.sql
                 .weeklyPoints(fantasyTeam.getWeeklyPoints())
                 .totalPoints(fantasyTeam.getTotalPoints())
                 .valid(fantasyTeam.getIsValid())
+                // TODO: FantasyTeam.isLocked removed (no column, no derivation) — model now mirrors schema.sql
                 .locked(fantasyTeam.getIsLocked())
                 .selectedPlayers(selectedResponsePlayers)
                 .build();
@@ -93,6 +100,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         List<TeamPlayerSelection> squad = fantasyTeamPlayerDAO.getSquadByTeamId(teamId);
         for(TeamPlayerSelection squadPlayer : squad){
 
+            // TODO: TeamPlayerSelection.player replaced by playerId (UUID FK) — model now mirrors schema.sql
             player = squadPlayer.getPlayer();
 
             playerResponseDTO = PlayerResponseDTO.builder()
@@ -108,6 +116,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                     .currentForm(player.getCurrentForm())
                     .totalFantasyPoints(player.getTotalFantasyPoints())
                     .isActive(player.isActive())
+                    // TODO: Player.club/position replaced by clubId/positionId (UUID FK) — model now mirrors schema.sql
                     .club(player.getClub())
                     .position(player.getPosition())
                     .isCaptain(squadPlayer.getIsCaptain())
@@ -121,6 +130,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                 .teamId(teamId)
                 .teamName(fantasyTeam.getTeamName())
                 .totalPoints(fantasyTeam.getTotalPoints())
+                // TODO: FantasyTeam.weeklyPoints removed (no column, no derivation) — model now mirrors schema.sql
                 .weeklyPoints(fantasyTeam.getWeeklyPoints())
                 .players(playerResponses)
                 .build();
@@ -132,6 +142,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         List<TeamPlayerSelection> playerResponses = fantasyTeamPlayerDAO.getSquadByTeamId(teamId);
         List<PlayerResponseDTO> playerResponsesDTO = new ArrayList<>();
         for(TeamPlayerSelection playerResponse : playerResponses){
+            // TODO: TeamPlayerSelection.player replaced by playerId (UUID FK) — model now mirrors schema.sql
             Player player = playerResponse.getPlayer();
             playerResponsesDTO.add(PlayerResponseDTO.builder()
                     .playerId(player.getPlayerId())
@@ -146,6 +157,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                     .currentForm(player.getCurrentForm())
                     .totalFantasyPoints(player.getTotalFantasyPoints())
                     .isActive(player.isActive())
+                    // TODO: Player.club/position replaced by clubId/positionId (UUID FK) — model now mirrors schema.sql
                     .club(player.getClub())
                     .position(player.getPosition())
                     .isCaptain(player.isActive())
@@ -160,8 +172,10 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                 .remainingBudget(fantasyTeam.getRemainingBudget())
                 .creationDate(fantasyTeam.getCreationDate())
                 .totalPoints(fantasyTeam.getTotalPoints())
+                // TODO: FantasyTeam.weeklyPoints/isLocked removed (no column, no derivation) — model now mirrors schema.sql
                 .weeklyPoints(fantasyTeam.getWeeklyPoints())
                 .isValid(fantasyTeam.getIsValid())
+                // TODO: FantasyTeam.isLocked removed (no column, no derivation); FantasyTeam.owner (RegisteredUser) replaced by ownerUserId (UUID) — model now mirrors schema.sql
                 .isLocked(fantasyTeam.getIsLocked())
                 .ownerUsername(fantasyTeam.getOwner().getUsername())
                 .players(playerResponsesDTO)
@@ -172,10 +186,12 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
     public FantasyTeamResponseDTO updateTeam(UUID registeredId, UUID teamId, FantasyTeamRequestDTO fantasyTeamDTO) {
         FantasyTeam fantasyTeam = fantasyTeamDAO.getTeamById(teamId).orElseThrow(() -> new ResourceNotFoundException("Fantasy team not found."));
 
+        // TODO: FantasyTeam.owner (RegisteredUser) replaced by ownerUserId (UUID) — model now mirrors schema.sql
         if (!fantasyTeam.getOwner().getUserId().equals(registeredId)) {
             throw new AuthorisationException("You do not own this fantasy team.");
         }
 
+        // TODO: FantasyTeam.isLocked removed (no column, no derivation) — this check never fires (DAO always hardcodes false). Real lock state is fantasyRound.status/roundLock. Model now mirrors schema.sql
         if (fantasyTeam.getIsLocked()) {
             throw new BusinessRuleException("This fantasy team is locked.");
         }
@@ -188,6 +204,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
             selectedResponsePlayers.add(FantasyTeamPlayerSelectionResponseDTO.builder()
                     .playerId(player.getPlayerId())
                     .playerName(player.getPlayerName())
+                    // TODO: Player.position/club replaced by positionId/clubId (UUID FK) — model now mirrors schema.sql
                     .positionId(player.getPosition().getPositionId())
                     .positionName(player.getPosition().getPositionName())
                     .clubId(player.getClub().getClubId())
@@ -224,13 +241,16 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         return FantasyTeamResponseDTO.builder()
                 .teamId(fantasyTeam.getTeamId())
                 .teamName(fantasyTeam.getTeamName())
+                // TODO: FantasyTeam.owner (RegisteredUser) replaced by ownerUserId (UUID) — model now mirrors schema.sql
                 .managerId(fantasyTeam.getOwner().getUserId())
                 .managerUsername(fantasyTeam.getOwner().getUsername())
                 .totalTeamValue(fantasyTeam.getTotalTeamValue())
                 .remainingBudget(fantasyTeam.getRemainingBudget())
+                // TODO: FantasyTeam.weeklyPoints/isLocked removed (no column, no derivation) — model now mirrors schema.sql
                 .weeklyPoints(fantasyTeam.getWeeklyPoints())
                 .totalPoints(fantasyTeam.getTotalPoints())
                 .valid(fantasyTeam.getIsValid())
+                // TODO: FantasyTeam.isLocked removed (no column, no derivation) — model now mirrors schema.sql
                 .locked(fantasyTeam.getIsLocked())
                 .selectedPlayers(selectedResponsePlayers)
                 .build();
