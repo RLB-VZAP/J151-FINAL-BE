@@ -2,7 +2,6 @@ package com.vzap.trytons.dao;
 import com.vzap.trytons.enums.LeagueType;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.League;
-//import com.vzap.trytons.model.RegisteredUser;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -19,15 +18,17 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
 
     @Override
     public League createLeague(League league) {
-        String query = "INSERT INTO league(leagueId,leagueName,description,leagueType,leagueCode,maxMembers) VALUES (?,?,?,?,?,?)";
+        String query = "INSERT INTO league(leagueId,manager_user_id,leagueName,description,leagueType,leagueCode,isActive,maxMembers) VALUES (?,?,?,?,?,?,?,?)";
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query);){
             ps.setString(1,league.getLeagueId().toString());
-            ps.setString(2,league.getLeagueName());
-            ps.setString(3,league.getDescription());
-            ps.setString(4,league.getLeagueType().toString());
-            ps.setString(5,league.getLeagueCode());
-            ps.setInt(6,league.getMaxMembers());
+            ps.setString(2,toNullableId(league.getManagerUserId()));
+            ps.setString(3,league.getLeagueName());
+            ps.setString(4,league.getDescription());
+            ps.setString(5,league.getLeagueType().toString());
+            ps.setString(6,league.getLeagueCode());
+            ps.setBoolean(7,league.getIsActive() == null || league.getIsActive());
+            ps.setInt(8,league.getMaxMembers());
             if (ps.executeUpdate() > 0){
                 return league;
             }
@@ -44,9 +45,10 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query);){
             ps.setString(1, leagueId.toString());
-            ResultSet rs = ps.executeQuery();
-            if(rs.next()){
-                return Optional.of(this.rowToLeague(rs));
+            try(ResultSet rs = ps.executeQuery();){
+                if(rs.next()){
+                    return Optional.of(this.rowToLeague(rs));
+                }
             }
         }catch(SQLException e){
             LOG.log(Level.SEVERE, "Unable to find League", e);
@@ -61,9 +63,10 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query);){
             ps.setString(1, leagueName);
-            ResultSet rs = ps.executeQuery();
-            if(rs.next()){
-                return Optional.of(this.rowToLeague(rs));
+            try(ResultSet rs = ps.executeQuery();){
+                if(rs.next()){
+                    return Optional.of(this.rowToLeague(rs));
+                }
             }
         }catch(SQLException e){
             LOG.log(Level.SEVERE, "Unable to find League by name", e);
@@ -77,8 +80,8 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
         List<League> leagues = new ArrayList<>();
         String query = "SELECT * FROM league";
         try(Connection con = getConnection();
-        PreparedStatement ps = con.prepareStatement(query);){
-            ResultSet rs = ps.executeQuery();
+        PreparedStatement ps = con.prepareStatement(query);
+        ResultSet rs = ps.executeQuery();){
             while(rs.next()){
                 leagues.add(this.rowToLeague(rs));
             }
@@ -96,9 +99,10 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query);){
             ps.setString(1,manager_user_id.toString());
-            ResultSet rs = ps.executeQuery();
-            while(rs.next()){
-                leagues.add(this.rowToLeague(rs));
+            try(ResultSet rs = ps.executeQuery();){
+                while(rs.next()){
+                    leagues.add(this.rowToLeague(rs));
+                }
             }
         }catch(SQLException e){
             LOG.log(Level.SEVERE, "Unable to find League by manager ID", e);
@@ -110,17 +114,14 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
     @Override
     public List<League> findLeaguesByManagerName(String username) {
         List<League> leagues = new ArrayList<>();
-        String query = "SELECT l.* " +
-                "FROM league l " +
-                "INNER JOIN registeredUser ru ON l.manager_user_id = ru.userId " +
-                "INNER JOIN user u ON ru.userId = u.userId " +
-                "WHERE u.username = ?";
+        String query = "SELECT l.* FROM league l INNER JOIN registeredUser ru ON l.manager_user_id = ru.userId INNER JOIN user u ON ru.userId = u.userId WHERE u.username = ?";
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query);){
             ps.setString(1,username);
-            ResultSet rs = ps.executeQuery();
-            while(rs.next()){
-                leagues.add(this.rowToLeague(rs));
+            try(ResultSet rs = ps.executeQuery();){
+                while(rs.next()){
+                    leagues.add(this.rowToLeague(rs));
+                }
             }
         }catch(SQLException e){
             LOG.log(Level.SEVERE, "Unable to find League by manager name", e);
@@ -135,9 +136,10 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query);){
             ps.setString(1, leagueCode);
-            ResultSet rs = ps.executeQuery();
-            if(rs.next()){
-                return Optional.of(this.rowToLeague(rs));
+            try(ResultSet rs = ps.executeQuery();){
+                if(rs.next()){
+                    return Optional.of(this.rowToLeague(rs));
+                }
             }
         }catch(SQLException e){
             LOG.log(Level.SEVERE, "Unable to find League by league code", e);
@@ -148,7 +150,7 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
 
     @Override
     public boolean existsByLeagueCode(String leagueCode) {
-        String query = "SELECT COUNT (*) FROM league WHERE leagueCode = ?";
+        String query = "SELECT COUNT(*) FROM league WHERE leagueCode = ?";
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query);){
             ps.setString(1,leagueCode);
@@ -184,7 +186,7 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
         PreparedStatement ps = con.prepareStatement(query)) {
             ps.setString(1,league.getLeagueName());
             ps.setString(2,league.getDescription());
-            ps.setBoolean(3,league.getIsActive());
+            ps.setBoolean(3,league.getIsActive() == null || league.getIsActive());
             ps.setInt(4,league.getMaxMembers());
             ps.setString(5,league.getLeagueId().toString());
             return ps.executeUpdate() > 0;
@@ -205,6 +207,10 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
             LOG.log(Level.SEVERE,"League cannot be deleted",e);
             throw new DataAccessException("League cannot be deleted", e);
         }
+    }
+
+    private static String toNullableId(UUID id) {
+        return id == null ? null : id.toString();
     }
 
     private League rowToLeague(ResultSet rs) throws SQLException {
