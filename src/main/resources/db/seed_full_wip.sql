@@ -359,23 +359,6 @@ VALUES (UUID(), @publicLeague, @johnId, @team1, 'MANAGER'),
        (UUID(), @privateLeague, @johnId, @team1, 'MEMBER'),
        (UUID(), @privateLeague, @mikeId, @team3, 'MEMBER');
 
-INSERT INTO leagueInvitation
-(invitationId,
- leagueId,
- invited_user_id,
- created_by_user_id,
- expiryDate)
-VALUES (UUID(),
-        @privateLeague,
-        @lisaId,
-        @sarahId,
-        DATE_ADD(NOW(), INTERVAL 7 DAY)),
-       (UUID(),
-        @privateLeague,
-        @tomId,
-        @sarahId,
-        DATE_ADD(NOW(), INTERVAL 7 DAY));
-
 SET
 @fixture1 = UUID();
     SET
