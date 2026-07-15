@@ -21,6 +21,6 @@ public class FantasyTeamResponseDTO {
     private Integer weeklyPoints;
     private Integer totalPoints;
     private Boolean valid;
-    private Boolean locked;
     private List<FantasyTeamPlayerSelectionResponseDTO> selectedPlayers;
+
 }
