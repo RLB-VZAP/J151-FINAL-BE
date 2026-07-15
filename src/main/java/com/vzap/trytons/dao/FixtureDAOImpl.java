@@ -36,8 +36,12 @@ public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
             }else{
                 ps.setNull(9,Types.TIMESTAMP);
             }
-            if(ps.executeUpdate() > 0){
-                return fixture;
+            if(ps.executeUpdate() == 1){
+                Optional<Fixture> createdFixture = findById(fixture.getFixtureId());
+                if(createdFixture.isPresent()){
+                    return createdFixture.get();
+                }
+                throw new DataAccessException("Fixture was inserted, but cannot be retrieved.",null);
             }
         }catch(SQLException e){
             LOG.log(Level.SEVERE, "Unable to create fixture", e);
