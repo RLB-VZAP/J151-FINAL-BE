@@ -35,7 +35,7 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
         LocalDateTime joinDate = LocalDateTime.now();
 
         String sql = "INSERT INTO leagueMembership (membershipId, leagueId, registered_user_id, teamId, isActive, " +
-                "joinDate)" + " VALUES (?, ?, ?, ?, TRUE, ?, ?)";
+                "joinDate)" + " VALUES (?, ?, ?, ?, TRUE, ?)";
 
         try (Connection con = getConnection();
              PreparedStatement stmt = con.prepareStatement(sql)){
@@ -65,10 +65,9 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
         membership.setMembershipId(newId);
         membership.setIsActive(true);
         membership.setJoinDate(joinDate);
-        // TODO: LeagueMembership.league/registeredUser/fantasyTeam renamed to leagueId/registeredUserId/teamId (UUID) — model now mirrors schema.sql
-        membership.setLeague(league);
-        membership.setRegisteredUser(registeredUser);
-        membership.setFantasyTeam(fantasyTeam);
+        membership.setLeagueId(leagueId);
+        membership.setRegisteredUserId(userId);
+        membership.setTeamId(teamId);
 
         return membership;
     }
@@ -245,18 +244,18 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
 
         League league = new League();
         league.setLeagueId(parseUuid(rs.getString("leagueId"), "leagueId"));
-        // TODO: LeagueMembership.league renamed to leagueId (UUID) — model now mirrors schema.sql
-        mem.setLeague(league);
+
+        mem.setLeagueId(parseUuid(rs.getString("leagueId"), "leagueId"));
 
         RegisteredUser registeredUser = new RegisteredUser();
         registeredUser.setUserId(parseUuid(rs.getString("registered_user_id"), "registered_user_id"));
-        // TODO: LeagueMembership.registeredUser renamed to registeredUserId (UUID) — model now mirrors schema.sql
-        mem.setRegisteredUser(registeredUser);
+
+        mem.setRegisteredUserId(parseUuid(rs.getString("registered_user_id"), "registered_user_id"));
 
         FantasyTeam fantasyTeam = new FantasyTeam();
         fantasyTeam.setTeamId(parseUuid(rs.getString("teamId"), "teamId"));
-        // TODO: LeagueMembership.fantasyTeam renamed to teamId (UUID) — model now mirrors schema.sql
-        mem.setFantasyTeam(fantasyTeam);
+
+        mem.setTeamId(parseUuid(rs.getString("teamId"), "teamId"));
         return mem;
     }
 
