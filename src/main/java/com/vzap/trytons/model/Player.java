@@ -1,19 +1,23 @@
 package com.vzap.trytons.model;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
 @NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @Setter
+@Builder
 public class Player {
     private UUID playerId;
+    private UUID clubId;
+    private UUID positionId;
+
     private String playerName;
     private BigDecimal value;
+
     private int attackingAbility;
     private int defensiveAbility;
     private int kickingAbility;
@@ -21,9 +25,5 @@ public class Player {
     private int consistency;
     private int fitness;
     private int currentForm;
-    private int totalFantasyPoints;
     private boolean isActive;
-    private UUID clubId;
-    private UUID positionId;
-
 }
