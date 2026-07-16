@@ -14,6 +14,7 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.ext.Provider;
+import lombok.Getter;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -21,6 +22,7 @@ import java.util.UUID;
 @Provider
 @Authenticated
 @Priority(Priorities.AUTHENTICATION)
+@Getter
 public class AuthFilter implements ContainerRequestFilter {
     public static final String CURRENT_USER_PROPERTY = "currentUser";
     private static final String BEARER_PREFIX = "Bearer ";

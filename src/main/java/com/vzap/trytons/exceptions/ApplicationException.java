@@ -1,27 +1,22 @@
 package com.vzap.trytons.exceptions;
 
-public abstract class ApplicationException extends RuntimeException {
+import lombok.Getter;
 
+@Getter
+public abstract class ApplicationException extends RuntimeException {
     private final String errorCode;
     private final int statusCode;
 
-    protected ApplicationException(String message, int statusCode, String errorCode) {
-        super(message);
+
+    public ApplicationException(String Message, int statusCode, String errorCode) {
+        super(Message);
         this.errorCode = errorCode;
         this.statusCode = statusCode;
     }
 
-    protected ApplicationException(String message, int statusCode, String errorCode, Throwable cause) {
-        super(message, cause);
+    public ApplicationException(String Message, int statusCode, String errorCode, Throwable cause) {
+        super(Message, cause);
         this.errorCode = errorCode;
         this.statusCode = statusCode;
-    }
-
-    public String getErrorCode() {
-        return errorCode;
-    }
-
-    public int getStatusCode() {
-        return statusCode;
     }
 }

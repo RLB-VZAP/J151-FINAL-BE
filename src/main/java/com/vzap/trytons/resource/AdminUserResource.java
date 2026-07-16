@@ -1,5 +1,6 @@
 package com.vzap.trytons.resource;
 
+import jakarta.ws.rs.ApplicationPath;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -7,7 +8,8 @@ import jakarta.ws.rs.core.MediaType;
 
 import java.util.logging.Logger;
 
-@Path("/admin/users")
+@ApplicationPath("") //full in the path
+@Path("")//full in the path
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 

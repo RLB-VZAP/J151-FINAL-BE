@@ -3,13 +3,11 @@ package com.vzap.trytons.dto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class PlayerStatisticsResponseDTO {
@@ -17,6 +15,7 @@ public class PlayerStatisticsResponseDTO {
     private UUID resultId;
     private UUID teamId;
     private UUID playerId;
+
     private int tries;
     private int assists;
     private int tackles;
@@ -26,5 +25,6 @@ public class PlayerStatisticsResponseDTO {
     private int metersGained;
     private int yellowCards;
     private int redCards;
+
     private LocalDateTime statisticDate;
 }
