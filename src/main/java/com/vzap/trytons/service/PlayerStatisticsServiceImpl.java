@@ -87,8 +87,7 @@ public class PlayerStatisticsServiceImpl implements PlayerStatisticsService {
             throw new ConflictException("Statistics have already been captured for this player in the result.");
         }
 
-        PlayerStatistics saved = playerStatisticsDAO.save(buildStatistics(request))
-                .orElseThrow(() -> new DataAccessException("Failed to persist the captured player statistics.", null));
+        PlayerStatistics saved = playerStatisticsDAO.save(buildStatistics(request)).orElseThrow(() -> new DataAccessException("Failed to persist the captured player statistics.", null));
 
         return mapToResponse(saved);
     }
@@ -153,7 +152,6 @@ public class PlayerStatisticsServiceImpl implements PlayerStatisticsService {
     }
 
     private PlayerStatisticsResponseDTO mapToResponse(PlayerStatistics stat) {
-        return new PlayerStatisticsResponseDTO(
-                stat.getStatId(), stat.getResultId(), stat.getTeamId(), stat.getPlayerId(), stat.getTries(), stat.getAssists(), stat.getTackles(), stat.getMissedTackles(), stat.getConversions(), stat.getPenalties(), stat.getMetersGained(), stat.getYellowCards(), stat.getRedCards(), stat.getStatisticDate());
+        return new PlayerStatisticsResponseDTO(stat.getStatId(), stat.getResultId(), stat.getTeamId(), stat.getPlayerId(), stat.getTries(), stat.getAssists(), stat.getTackles(), stat.getMissedTackles(), stat.getConversions(), stat.getPenalties(), stat.getMetersGained(), stat.getYellowCards(), stat.getRedCards(), stat.getStatisticDate());
     }
 }
