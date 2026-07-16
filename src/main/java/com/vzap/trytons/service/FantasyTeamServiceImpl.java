@@ -96,7 +96,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         }
         FantasyTeam fantasyTeam = mapRequestToFantasyTeam(request);
         fantasyTeam.setTeamId(UUID.randomUUID());
-        fantasyTeam.setOwner_user_id(registeredUserId);
+        fantasyTeam.setOwnerUserId(registeredUserId);
         fantasyTeam.setRemainingBudget(INITIAL_BUDGET);
         fantasyTeam.setCreationDate(LocalDateTime.now());
         fantasyTeam.setIsValid(true);
@@ -179,7 +179,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         if(fantasyTeam == null){
             throw new ResourceNotFoundException("Fantasy Team not found.");
         }
-        if(!fantasyTeam.getOwner_user_id().equals(registeredUserId)){
+        if(!fantasyTeam.getOwnerUserId().equals(registeredUserId)){
             throw new BusinessRuleException("You are not the owner of this fantasy team.");
         }
         List<TeamPlayerSelection> squad = fantasyTeamPlayerDAO.getSquadByTeamId(teamId);
@@ -211,7 +211,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
             playerResponsesDTO.add(response);
         }
 
-            RegisteredUser owner = registeredUserDAO.getRegisteredUserById(fantasyTeam.getOwner_user_id()).orElseThrow(() -> new ResourceNotFoundException("Owner Not Found."));
+            RegisteredUser owner = registeredUserDAO.getRegisteredUserById(fantasyTeam.getOwnerUserId()).orElseThrow(() -> new ResourceNotFoundException("Owner Not Found."));
 
             return ViewOwnTeamDTO.builder()
                     .teamId(fantasyTeam.getTeamId())
@@ -230,7 +230,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
     @Override
     public FantasyTeamResponseDTO updateTeam(UUID registeredId, UUID teamId, FantasyTeamRequestDTO fantasyTeamDTO) {
         FantasyTeam fantasyTeam = fantasyTeamDAO.getTeamById(teamId).orElseThrow(() -> new ResourceNotFoundException("Fantasy team not found."));
-        if(!fantasyTeam.getOwner_user_id().equals(registeredId)){
+        if(!fantasyTeam.getOwnerUserId().equals(registeredId)){
             throw new BusinessRuleException("You are not the owner of this fantasy team.");
         }
 
