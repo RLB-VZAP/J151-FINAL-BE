@@ -47,23 +47,23 @@ public class TransferDAOImpl extends BaseDAO implements TransferDAO {
              PreparedStatement ps = con.prepareStatement(query)) {
 
             ps.setString(1, transfer.getTransferId().toString());
-            ps.setString(2, transfer.getFantasyTeam().getTeamId().toString());
-            ps.setString(3, transfer.getRound().getRoundId().toString());
-            ps.setString(4, transfer.getRemovedPlayer().getPlayerId().toString());
-            ps.setString(5, transfer.getAddedPlayer().getPlayerId().toString());
+            ps.setString(2, transfer.getTeamId().toString());
+            ps.setString(3, transfer.getRoundId().toString());
+            ps.setString(4, transfer.getRemovedPlayerId().toString());
+            ps.setString(5, transfer.getAddedPlayerId().toString());
             ps.setTimestamp(6, Timestamp.valueOf(transfer.getTransferDate()));
-            ps.setBigDecimal(7, transfer.getRemoved_player_value());
-            ps.setBigDecimal(8, transfer.getAdded_player_value());
+            ps.setBigDecimal(7, transfer.getRemovedPlayerValue());
+            ps.setBigDecimal(8, transfer.getAddedPlayerValue());
             ps.setInt(9, transfer.getPenaltyPoints());
             ps.setString(10, transfer.getStatus().name());
 
-            if (transfer.getConfirmationDate() != null) {
-                ps.setTimestamp(11, Timestamp.valueOf(transfer.getConfirmationDate()));
+            if (transfer.getConfirmedAt() != null) {
+                ps.setTimestamp(11, Timestamp.valueOf(transfer.getConfirmedAt()));
             } else {
                 ps.setNull(11, Types.TIMESTAMP);
             }
 
-            ps.setString(12, transfer.getCreatedBy().getUserId().toString());
+            ps.setString(12, transfer.getCreatedByUserId().toString());
 
             if (ps.executeUpdate() == 1) {
                 return Optional.of(transfer);
@@ -246,36 +246,36 @@ public class TransferDAOImpl extends BaseDAO implements TransferDAO {
 
         transfer.setTransferId(UUID.fromString(rs.getString("transferId")));
         transfer.setTransferDate(rs.getTimestamp("transferDate").toLocalDateTime());
-        transfer.setRemoved_player_value(rs.getBigDecimal("removed_player_value"));
-        transfer.setAdded_player_value(rs.getBigDecimal("added_player_value"));
+        transfer.setRemovedPlayerValue(rs.getBigDecimal("removed_player_value"));
+        transfer.setAddedPlayerValue(rs.getBigDecimal("added_player_value"));
         transfer.setValueDifference(rs.getBigDecimal("valueDifference"));
         transfer.setPenaltyPoints(rs.getInt("penaltyPoints"));
         transfer.setStatus(TransferStatus.valueOf(rs.getString("status")));
 
         Timestamp confirmedAt = rs.getTimestamp("confirmedAt");
-        transfer.setConfirmationDate(confirmedAt != null ? confirmedAt.toLocalDateTime() : null);
+        transfer.setConfirmedAt(confirmedAt != null ? confirmedAt.toLocalDateTime() : null);
 
         FantasyTeam team = new FantasyTeam();
         team.setTeamId(UUID.fromString(rs.getString("teamId")));
-        transfer.setFantasyTeam(team);
+        transfer.setTeamId(team.getTeamId());
 
         FantasyRound round = new FantasyRound();
         round.setRoundId(UUID.fromString(rs.getString("roundId")));
-        transfer.setRound(round);
+        transfer.setRoundId(round.getRoundId());
 
         Player removed = new Player();
         removed.setPlayerId(UUID.fromString(rs.getString("removed_player_id")));
         removed.setPlayerName(rs.getString("removed_player_name"));
-        transfer.setRemovedPlayer(removed);
+        transfer.setRemovedPlayerId(removed.getPlayerId());
 
         Player added = new Player();
         added.setPlayerId(UUID.fromString(rs.getString("added_player_id")));
         added.setPlayerName(rs.getString("added_player_name"));
-        transfer.setAddedPlayer(added);
+        transfer.setAddedPlayerId(added.getPlayerId());
 
         RegisteredUser createdBy = new RegisteredUser();
         createdBy.setUserId(UUID.fromString(rs.getString("created_by_user_id")));
-        transfer.setCreatedBy(createdBy);
+        transfer.setCreatedByUserId(createdBy.getUserId());
 
         return transfer;
     }

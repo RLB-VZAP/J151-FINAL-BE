@@ -1,5 +1,6 @@
 package com.vzap.trytons.dto;
 
+import com.vzap.trytons.enums.MatchTeamSide;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,17 +16,13 @@ public class MatchResultResponseDTO {
     private UUID fixtureId;
     private UUID teamAId;
     private UUID teamBId;
-
     private int simulationRunNumber;
     private int teamAScore;
     private int teamBScore;
-
-    private String winnerSide;
-
-    private boolean draw;
+    private MatchTeamSide winnerSide;
+    private boolean isDraw;
     private boolean approved;
-    private boolean current;
-
+    private boolean isCurrent;
     private LocalDateTime resultDate;
-    private LocalDateTime approvedAt;
+    private UUID approvedByAdminUserId;
 }

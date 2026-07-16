@@ -41,7 +41,13 @@
             <artifactId>java-jwt</artifactId>
             <version>4.5.2</version>
         </dependency>
-
+        <!-- Source: https://mvnrepository.com/artifact/tools.jackson.core/jackson-databind -->
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>3.2.1</version>
+            <scope>compile</scope>
+        </dependency>
         <!-- MySQL JDBC Driver for DAO/JDBC database access -->
         <dependency>
             <groupId>com.mysql</groupId>

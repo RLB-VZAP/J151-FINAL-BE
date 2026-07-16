@@ -1,11 +1,10 @@
 package com.vzap.trytons.dao;
 
+import com.vzap.trytons.enums.SquadRole;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
-import com.vzap.trytons.model.FantasyTeam;
-import com.vzap.trytons.model.Player;
+import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.model.TeamPlayerSelection;
-
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -18,31 +17,29 @@ import java.util.logging.Logger;
 public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlayerDAO {
 
     private static final Logger LOG = Logger.getLogger(FantasyTeamPlayerDAOImpl.class.getName());
-    private static final String SELECTION_SELECT = "SELECT"+
-            "selectionId,teamId,playerId,selectedDate,isCaptain,is_vice_captain AS isViceCaptain"+
-            "FROM team_player_selection";
-    //made a constant when selecting from database to reduce typing. Efficiency :)
 
-    private TeamPlayerSelection mapSelection(ResultSet rs) throws SQLException {
-        FantasyTeam team = new FantasyTeam();
-        team.setTeamId(readUuid(rs, "teamId"));
-
-        Player player = new Player();
-        player.setPlayerId(readUuid(rs, "playerId"));
-
-        TeamPlayerSelection selection = new TeamPlayerSelection();
-        selection.setSelectionId(readUuid(rs, "selectionId"));
-
-        Timestamp selectedDate = rs.getTimestamp("selectedDate");
-        selection.setSelectedDate(selectedDate != null ? selectedDate.toLocalDateTime() : null);
-
-        selection.setIsCaptain(rs.getBoolean("isCaptain"));
-        selection.setIsViceCaptain(rs.getBoolean("isViceCaptain"));
-        selection.setFantasyTeam(team);
-        selection.setPlayer(player);
-
-        return selection;
+    private TeamPlayerSelection mapSelection(ResultSet rs){
+        try {
+            TeamPlayerSelection selection = new TeamPlayerSelection();
+            selection.setSelectionId(readUuid(rs, "selectionId"));
+            selection.setTeamId(readUuid(rs, "teamId"));
+            selection.setPlayerId(readUuid(rs, "playerId"));
+            Timestamp selectedDate = rs.getTimestamp("selectedDate");
+            selection.setSelectedDate(selectedDate != null ? selectedDate.toLocalDateTime() : null);
+            selection.setIsCaptain(rs.getBoolean("isCaptain"));
+            selection.setIsViceCaptain(rs.getBoolean("isViceCaptain"));
+            selection.setSquadRole(SquadRole.valueOf(rs.getString("squadRole")));
+            return selection;
+        } catch(IllegalArgumentException e){
+            LOG.log(Level.WARNING, "Error reading team player selection", e);
+            throw new DataAccessException("Error reading team player selection", e);
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE,"Cannot retrieve player selection",e);
+            throw new DataAccessException("Cannot retrieve player selection",e);
+        }
     }
+    private static final String SELECTION_SELECT = "SELECT selectionId, teamId, playerId, selectedDate, isCaptain, " +
+            "is_vice_captain AS isViceCaptain, squadRole FROM team_player_selection";
 
     private UUID readUuid(ResultSet rs, String name) throws SQLException {
         String value =  rs.getString(name);
@@ -59,10 +56,10 @@ public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlay
     }
 
     @Override
-    public boolean addPlayerToSquad(UUID teamId, UUID playerId) {
+    public boolean addPlayerToSquad(UUID teamId, UUID playerId, SquadRole squadRole) {
         String query = "INSERT INTO team_player_selection "
-                + "(selectionId, teamId, playerId, selectedDate, isCaptain, is_vice_captain) "
-                + "VALUES (?, ?, ?, ?, ?, ?)";
+                + "(selectionId, teamId, playerId, selectedDate, isCaptain, is_vice_captain, squadRole) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try(Connection con = getConnection();
             PreparedStatement ps = con.prepareStatement(query)) {
@@ -72,6 +69,7 @@ public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlay
             ps.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
             ps.setBoolean(5, false);
             ps.setBoolean(6, false);
+            ps.setString(7, squadRole.name());
 
             return ps.executeUpdate() == 1;
         } catch (SQLException e) {
@@ -87,11 +85,11 @@ public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlay
     }
 
     @Override
-    public void replaceSquad(UUID teamId, List<UUID> playerIds) {
+    public void replaceSquad(UUID teamId, List<TeamPlayerSelection> squad) {
         String deleteQuery = "DELETE FROM team_player_selection WHERE teamId = ?";
         String insertQuery = "INSERT INTO team_player_selection "
-                + "(selectionId, teamId, playerId, selectedDate, isCaptain, is_vice_captain) "
-                + "VALUES (?, ?, ?, ?, ?, ?)";
+                + "(selectionId, teamId, playerId, selectedDate, isCaptain, is_vice_captain, squadRole) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         Connection con = null; //Declared at the top instead of in try resource for rollback
 
@@ -106,23 +104,22 @@ public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlay
                 dps.setString(1, teamId.toString());
                 dps.executeUpdate();
 
-                LocalDateTime now = LocalDateTime.now();
 
-                for (UUID playerId : playerIds) {
-                    ips.setString(1, UUID.randomUUID().toString());
+                for (TeamPlayerSelection selection : squad) {
+                    UUID selectionId = selection.getSelectionId() == null ? UUID.randomUUID() : selection.getSelectionId();
+                    ips.setString(1, selectionId.toString());
                     ips.setString(2, teamId.toString());
-                    ips.setString(3, playerId.toString());
-                    ips.setTimestamp(4, Timestamp.valueOf(now));
-                    ips.setBoolean(5, false);
-                    ips.setBoolean(6, false);
+                    ips.setString(3, selection.getPlayerId().toString());
+                    LocalDateTime selectedDate = selection.getSelectedDate() == null ? LocalDateTime.now() : selection.getSelectedDate();
+                    ips.setTimestamp(4, Timestamp.valueOf(selectedDate));
+                    ips.setBoolean(5, Boolean.TRUE.equals(selection.getIsCaptain()));
+                    ips.setBoolean(6, Boolean.TRUE.equals(selection.getIsViceCaptain()));
+                    ips.setString(7,selection.getSquadRole().name());
                     ips.addBatch();
                 }
-
-                if (!playerIds.isEmpty()) {
-                    ips.executeBatch();
-                }
-
+                ips.executeBatch();
                 con.commit();
+
             }
 
         } catch (SQLException e) {
@@ -204,6 +201,141 @@ public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlay
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Could not remove player from squad", e);
             throw new DataAccessException("Could not remove player from squad", e);
+        }
+    }
+
+    @Override
+    public boolean updateSquadRole(UUID teamId, UUID playerId, SquadRole squadRole) {
+        String query = "UPDATE team_player_selection SET squadRole = ? WHERE teamId = ? AND playerId = ?";
+        try(Connection con = getConnection();
+        PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1, squadRole.name());
+            ps.setString(2, teamId.toString());
+            ps.setString(3, playerId.toString());
+            return ps.executeUpdate() >= 1;
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE, "Could not update squad role", e);
+            throw new DataAccessException("Could not update squad role", e);
+        }
+    }
+
+    @Override
+    public boolean setCaptain(UUID teamId, UUID playerId) {
+        String oldCaptain = " UPDATE team_player_selection SET isCaptain = FALSE  WHERE teamId = ? AND isCaptain = TRUE";
+        String newCaptain = " UPDATE team_player_selection SET isCaptain = TRUE  WHERE teamId = ? AND playerId = ?";
+        Connection con = null;
+        try{
+            con = getConnection();
+            con.setAutoCommit(false);
+            try(PreparedStatement oldPs = con.prepareStatement(oldCaptain);
+                PreparedStatement newPs = con.prepareStatement(newCaptain)
+            ){
+                oldPs.setString(1, teamId.toString());
+                oldPs.executeUpdate();
+
+                newPs.setString(1,teamId.toString());
+                newPs.setString(2,playerId.toString());
+
+                int update = newPs.executeUpdate();
+                if(update == 0){
+                    con.rollback();
+                    throw new ResourceNotFoundException("Player not found in this team's squad");
+                }
+                con.commit();
+                return true;
+            }
+        }catch(SQLException e){
+            if(con != null) {
+                try {
+                    con.rollback();
+                } catch (SQLException rollbackException) {
+                    e.addSuppressed(rollbackException);
+                }
+            }
+            LOG.log(Level.SEVERE, "Could not update captain", e);
+            throw new DataAccessException("Could not update captain", e);
+        }finally{
+            if(con != null) {
+                try {
+                    con.setAutoCommit(true);
+                    con.close();
+                } catch (SQLException e) {
+                    LOG.log(Level.SEVERE, "Could not close database connection", e);
+                }
+            }
+        }
+    }
+
+    @Override
+    public boolean setViceCaptain(UUID teamId, UUID playerId) {
+        String oldViceCaptain = "UPDATE team_player_selection SET is_vice_captain = FALSE  WHERE teamId = ? AND is_vice_captain = TRUE";
+        String newViceCaptain = "UPDATE team_player_selection SET is_vice_captain = TRUE  WHERE teamId = ? AND playerId = ?";
+        Connection con = null;
+        try{
+            con = getConnection();
+            con.setAutoCommit(false);
+            try(PreparedStatement oldPs = con.prepareStatement(oldViceCaptain);
+                PreparedStatement newPs = con.prepareStatement(newViceCaptain)
+            ){
+                oldPs.setString(1, teamId.toString());
+                oldPs.executeUpdate();
+
+                newPs.setString(1,teamId.toString());
+                newPs.setString(2,playerId.toString());
+
+                int update = newPs.executeUpdate();
+                if(update == 0){
+                    con.rollback();
+                    throw new ResourceNotFoundException("Player not found in this team's squad");
+                }
+                con.commit();
+                return true;
+            }
+        }catch(SQLException e){
+            if(con != null) {
+                try {
+                    con.rollback();
+                } catch (SQLException rollbackException) {
+                    e.addSuppressed(rollbackException);
+                }
+            }
+            LOG.log(Level.SEVERE, "Could not update  vice captain", e);
+            throw new DataAccessException("Could not update  vice captain", e);
+        }finally{
+            if(con != null) {
+                try {
+                    con.setAutoCommit(true);
+                    con.close();
+                } catch (SQLException e) {
+                    LOG.log(Level.SEVERE, "Could not close database connection", e);
+                }
+            }
+        }
+    }
+
+    @Override
+    public boolean clearCaptain(UUID teamId) {
+        String query = " UPDATE team_player_selection SET isCaptain = FALSE WHERE teamId = ? AND isCaptain = TRUE";
+        try(Connection con = getConnection();
+        PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1, teamId.toString());
+            return ps.executeUpdate() >= 1;
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE, "Could not clear captain", e);
+            throw new DataAccessException("Could not clear captain", e);
+        }
+    }
+
+    @Override
+    public boolean clearViceCaptain(UUID teamId) {
+        String query = "UPDATE team_player_selection SET is_vice_captain = FALSE WHERE teamId = ? AND is_vice_captain = TRUE";
+        try(Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1, teamId.toString());
+            return ps.executeUpdate() >= 1;
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE, "Could not clear vice captain", e);
+            throw new DataAccessException("Could not clear vice captain", e);
         }
     }
 }

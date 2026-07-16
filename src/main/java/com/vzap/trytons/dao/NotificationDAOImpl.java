@@ -22,29 +22,24 @@ public class NotificationDAOImpl extends BaseDAO implements NotificationDAO {
 
     private static final Logger LOG = Logger.getLogger(NotificationDAOImpl.class.getName());
 
-    public static Notification mapRow(ResultSet rs) throws SQLException {
-        Notification notification = new Notification();
-
-        notification.setNotificationId(UUID.fromString(rs.getString("notificationId")));
-
-        //This part needs to be double-checked once (W1-BE03): schema.notification.type is finished
-        //and merged - not part of my ticket :)
-        notification.setType(NotificationType.valueOf(rs.getString("type")));
-
-        notification.setBody(rs.getString("body"));
-        notification.setCreatedAt(rs.getTimestamp("createdAt").toLocalDateTime());
-        notification.setIsRead(rs.getBoolean("isRead"));
-        notification.setRelatedEntityType(rs.getString("related_entity_type"));
-
-        String relatedEntityId = rs.getString("related_entity_id");
-        notification.setRelatedEntityId(relatedEntityId != null ? UUID.fromString(relatedEntityId) : null);
-
-        User user = User.builder()
-                .userId(UUID.fromString(rs.getString("userId")))
-                .build();
-        notification.setUser(user);
-
-        return notification;
+    private static Notification mapRow(ResultSet rs)  {
+        try {
+            Notification notification = new Notification();
+            notification.setNotificationId(UUID.fromString(rs.getString("notificationId")));
+            notification.setType(NotificationType.valueOf(rs.getString("type")));
+            notification.setBody(rs.getString("body"));
+            notification.setCreatedAt(rs.getTimestamp("createdAt").toLocalDateTime());
+            notification.setIsRead(rs.getBoolean("isRead"));
+            notification.setRelatedEntityType(rs.getString("related_entity_type"));
+            String relatedEntityId = rs.getString("related_entity_id");
+            notification.setRelatedEntityId(relatedEntityId != null ? UUID.fromString(relatedEntityId) : null);
+            User user = User.builder().userId(UUID.fromString(rs.getString("userId"))).build();
+            String userId = rs.getString("user_id");
+            notification.setUserId(userId != null ? UUID.fromString(userId) : null);
+            return notification;
+        }catch(SQLException e){
+           throw new DataAccessException(e.getMessage(), e);
+        }
     }
 
     @Override
@@ -58,7 +53,7 @@ public class NotificationDAOImpl extends BaseDAO implements NotificationDAO {
              PreparedStatement ps = con.prepareStatement(query)) {
 
             ps.setString(1, newId.toString());
-            ps.setString(2, notification.getUser().getUserId().toString());
+            ps.setString(2, notification.getUserId().toString());
             ps.setString(3, notification.getType().name());
             ps.setString(4, notification.getBody());
             ps.setBoolean(5, Boolean.TRUE.equals(notification.getIsRead()));

@@ -13,12 +13,12 @@ import java.util.UUID;
 @Setter
 public class SystemReport {
 
-    private UUID systemReportId;
+    private UUID reportId;
     private SystemReportType reportType;
     private String reportTitle;
     private String parametersJson;
     private String resultJson;
     private LocalDateTime generatedAt;
 
-    private Administrator generatedByAdmin;
+    private UUID generatedByAdminUserId;
 }

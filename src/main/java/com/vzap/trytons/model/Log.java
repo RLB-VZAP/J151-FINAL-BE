@@ -19,8 +19,8 @@ public class Log {
     private LocalDateTime createdAt;
     private String ipAddress;
 
-    private Notification notification;
+    private UUID notificationId;
 
-    private User user;
-    private Transfer transfer;
+    private UUID userId;
+    private UUID transferId;
 }

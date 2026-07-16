@@ -60,7 +60,7 @@ public class NotificationServiceImpl implements NotificationService{
         Notification notification = notificationDAO.findById(notificationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
 
-        if(notification.getUser() == null || !actorUserId.equals(notification.getUser().getUserId())){
+        if(notification.getUserId() == null || !actorUserId.equals(notification.getUserId())){
             throw new AuthorisationException("User may only mark their own messages as read");
         }
 
@@ -93,17 +93,15 @@ public class NotificationServiceImpl implements NotificationService{
             throw new ValidationException("Related entity type and related entity ID must be provided together to continue.");
         }
 
-        userDAO.getUserById(request.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("Target user not found."));
+        userDAO.getUserById(request.getUserId()).orElseThrow(() -> new ResourceNotFoundException("Target user not found."));
 
         Notification notification = new Notification();
-        notification.setUser(User.builder().userId(request.getUserId()).build());
+        notification.setUserId(request.getUserId());
         notification.setType(request.getType());
         notification.setBody(request.getBody());
         notification.setIsRead(false);
         notification.setRelatedEntityType(request.getRelatedEntityType());
         notification.setRelatedEntityId(request.getRelatedEntityId());
-
         Notification created = notificationDAO.create(notification);
         return mapToResponse(created);
     }
