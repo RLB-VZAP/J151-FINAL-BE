@@ -2,10 +2,8 @@ package com.vzap.trytons.dao;
 
 import com.vzap.trytons.enums.AvailabilityStatus;
 import com.vzap.trytons.exceptions.DataAccessException;
-import com.vzap.trytons.model.Club;
 import com.vzap.trytons.model.Player;
 import com.vzap.trytons.model.PlayerAvailability;
-import com.vzap.trytons.model.Position;
 import jakarta.inject.Singleton;
 
 import java.math.BigDecimal;
@@ -25,171 +23,78 @@ import java.util.logging.Logger;
 @Singleton
 public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
 
-    private static final Logger LOG =
-            Logger.getLogger(PlayerDAOImpl.class.getName());
+    private static final Logger LOG = Logger.getLogger(PlayerDAOImpl.class.getName());
+    private static final String PLAYER_SELECT = "SELECT * FROM player ";
 
-    private static final String PLAYER_SELECT =
-            "SELECT "
-                    + "p.playerId AS playerId, "
-                    + "p.playerName AS playerName, "
-                    + "p.value AS playerValue, "
-                    + "p.attackingAbility AS attackingAbility, "
-                    + "p.defensiveAbility AS defensiveAbility, "
-                    + "p.kickingAbility AS kickingAbility, "
-                    + "p.discipline AS discipline, "
-                    + "p.consistency AS consistency, "
-                    + "p.fitness AS fitness, "
-                    + "p.currentForm AS currentForm, "
-                    + "COALESCE((SELECT SUM(fp.totalPoints) FROM playerStatistics ps_stats JOIN fantasyPoints fp ON fp.statId = ps_stats.statId AND fp.isFinal = TRUE WHERE ps_stats.playerId = p.playerId), 0) AS totalFantasyPoints, "
-                    + "p.isActive AS playerIsActive, "
-                    + "c.clubId AS clubId, "
-                    + "c.clubName AS clubName, "
-                    + "c.location AS clubLocation, "
-                    + "c.homeVenue AS homeVenue, "
-                    + "c.isActive AS clubIsActive, "
-                    + "pos.positionId AS positionId, "
-                    + "pos.positionName AS positionName, "
-                    + "pos.positionCategory AS positionCategory, "
-                    + "pos.minRequired AS minRequired, "
-                    + "pos.maxAllowed AS maxAllowed "
-                    + "FROM player p "
-                    + "JOIN club c ON p.clubId = c.clubId "
-                    + "JOIN position pos ON p.positionId = pos.positionId ";
-
-    private Player mapPlayer(ResultSet rs) throws SQLException {
-        Club club = new Club();
-        club.setClubId(readUuid(rs, "clubId"));
-        club.setClubName(rs.getString("clubName"));
-        club.setLocation(rs.getString("clubLocation"));
-        club.setHomeVenue(rs.getString("homeVenue"));
-        club.setActive(rs.getBoolean("clubIsActive"));
-
-        Position position = new Position();
-        position.setPositionId(readUuid(rs, "positionId"));
-        position.setPositionName(rs.getString("positionName"));
-        position.setPositionCategory(rs.getString("positionCategory"));
-        position.setMinRequired(rs.getInt("minRequired"));
-        position.setMaxAllowed(rs.getInt("maxAllowed"));
-
-        Player player = new Player();
-        player.setPlayerId(readUuid(rs, "playerId"));
-        player.setPlayerName(rs.getString("playerName"));
-        player.setValue(rs.getBigDecimal("playerValue"));
-        player.setAttackingAbility(rs.getInt("attackingAbility"));
-        player.setDefensiveAbility(rs.getInt("defensiveAbility"));
-        player.setKickingAbility(rs.getInt("kickingAbility"));
-        player.setDiscipline(rs.getInt("discipline"));
-        player.setConsistency(rs.getInt("consistency"));
-        player.setFitness(rs.getInt("fitness"));
-        player.setCurrentForm(rs.getInt("currentForm"));
-        player.setTotalFantasyPoints(rs.getInt("totalFantasyPoints"));
-        player.setActive(rs.getBoolean("playerIsActive"));
-        // TODO: Player.club/position renamed to clubId/positionId (UUID) — model now mirrors schema.sql
-        player.setClub(club);
-        player.setPosition(position);
-
-        return player;
-    }
-
-    private PlayerAvailability mapAvailability(ResultSet rs) throws SQLException {
-        String statusValue = rs.getString("status");
-
-        if (statusValue == null) {
-            throw new SQLException("Availability status cannot be null.");
-        }
-
-        Player player = new Player();
-        player.setPlayerId(readUuid(rs, "playerId"));
-
-        PlayerAvailability availability = new PlayerAvailability();
-        availability.setAvailabilityId(readUuid(rs, "availabilityId"));
-
+    private Player mapPlayer(ResultSet rs) {
         try {
-            availability.setStatus(AvailabilityStatus.valueOf(statusValue));
-        } catch (IllegalArgumentException e) {
-            throw new SQLException("Invalid availability status stored in database: " + statusValue, e);
+            return Player.builder()
+                    .playerId(UUID.fromString(rs.getString("playerId")))
+                    .clubId(UUID.fromString(rs.getString("clubId")))
+                    .positionId(UUID.fromString(rs.getString("positionId")))
+                    .playerName(rs.getString("playerName"))
+                    .value(rs.getBigDecimal("value"))
+                    .attackingAbility(rs.getInt("attackingAbility"))
+                    .defensiveAbility(rs.getInt("defensiveAbility"))
+                    .kickingAbility(rs.getInt("kickingAbility"))
+                    .discipline(rs.getInt("discipline"))
+                    .consistency(rs.getInt("consistency"))
+                    .fitness(rs.getInt("fitness"))
+                    .currentForm(rs.getInt("currentForm"))
+                    .isActive(rs.getBoolean("isActive"))
+                    .build();
+
+        } catch (SQLException | IllegalArgumentException e) {
+            LOG.log(Level.SEVERE, "Unable to map player result.", e);
+            throw new DataAccessException("Unable to map player result.", e);
         }
-
-        Date effectiveDate = rs.getDate("effectiveDate");
-        Date endDate = rs.getDate("endDate");
-
-        availability.setEffectiveDate(effectiveDate != null ? effectiveDate.toLocalDate() : null);
-
-        availability.setEndDate(endDate != null ? endDate.toLocalDate() : null);
-        availability.setNotes(rs.getString("notes"));
-        // TODO: PlayerAvailability.player renamed to playerId (UUID) — model now mirrors schema.sql
-        availability.setPlayer(player);
-
-        return availability;
     }
 
-    private UUID readUuid(ResultSet rs, String columnName) throws SQLException {
-        String value = rs.getString(columnName);
-
-        if (value == null) {
-            throw new SQLException("Database column '" + columnName + "' contains a null UUID.");
-        }
-
+    private PlayerAvailability mapAvailability(ResultSet rs) {
         try {
-            return UUID.fromString(value);
-        } catch (IllegalArgumentException e) {
-            throw new SQLException("Invalid UUID in database column '" + columnName + "': " + value, e);
-        }
-    }
+            String statusValue = rs.getString("status");
 
-    private List<Player> executePlayerList(String query, List<Object> parameters, String errorMessage) {
-        List<Player> players = new ArrayList<>();
-
-        try (Connection con = getConnection();
-             PreparedStatement ps = con.prepareStatement(query)) {
-
-            bindParameters(ps, parameters);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    players.add(mapPlayer(rs));
-                }
+            if (statusValue == null) {
+                throw new DataAccessException("Availability status cannot be null.", null);
             }
 
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, errorMessage, e);
-            throw new DataAccessException(errorMessage, e);
-        }
-        return players;
-    }
+            AvailabilityStatus status;
 
-    private void bindParameters(PreparedStatement ps, List<Object> parameters) throws SQLException {
-
-        for (int index = 0; index < parameters.size(); index++) {
-            Object parameter = parameters.get(index);
-            int jdbcIndex = index + 1;
-
-            if (parameter instanceof UUID uuid) {
-                ps.setString(jdbcIndex, uuid.toString());
-            } else if (parameter instanceof BigDecimal decimal) {
-                ps.setBigDecimal(jdbcIndex, decimal);
-            } else if (parameter instanceof Integer integer) {
-                ps.setInt(jdbcIndex, integer);
-            } else if (parameter instanceof Boolean bool) {
-                ps.setBoolean(jdbcIndex, bool);
-            } else if (parameter instanceof AvailabilityStatus status) {
-                ps.setString(jdbcIndex, status.name());
-            } else {
-                ps.setString(jdbcIndex, String.valueOf(parameter));
+            try {
+                status = AvailabilityStatus.valueOf(statusValue);
+            } catch (IllegalArgumentException e) {
+                throw new DataAccessException("Invalid availability status stored in database.", e);
             }
+
+            Date effectiveDate = rs.getDate("effectiveDate");
+            Date endDate = rs.getDate("endDate");
+
+            PlayerAvailability availability = new PlayerAvailability();
+            availability.setAvailabilityId(UUID.fromString(rs.getString("availabilityId")));
+            availability.setPlayerId(UUID.fromString(rs.getString("playerId")));
+            availability.setStatus(status);
+            availability.setEffectiveDate(effectiveDate != null ? effectiveDate.toLocalDate() : null);
+            availability.setEndDate(endDate != null ? endDate.toLocalDate() : null);
+            availability.setNotes(rs.getString("notes"));
+
+            return availability;
+
+        } catch (SQLException | IllegalArgumentException e) {
+            LOG.log(Level.SEVERE, "Unable to map player availability result.", e);
+            throw new DataAccessException("Unable to map player availability result.", e);
         }
     }
 
     @Override
     public Optional<Player> getPlayerById(UUID playerId) {
-        String query = PLAYER_SELECT + "WHERE p.playerId = ?";
+        String query = PLAYER_SELECT + "WHERE playerId = ?";
 
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {
 
             ps.setString(1, playerId.toString());
-
             try (ResultSet rs = ps.executeQuery()) {
+
                 if (rs.next()) {
                     return Optional.of(mapPlayer(rs));
                 }
@@ -205,114 +110,143 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
 
     @Override
     public List<Player> getAllPlayers() {
-        String query = PLAYER_SELECT + "ORDER BY p.playerName ASC";
+        String query = PLAYER_SELECT + "ORDER BY playerName ASC";
+        List<Player> players = new ArrayList<>();
 
-        return executePlayerList(query, List.of(), "Unable to retrieve all players.");
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                players.add(mapPlayer(rs));
+            }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to retrieve all players.", e);
+            throw new DataAccessException("Unable to retrieve all players.", e);
+        }
+        return players;
     }
 
     @Override
-    public List<Player> searchPlayers(
-            String playerName,
-            UUID clubId,
-            UUID positionId,
-            BigDecimal minValue,
-            BigDecimal maxValue,
-            Integer minTotalFantasyPoints,
-            Integer maxTotalFantasyPoints,
-            Integer minCurrentForm,
-            Integer maxCurrentForm,
-            AvailabilityStatus availabilityStatus,
-            Boolean isActive) {
-        StringBuilder query = new StringBuilder(PLAYER_SELECT);
-        List<Object> parameters = new ArrayList<>();
+    public List<Player> searchPlayers(String playerName, UUID clubId, UUID positionId, BigDecimal minValue, BigDecimal maxValue, Integer minCurrentForm, Integer maxCurrentForm, AvailabilityStatus availabilityStatus, Boolean isActive) {
 
-        query.append("WHERE 1 = 1 ");
+        String query = PLAYER_SELECT + "WHERE 1 = 1 ";
 
         if (playerName != null && !playerName.isBlank()) {
-            query.append("AND LOWER(p.playerName) LIKE ? ");
-            parameters.add("%" + playerName.trim().toLowerCase(Locale.ROOT) + "%");
+            query = query + "AND LOWER(playerName) LIKE ? ";
         }
 
         if (clubId != null) {
-            query.append("AND p.clubId = ? ");
-            parameters.add(clubId);
+            query = query + "AND clubId = ? ";
         }
 
         if (positionId != null) {
-            query.append("AND p.positionId = ? ");
-            parameters.add(positionId);
+            query = query + "AND positionId = ? ";
         }
 
         if (minValue != null) {
-            query.append("AND p.value >= ? ");
-            parameters.add(minValue);
+            query = query + "AND value >= ? ";
         }
 
         if (maxValue != null) {
-            query.append("AND p.value <= ? ");
-            parameters.add(maxValue);
-        }
-
-        if (minTotalFantasyPoints != null) {
-            query.append("AND COALESCE((SELECT SUM(fp.totalPoints) FROM playerStatistics ps_stats JOIN fantasyPoints fp ON fp.statId = ps_stats.statId AND fp.isFinal = TRUE WHERE ps_stats.playerId = p.playerId), 0) >= ? ");
-            parameters.add(minTotalFantasyPoints);
-        }
-
-        if (maxTotalFantasyPoints != null) {
-            query.append("AND COALESCE((SELECT SUM(fp.totalPoints) FROM playerStatistics ps_stats JOIN fantasyPoints fp ON fp.statId = ps_stats.statId AND fp.isFinal = TRUE WHERE ps_stats.playerId = p.playerId), 0) <= ? ");
-            parameters.add(maxTotalFantasyPoints);
+            query = query + "AND value <= ? ";
         }
 
         if (minCurrentForm != null) {
-            query.append("AND p.currentForm >= ? ");
-            parameters.add(minCurrentForm);
+            query = query + "AND currentForm >= ? ";
         }
 
         if (maxCurrentForm != null) {
-            query.append("AND p.currentForm <= ? ");
-            parameters.add(maxCurrentForm);
+            query = query + "AND currentForm <= ? ";
         }
 
         if (availabilityStatus != null) {
-            query.append(
-                    "AND EXISTS ( "
-                            + "SELECT 1 "
-                            + "FROM playerAvailability pa "
-                            + "WHERE pa.playerId = p.playerId "
-                            + "AND pa.status = ? "
-                            + "AND pa.effectiveDate <= CURRENT_DATE "
-                            + "AND (pa.endDate IS NULL OR pa.endDate >= CURRENT_DATE) "
-                            + ") ");
-            parameters.add(availabilityStatus);
+            query = query
+                    + "AND EXISTS (SELECT 1 FROM playerAvailability "
+                    + "WHERE playerAvailability.playerId = player.playerId "
+                    + "AND playerAvailability.status = ? "
+                    + "AND playerAvailability.effectiveDate <= CURRENT_DATE "
+                    + "AND (playerAvailability.endDate IS NULL "
+                    + "OR playerAvailability.endDate >= CURRENT_DATE)) ";
         }
 
         if (isActive != null) {
-            query.append("AND p.isActive = ? ");
-            parameters.add(isActive);
+            query = query + "AND isActive = ? ";
         }
 
-        query.append("ORDER BY p.playerName ASC");
-        return executePlayerList(query.toString(), parameters, "Unable to search players.");
+        query = query + "ORDER BY playerName ASC";
+
+        List<Player> players = new ArrayList<>();
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            int parameterIndex = 1;
+
+            if (playerName != null && !playerName.isBlank()) {
+                ps.setString(parameterIndex++, "%" + playerName.trim().toLowerCase(Locale.ROOT) + "%");
+            }
+
+            if (clubId != null) {
+                ps.setString(parameterIndex++, clubId.toString());
+            }
+
+            if (positionId != null) {
+                ps.setString(parameterIndex++, positionId.toString());
+            }
+
+            if (minValue != null) {
+                ps.setBigDecimal(parameterIndex++, minValue);
+            }
+
+            if (maxValue != null) {
+                ps.setBigDecimal(parameterIndex++, maxValue);
+            }
+
+            if (minCurrentForm != null) {
+                ps.setInt(parameterIndex++, minCurrentForm);
+            }
+
+            if (maxCurrentForm != null) {
+                ps.setInt(parameterIndex++, maxCurrentForm);
+            }
+
+            if (availabilityStatus != null) {
+                ps.setString(parameterIndex++, availabilityStatus.name());
+            }
+
+            if (isActive != null) {
+                ps.setBoolean(parameterIndex, isActive);
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    players.add(mapPlayer(rs));
+                }
+            }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to search players.", e);
+            throw new DataAccessException("Unable to search players.", e);
+        }
+
+        return players;
     }
 
     @Override
     public Optional<Player> createPlayer(Player player) {
-        UUID playerId = player.getPlayerId() != null ? player.getPlayerId(): UUID.randomUUID();
+        UUID playerId = player.getPlayerId() != null ? player.getPlayerId() : UUID.randomUUID();
 
-        String query =
-                "INSERT INTO player ("
-                        + "playerId, clubId, positionId, playerName, value, "
-                        + "attackingAbility, defensiveAbility, kickingAbility, "
-                        + "discipline, consistency, fitness, currentForm"
-                        + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String query = "INSERT INTO player (playerId, clubId, positionId, playerName, value, attackingAbility, defensiveAbility, kickingAbility, discipline, consistency, fitness, currentForm) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {
 
             ps.setString(1, playerId.toString());
-            // TODO: Player.club/position renamed to clubId/positionId (UUID) — model now mirrors schema.sql
-            ps.setString(2, player.getClub().getClubId().toString());
-            ps.setString(3, player.getPosition().getPositionId().toString());
+            ps.setString(2, player.getClubId().toString());
+            ps.setString(3, player.getPositionId().toString());
             ps.setString(4, player.getPlayerName());
             ps.setBigDecimal(5, player.getValue());
             ps.setInt(6, player.getAttackingAbility());
@@ -331,32 +265,20 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
             LOG.log(Level.SEVERE, "Unable to create player.", e);
             throw new DataAccessException("Unable to create player.", e);
         }
+
         return Optional.empty();
     }
 
     @Override
     public Optional<Player> updatePlayer(Player player) {
-        String query =
-                "UPDATE player SET "
-                        + "clubId = ?, "
-                        + "positionId = ?, "
-                        + "playerName = ?, "
-                        + "value = ?, "
-                        + "attackingAbility = ?, "
-                        + "defensiveAbility = ?, "
-                        + "kickingAbility = ?, "
-                        + "discipline = ?, "
-                        + "consistency = ?, "
-                        + "fitness = ?, "
-                        + "currentForm = ? "
-                        + "WHERE playerId = ?";
+        String query = "UPDATE player SET clubId = ?, positionId = ?, playerName = ?, value = ?, attackingAbility = ?, defensiveAbility = ?, "
+                        + "kickingAbility = ?, discipline = ?, consistency = ?, fitness = ?, currentForm = ? WHERE playerId = ?";
 
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {
 
-            // TODO: Player.club/position renamed to clubId/positionId (UUID) — model now mirrors schema.sql
-            ps.setString(1, player.getClub().getClubId().toString());
-            ps.setString(2, player.getPosition().getPositionId().toString());
+            ps.setString(1, player.getClubId().toString());
+            ps.setString(2, player.getPositionId().toString());
             ps.setString(3, player.getPlayerName());
             ps.setBigDecimal(4, player.getValue());
             ps.setInt(5, player.getAttackingAbility());
@@ -376,15 +298,13 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
             LOG.log(Level.SEVERE, "Unable to update player.", e);
             throw new DataAccessException("Unable to update player.", e);
         }
+
         return Optional.empty();
     }
 
     @Override
     public boolean deactivatePlayer(UUID playerId) {
-        String query =
-                "UPDATE player "
-                        + "SET isActive = FALSE "
-                        + "WHERE playerId = ? AND isActive = TRUE";
+        String query = "UPDATE player SET isActive = FALSE WHERE playerId = ? AND isActive = TRUE";
 
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {
@@ -400,34 +320,58 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
 
     @Override
     public List<Player> getPlayersByClubId(UUID clubId) {
-        String query = PLAYER_SELECT + "WHERE p.clubId = ? " + "ORDER BY p.playerName ASC";
+        String query = PLAYER_SELECT + "WHERE clubId = ? ORDER BY playerName ASC";
+        List<Player> players = new ArrayList<>();
 
-        return executePlayerList(query, List.of(clubId), "Unable to retrieve players for the club.");
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, clubId.toString());
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    players.add(mapPlayer(rs));
+                }
+            }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to retrieve players for the club.", e);
+            throw new DataAccessException("Unable to retrieve players for the club.", e);
+        }
+
+        return players;
     }
 
     @Override
     public List<Player> getPlayersByPositionId(UUID positionId) {
-        String query = PLAYER_SELECT + "WHERE p.positionId = ? " + "ORDER BY p.playerName ASC";
+        String query = PLAYER_SELECT + "WHERE positionId = ? ORDER BY playerName ASC";
+        List<Player> players = new ArrayList<>();
 
-        return executePlayerList(query, List.of(positionId), "Unable to retrieve players for the position.");
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, positionId.toString());
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    players.add(mapPlayer(rs));
+                }
+            }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to retrieve players for the position.", e);
+            throw new DataAccessException("Unable to retrieve players for the position.", e);
+        }
+
+        return players;
     }
 
     @Override
     public Optional<PlayerAvailability> getCurrentAvailability(UUID playerId) {
-        String query =
-                "SELECT "
-                        + "pa.availabilityId, "
-                        + "pa.playerId, "
-                        + "pa.status, "
-                        + "pa.effectiveDate, "
-                        + "pa.endDate, "
-                        + "pa.notes "
-                        + "FROM playerAvailability pa "
-                        + "WHERE pa.playerId = ? "
-                        + "AND pa.effectiveDate <= CURRENT_DATE "
-                        + "AND (pa.endDate IS NULL OR pa.endDate >= CURRENT_DATE) "
-                        + "ORDER BY pa.effectiveDate DESC, pa.availabilityId DESC "
-                        + "LIMIT 1";
+        String query = "SELECT * FROM playerAvailability WHERE playerId = ? "
+                        + "AND effectiveDate <= CURRENT_DATE "
+                        + "AND (endDate IS NULL OR endDate >= CURRENT_DATE) "
+                        + "ORDER BY effectiveDate DESC, availabilityId DESC LIMIT 1";
 
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {
@@ -444,22 +388,14 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
             LOG.log(Level.SEVERE, "Unable to retrieve current player availability.", e);
             throw new DataAccessException("Unable to retrieve current player availability.", e);
         }
+
         return Optional.empty();
     }
 
     @Override
     public List<PlayerAvailability> getAvailabilityHistory(UUID playerId) {
-        String query =
-                "SELECT "
-                        + "pa.availabilityId, "
-                        + "pa.playerId, "
-                        + "pa.status, "
-                        + "pa.effectiveDate, "
-                        + "pa.endDate, "
-                        + "pa.notes "
-                        + "FROM playerAvailability pa "
-                        + "WHERE pa.playerId = ? "
-                        + "ORDER BY pa.effectiveDate DESC, pa.availabilityId DESC";
+        String query = "SELECT * FROM playerAvailability WHERE playerId = ? "
+                        + "ORDER BY effectiveDate DESC, availabilityId DESC";
 
         List<PlayerAvailability> availabilityHistory = new ArrayList<>();
 
@@ -474,8 +410,11 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
                 }
             }
 
-        } catch (SQLException e) {LOG.log(Level.SEVERE, "Unable to retrieve player availability history.", e);throw new DataAccessException("Unable to retrieve player availability history.", e);
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to retrieve player availability history.", e);
+            throw new DataAccessException("Unable to retrieve player availability history.", e);
         }
+
         return availabilityHistory;
     }
 }
