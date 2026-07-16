@@ -1,5 +1,6 @@
 package com.vzap.trytons.dto;
 
+import com.vzap.trytons.enums.SquadRole;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,4 +22,7 @@ public class FantasyTeamPlayerSelectionResponseDTO {
     private Boolean isActive;
     private Integer totalFantasyPoints;
     private Integer currentForm;
+    private SquadRole squadRole;
+    private Boolean isCaptain;
+    private Boolean isViceCaptain;
 }
