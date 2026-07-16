@@ -8,9 +8,7 @@ import com.vzap.trytons.dto.PlayerResponseDTO;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.exceptions.ValidationException;
-import com.vzap.trytons.model.Club;
 import com.vzap.trytons.model.Player;
-import com.vzap.trytons.model.Position;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -38,10 +36,8 @@ public class PlayerServiceImpl implements PlayerService {
         Player player = mapRequestToPlayer(request);
         player.setPlayerId(UUID.randomUUID());
 
-        player.setTotalFantasyPoints(0);
-        player.setActive(true);
-
         Player createdPlayer = playerDAO.createPlayer(player).orElseThrow(() -> new DataAccessException("Failed to create player.", null));
+
         return mapToResponse(createdPlayer);
     }
 
@@ -62,29 +58,19 @@ public class PlayerServiceImpl implements PlayerService {
         for (Player player : players) {
             responses.add(mapToResponse(player));
         }
+
         return responses;
     }
 
     @Override
     public List<PlayerResponseDTO> searchPlayers(String playerName, UUID clubId, UUID positionId) {
-        List<Player> players = playerDAO.searchPlayers(
-                playerName,
-                clubId,
-                positionId,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null);
-
+        List<Player> players = playerDAO.searchPlayers(playerName, clubId, positionId, null, null, null, null, null, null);
         List<PlayerResponseDTO> responses = new ArrayList<>();
 
         for (Player player : players) {
             responses.add(mapToResponse(player));
         }
+
         return responses;
     }
 
@@ -93,14 +79,10 @@ public class PlayerServiceImpl implements PlayerService {
         validatePlayerId(playerId);
         validatePlayerRequest(request);
 
-        Player existingPlayer = playerDAO.getPlayerById(playerId).orElseThrow(() -> new ResourceNotFoundException("Player was not found."));
+        playerDAO.getPlayerById(playerId).orElseThrow(() -> new ResourceNotFoundException("Player was not found."));
 
         Player player = mapRequestToPlayer(request);
         player.setPlayerId(playerId);
-
-
-        player.setTotalFantasyPoints(existingPlayer.getTotalFantasyPoints());
-        player.setActive(existingPlayer.isActive());
 
         Player updatedPlayer = playerDAO.updatePlayer(player).orElseThrow(() -> new DataAccessException("Failed to update player.", null));
 
@@ -132,12 +114,8 @@ public class PlayerServiceImpl implements PlayerService {
         validateRating(request.getFitness(), "Fitness");
         validateRating(request.getCurrentForm(), "Current form");
 
-        if (request.getTotalFantasyPoints() < 0) {
-            throw new ValidationException("Total fantasy points cannot be negative.");
-        }
-
-        validateClubReference(request);
-        validatePositionReference(request);
+        validateClubReference(request.getClubId());
+        validatePositionReference(request.getPositionId());
     }
 
     private void validateRating(int rating, String fieldName) {
@@ -152,24 +130,27 @@ public class PlayerServiceImpl implements PlayerService {
         }
     }
 
-    private void validateClubReference(PlayerRequestDTO request) {
-        if (request.getClub() == null || request.getClub().getClubId() == null) {
-            throw new ValidationException("A valid club reference is required.");
+    private void validateClubReference(UUID clubId) {
+        if (clubId == null) {
+            throw new ValidationException("Club ID is required.");
         }
+
+        clubDAO.findByClubId(clubId).orElseThrow(() -> new ResourceNotFoundException("Selected club was not found."));
     }
 
-    private void validatePositionReference(PlayerRequestDTO request) {
-        if (request.getPosition() == null || request.getPosition().getPositionId() == null) {
-            throw new ValidationException("A valid position reference is required.");
+    private void validatePositionReference(UUID positionId) {
+        if (positionId == null) {
+            throw new ValidationException("Position ID is required.");
         }
+
+        positionDAO.findById(positionId).orElseThrow(() -> new ResourceNotFoundException("Selected position was not found."));
     }
 
     private Player mapRequestToPlayer(PlayerRequestDTO request) {
-
-        Club club = clubDAO.findByClubId(request.getClub().getClubId()).orElseThrow(() -> new ResourceNotFoundException("Selected club was not found."));
-        Position position = positionDAO.findById(request.getPosition().getPositionId()).orElseThrow(() -> new ResourceNotFoundException("Selected position was not found."));
-
         Player player = new Player();
+
+        player.setClubId(request.getClubId());
+        player.setPositionId(request.getPositionId());
         player.setPlayerName(request.getPlayerName().trim());
         player.setValue(request.getValue());
         player.setAttackingAbility(request.getAttackingAbility());
@@ -179,9 +160,6 @@ public class PlayerServiceImpl implements PlayerService {
         player.setConsistency(request.getConsistency());
         player.setFitness(request.getFitness());
         player.setCurrentForm(request.getCurrentForm());
-        // TODO: Player.club/position replaced by clubId/positionId (UUID FK) — model now mirrors schema.sql
-        player.setClub(club);
-        player.setPosition(position);
 
         return player;
     }
@@ -190,6 +168,8 @@ public class PlayerServiceImpl implements PlayerService {
         PlayerResponseDTO response = new PlayerResponseDTO();
 
         response.setPlayerId(player.getPlayerId());
+        response.setClubId(player.getClubId());
+        response.setPositionId(player.getPositionId());
         response.setPlayerName(player.getPlayerName());
         response.setValue(player.getValue());
         response.setAttackingAbility(player.getAttackingAbility());
@@ -199,11 +179,7 @@ public class PlayerServiceImpl implements PlayerService {
         response.setConsistency(player.getConsistency());
         response.setFitness(player.getFitness());
         response.setCurrentForm(player.getCurrentForm());
-        response.setTotalFantasyPoints(player.getTotalFantasyPoints());
         response.setActive(player.isActive());
-        // TODO: Player.club/position replaced by clubId/positionId (UUID FK) — model now mirrors schema.sql
-        response.setClub(player.getClub());
-        response.setPosition(player.getPosition());
 
         return response;
     }
