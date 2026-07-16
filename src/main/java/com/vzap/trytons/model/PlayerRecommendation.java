@@ -19,7 +19,7 @@ public class PlayerRecommendation {
     private LocalDateTime createdAt;
     private Boolean isDismissed;
 
-    private FantasyTeam fantasyTeam;
-    private Player currentPlayer;
-    private Player recommendedPlayer;
+    private UUID teamId;
+    private UUID currentPlayerId;
+    private UUID recommendedPlayerId;
 }

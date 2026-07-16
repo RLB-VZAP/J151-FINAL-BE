@@ -1,5 +1,6 @@
 package com.vzap.trytons.model;
 
+import com.vzap.trytons.enums.MatchTeamSide;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,21 +19,13 @@ public class MatchResult {
 
     private UUID resultId;
     private UUID fixtureId;
-    private UUID teamAId;
-    private UUID teamBId;
-
     private int simulationRunNumber;
     private int teamAScore;
     private int teamBScore;
-
-    private String winnerSide;
-
-    private boolean draw;
+    private MatchTeamSide winnerSide;
+    private boolean isDraw;
     private boolean approved;
-    private boolean current;
-
+    private boolean isCurrent;
     private LocalDateTime resultDate;
-    private LocalDateTime approvedAt;
-
-    private UUID approvedByAdminId;
+    private UUID approvedByAdminUserId;
 }

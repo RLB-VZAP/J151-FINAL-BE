@@ -14,10 +14,8 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.vzap.trytons.util.DBConnectionManager.getConnection;
-
-public class FantasyPointBreakdownDAOImpl implements FantasyPointBreakdownDAO {
-    private static final Logger LOG = Logger.getLogger(FantasyPointsDAOImpl.class.getName());
+public class FantasyPointBreakdownDAOImpl extends BaseDAO implements FantasyPointBreakdownDAO {
+    private static final Logger LOG = Logger.getLogger(FantasyPointBreakdownDAOImpl.class.getName());
 
     @Override
     public FantasyPointBreakdown save(FantasyPointBreakdown fantasyPointBreakdown) {
@@ -56,7 +54,7 @@ public class FantasyPointBreakdownDAOImpl implements FantasyPointBreakdownDAO {
         String query = "SELECT * FROM fantasy_point_breakdown WHERE breakdownId = ?";
 
         try (Connection con = getConnection();
-            PreparedStatement ps = con.prepareStatement(query)) {
+             PreparedStatement ps = con.prepareStatement(query)) {
 
             ps.setString(1, breakdownId.toString());
 
@@ -92,7 +90,7 @@ public class FantasyPointBreakdownDAOImpl implements FantasyPointBreakdownDAO {
         List<FantasyPointBreakdown> breakdowns = new ArrayList<>();
 
         try (Connection con = getConnection();
-            PreparedStatement ps = con.prepareStatement(query)) {
+             PreparedStatement ps = con.prepareStatement(query)) {
 
             ps.setString(1, pointsId.toString());
 

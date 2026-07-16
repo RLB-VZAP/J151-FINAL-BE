@@ -19,13 +19,13 @@ public class FantasyPointBreakdownResource {
     @Path("/{breakdownId}")
     public Response getBreakdownById(@PathParam("breakdownId") UUID breakdownId) {
 
-        throw new UnsupportedOperationException("FantasyPointBreakdownResource.getBreakdownById is a stub for W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after FantasyPointBreakdownServiceImpl read mapping is confirmed.");
+        throw new UnsupportedOperationException("FantasyPointBreakdownResource.getBreakdownById is a stub made by W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after FantasyPointBreakdownServiceImpl read mapping is confirmed.");
     }
 
     @GET
     @Path("/points/{pointsId}")
     public Response listBreakdownsForPoints(@PathParam("pointsId") UUID pointsId) {
 
-        throw new UnsupportedOperationException("FantasyPointBreakdownResource.listBreakdownsForPoints is a stub for W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after FantasyPointBreakdownServiceImpl points-based lookup is confirmed.");
+        throw new UnsupportedOperationException("FantasyPointBreakdownResource.listBreakdownsForPoints is a stub made by W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after FantasyPointBreakdownServiceImpl points-based lookup is confirmed.");
     }
 }

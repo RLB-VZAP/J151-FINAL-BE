@@ -279,10 +279,9 @@ public class LeagueServiceImpl implements LeagueService {
                         )
                 );
 
-        if (team.getOwner() == null
-                || team.getOwner().getUserId() == null
+        if (team.getOwnerUserId() == null
                 || !currentUserId.equals(
-                team.getOwner().getUserId()
+                team.getOwnerUserId()
         )) {
 
             throw new ConflictException(
@@ -503,10 +502,9 @@ public class LeagueServiceImpl implements LeagueService {
             League league,
             UUID actorUserId) {
 
-        if (league.getManager() == null
-                || league.getManager().getUserId() == null
+        if (league.getManagerUserId() == null
                 || !actorUserId.equals(
-                league.getManager().getUserId()
+                league.getManagerUserId()
         )) {
 
             throw new ConflictException(
@@ -564,9 +562,9 @@ public class LeagueServiceImpl implements LeagueService {
                 league.getLeagueId()
         );
 
-        if (league.getManager() != null) {
+        if (league.getManagerUserId() != null) {
             response.setManagerUserId(
-                    league.getManager().getUserId()
+                    league.getManagerUserId()
             );
         }
 

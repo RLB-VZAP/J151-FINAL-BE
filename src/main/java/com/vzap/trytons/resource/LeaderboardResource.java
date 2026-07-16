@@ -1,6 +1,7 @@
 package com.vzap.trytons.resource;
 
 import com.vzap.trytons.Annotations.Authenticated;
+import com.vzap.trytons.dto.ApiResponseDTO;
 import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.dto.LeaderboardEntryResponseDTO;
 import com.vzap.trytons.exceptions.AuthorisationException;
@@ -15,6 +16,8 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -38,7 +41,9 @@ public class LeaderboardResource {
     public Response getLeaderboardForLeague(@PathParam("leagueId") UUID leagueId) {
         UUID requestingUserId = ((AuthPrincipal) requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY)).getUserId();
         try{
-            return Response.ok(leaderboardService.getLeaderboardForLeague(leagueId, requestingUserId)).build();
+            List<LeaderboardEntryResponseDTO> leaderboard = leaderboardService.getLeaderboardForLeague(leagueId, requestingUserId);
+            ApiResponseDTO<List<LeaderboardEntryResponseDTO>> payload = ApiResponseDTO.success("Leaderboard retrieved successfully", leaderboard);
+            return Response.ok(payload).build();
         }catch(ResourceNotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), "NOT_FOUND")).build();
         }catch(AuthorisationException e) {
@@ -59,7 +64,8 @@ public class LeaderboardResource {
             if (result.isEmpty()) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
-            return Response.ok(result.get()).build();
+            ApiResponseDTO<LeaderboardEntryResponseDTO>payload = ApiResponseDTO.success("Ranking retrieved successfully", result.get());
+            return Response.ok(payload).build();
         }catch(ResourceNotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), "NOT_FOUND")).build();
         }catch(AuthorisationException e) {
