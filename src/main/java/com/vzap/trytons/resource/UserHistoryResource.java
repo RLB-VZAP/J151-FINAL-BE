@@ -37,7 +37,7 @@ public class UserHistoryResource {
     public Response getUserPointsHistory() {
         try {
             UUID requestingUserId = ((AuthPrincipal) requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY)).getUserId();
-            return Response.ok(userHistoryService.getUserPointsHistory(requestingUserId.toString())).build();
+            return Response.ok(userHistoryService.getUserPointsHistory(requestingUserId)).build();
         } catch (ResourceNotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), "NOT_FOUND")).build();
         } catch (AuthorisationException e) {
@@ -54,7 +54,7 @@ public class UserHistoryResource {
     public Response getWeeklyPerformance() {
         try {
             UUID requestingUserId = ((AuthPrincipal) requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY)).getUserId();
-            return Response.ok(userHistoryService.getWeeklyPerformance(requestingUserId.toString())).build();
+            return Response.ok(userHistoryService.getWeeklyPerformance(requestingUserId)).build();
         } catch (ResourceNotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), "NOT_FOUND")).build();
         } catch (AuthorisationException e) {
@@ -78,8 +78,4 @@ public class UserHistoryResource {
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity(ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR")).build();
     }
-
-
-
-
 }

@@ -54,7 +54,7 @@ public class TransferRecommendationServiceImpl implements TransferRecommendation
 
         FantasyTeam team = fantasyTeamDAO.getTeamById(request.getTeamId()).orElseThrow(() -> new ResourceNotFoundException("Fantasy team not found"));
 
-        if (!actorUserId.equals(team.getOwner_user_id())) {
+        if (!actorUserId.equals(team.getOwnerUserId())) {
             throw new AuthorisationException("You do not own this fantasy team");
         }
 

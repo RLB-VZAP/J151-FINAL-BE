@@ -161,7 +161,7 @@ public class TransferServiceImpl implements TransferService {
             throw new BusinessRuleException("This transfer requires penalty confirmation before it can be completed");
         }
 
-        fantasyTeamPlayerDAO.replaceSquad(teamId, proposedPlayerIds);
+        fantasyTeamPlayerDAO.replaceSquad(teamId, currentSquad);
 
         boolean budgetUpdated = fantasyTeamDAO.updateBudget(teamId,  newRemainingBudget);
 
@@ -242,11 +242,11 @@ public class TransferServiceImpl implements TransferService {
     }
 
     private void validateTeamOwnership(UUID actorId, FantasyTeam team) {
-        if (team.getOwner_user_id() == null) {
+        if (team.getOwnerUserId() == null) {
             throw new BusinessRuleException("Fantasy team owner could not be verified");
         }
 
-        if (!team.getOwner_user_id().equals(actorId)) {
+        if (!team.getOwnerUserId().equals(actorId)) {
             throw new AuthorisationException("You do not own this fantasy team");
         }
     }

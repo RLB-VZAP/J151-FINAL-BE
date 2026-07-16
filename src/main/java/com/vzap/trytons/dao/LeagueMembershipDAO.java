@@ -14,16 +14,11 @@ public interface LeagueMembershipDAO {
     Optional<LeagueMembership> findById(UUID membershipId);
 
     List<LeagueMembership> findActiveByLeague(UUID leagueId);
-
     List<LeagueMembership> findActiveByUser(UUID userId);
-
     List<League> findLeaguesByLeague(UUID leagueId);
-
     List<League> findLeaguesByUser(UUID userId);
 
     boolean existsActiveByLeagueAndUser(UUID leagueId, UUID userId);
-
     int countActiveMembers(UUID leagueId);
-
     boolean deactivateMembership(UUID membershipId);
 }
