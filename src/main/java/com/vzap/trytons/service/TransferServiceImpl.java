@@ -1,10 +1,6 @@
 package com.vzap.trytons.service;
 
-import com.vzap.trytons.dao.FantasyRoundDAO;
-import com.vzap.trytons.dao.FantasyTeamDAO;
-import com.vzap.trytons.dao.FantasyTeamPlayerDAO;
-import com.vzap.trytons.dao.PlayerDAO;
-import com.vzap.trytons.dao.TransferDAO;
+import com.vzap.trytons.dao.*;
 import com.vzap.trytons.dto.DeadlineStatusResponseDTO;
 import com.vzap.trytons.dto.LockStatusResponseDTO;
 import com.vzap.trytons.dto.SquadValidationResultDTO;
@@ -12,6 +8,7 @@ import com.vzap.trytons.dto.TransferRequestDTO;
 import com.vzap.trytons.dto.TransferResponseDTO;
 import com.vzap.trytons.enums.AvailabilityStatus;
 import com.vzap.trytons.enums.FantasyRoundStatus;
+import com.vzap.trytons.enums.FixtureStatus;
 import com.vzap.trytons.enums.TransferStatus;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.BusinessRuleException;
@@ -21,6 +18,7 @@ import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.exceptions.ValidationException;
 import com.vzap.trytons.model.FantasyRound;
 import com.vzap.trytons.model.FantasyTeam;
+import com.vzap.trytons.model.Fixture;
 import com.vzap.trytons.model.Player;
 import com.vzap.trytons.model.PlayerAvailability;
 import com.vzap.trytons.model.RegisteredUser;
@@ -33,12 +31,12 @@ import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class TransferServiceImpl implements TransferService {
-
     private static final int FREE_TRANSFERS_PER_ROUND = 1;
     private static final int PENALTY_POINTS_PER_EXTRA_TRANSFER = 4;
 
@@ -56,6 +54,9 @@ public class TransferServiceImpl implements TransferService {
 
     @Inject
     private FantasyRoundDAO fantasyRoundDAO;
+
+    @Inject
+    private FixtureDAO fixtureDAO;
 
     @Inject
     private DeadlineLockService deadlineLockService;
@@ -107,8 +108,21 @@ public class TransferServiceImpl implements TransferService {
         BigDecimal removedValue = requirePlayerValue(removedPlayer, "Removed player");
         BigDecimal addedValue = requirePlayerValue(addedPlayer, "Added player");
 
+        BigDecimal totalValue = BigDecimal.ZERO;
         BigDecimal oldRemainingBudget = valueOrZero(team.getRemainingBudget());
-        BigDecimal oldTeamValue = valueOrZero(team.getTotalTeamValue());
+
+        List<TeamPlayerSelection> teamPlayerSelections = fantasyTeamPlayerDAO.getSquadByTeamId(teamId);
+        for (TeamPlayerSelection teamPlayerSelection : teamPlayerSelections) {
+            Optional<Player> playerOpt = playerDAO.getPlayerById(teamPlayerSelection.getPlayerId());
+            if (playerOpt.isPresent()) {
+                Player player = playerOpt.get();
+                if (player.getValue() != null) {
+                    totalValue = totalValue.add(player.getValue());
+                }
+            }
+        }
+        BigDecimal oldTeamValue = totalValue;
+
 
         BigDecimal newRemainingBudget = oldRemainingBudget.add(removedValue).subtract(addedValue);
         BigDecimal newTeamValue = oldTeamValue.subtract(removedValue).add(addedValue);
@@ -118,8 +132,8 @@ public class TransferServiceImpl implements TransferService {
         }
 
         List<UUID> proposedPlayerIds = currentSquad.stream()
-                .filter(selection -> selection != null && selection.getPlayer() != null)
-                .map(selection -> selection.getPlayer().getPlayerId())
+                .filter(selection -> selection != null && selection.getPlayerId() != null)
+                .map(selection -> selection.getPlayerId())
                 .collect(Collectors.toList());
 
         proposedPlayerIds.remove(removedPlayerId);
@@ -149,10 +163,7 @@ public class TransferServiceImpl implements TransferService {
 
         fantasyTeamPlayerDAO.replaceSquad(teamId, proposedPlayerIds);
 
-        boolean budgetUpdated = fantasyTeamDAO.updateBudgetAndValue(
-                teamId,
-                newTeamValue,
-                newRemainingBudget);
+        boolean budgetUpdated = fantasyTeamDAO.updateBudget(teamId,  newRemainingBudget);
 
         if (!budgetUpdated) {
             throw new DataAccessException("Unable to update budget after transfer", null);
@@ -164,18 +175,17 @@ public class TransferServiceImpl implements TransferService {
         Transfer transfer = new Transfer();
         transfer.setTransferId(UUID.randomUUID());
         transfer.setTransferDate(LocalDateTime.now());
-        transfer.setRound(round);
-        transfer.setFantasyTeam(team);
-        transfer.setRemovedPlayer(removedPlayer);
-        transfer.setAddedPlayer(addedPlayer);
-        transfer.setRemoved_player_value(removedValue);
-        transfer.setAdded_player_value(addedValue);
+        transfer.setRoundId(round.getRoundId());
+        transfer.setTeamId(team.getTeamId());
+        transfer.setRemovedPlayerId(removedPlayer.getPlayerId());
+        transfer.setAddedPlayerId(addedPlayer.getPlayerId());
+        transfer.setRemovedPlayerValue(removedValue);
+        transfer.setAddedPlayerValue(addedValue);
         transfer.setValueDifference(addedValue.subtract(removedValue));
         transfer.setPenaltyPoints(penaltyPoints);
         transfer.setStatus(TransferStatus.CONFIRMED);
-        transfer.setConfirmationDate(LocalDateTime.now());
-        transfer.setCreatedBy(createdBy);
-
+        transfer.setConfirmedAt(LocalDateTime.now());
+        transfer.setCreatedByUserId(createdBy.getUserId());
         Transfer savedTransfer = transferDAO.saveTransfer(transfer)
                 .orElseThrow(() -> new DataAccessException("Unable to save transfer", null));
 
@@ -232,16 +242,23 @@ public class TransferServiceImpl implements TransferService {
     }
 
     private void validateTeamOwnership(UUID actorId, FantasyTeam team) {
-        if (team.getOwner() == null || team.getOwner().getUserId() == null) {
+        if (team.getOwner_user_id() == null) {
             throw new BusinessRuleException("Fantasy team owner could not be verified");
         }
 
-        if (!team.getOwner().getUserId().equals(actorId)) {
+        if (!team.getOwner_user_id().equals(actorId)) {
             throw new AuthorisationException("You do not own this fantasy team");
         }
+    }
 
-        if (Boolean.TRUE.equals(team.getIsLocked())) {
-            throw new BusinessRuleException("This team is locked and cannot make transfers");
+    private void validateTeamIsNotLocked(UUID roundId, UUID teamId) {
+        for (Fixture fixture : fixtureDAO.findByRoundId(roundId)) {
+            boolean teamIsPlaying = teamId.equals(fixture.getTeamAId()) || teamId.equals(fixture.getTeamBId());
+
+            if (teamIsPlaying && fixture.getStatus() != FixtureStatus.UPCOMING
+                    && fixture.getStatus() != FixtureStatus.CANCELLED) {
+                throw new BusinessRuleException("This team is locked and cannot make transfers");
+            }
         }
     }
 
@@ -256,6 +273,8 @@ public class TransferServiceImpl implements TransferService {
             UUID teamId,
             UUID removedPlayerId,
             UUID addedPlayerId) {
+        validateTeamIsNotLocked(roundId, teamId);
+
         DeadlineStatusResponseDTO deadlineStatus = deadlineLockService.getDeadlineStatus(roundId);
 
         if (deadlineStatus != null) {
@@ -306,16 +325,15 @@ public class TransferServiceImpl implements TransferService {
         }
 
         boolean removedPlayerInSquad = currentSquad.stream()
-                .filter(selection -> selection != null && selection.getPlayer() != null)
-                .anyMatch(selection -> removedPlayerId.equals(selection.getPlayer().getPlayerId()));
+                .filter(selection -> selection != null && selection.getPlayerId() != null)
+                .anyMatch(selection -> removedPlayerId.equals(selection.getPlayerId()));
 
         if (!removedPlayerInSquad) {
             throw new BusinessRuleException("The player you are trying to remove is not in your squad");
         }
-
         boolean addedPlayerAlreadyInSquad = currentSquad.stream()
-                .filter(selection -> selection != null && selection.getPlayer() != null)
-                .anyMatch(selection -> addedPlayerId.equals(selection.getPlayer().getPlayerId()));
+                .filter(selection -> selection != null && selection.getPlayerId() != null)
+                .anyMatch(selection -> addedPlayerId.equals(selection.getPlayerId()));
 
         if (addedPlayerAlreadyInSquad) {
             throw new BusinessRuleException("The player you are trying to add is already in your squad");
@@ -356,38 +374,36 @@ public class TransferServiceImpl implements TransferService {
 
     private TransferResponseDTO toResponse(Transfer transfer, UUID fallbackTeamId) {
         BigDecimal valueDifference = transfer.getValueDifference();
-
         if (valueDifference == null
-                && transfer.getAdded_player_value() != null
-                && transfer.getRemoved_player_value() != null) {
-            valueDifference = transfer.getAdded_player_value().subtract(transfer.getRemoved_player_value());
+                && transfer.getAddedPlayerValue() != null
+                && transfer.getRemovedPlayerValue() != null) {
+            valueDifference = transfer.getAddedPlayerValue().subtract(transfer.getRemovedPlayerValue());
         }
-
         return TransferResponseDTO.builder()
                 .transferId(transfer.getTransferId())
-                .teamId(transfer.getFantasyTeam() != null
-                        ? transfer.getFantasyTeam().getTeamId()
+                .teamId(transfer.getTeamId() != null
+                        ? transfer.getTeamId()
                         : fallbackTeamId)
-                .roundId(transfer.getRound() != null ? transfer.getRound().getRoundId() : null)
-                .removed_player_id(transfer.getRemovedPlayer() != null
-                        ? transfer.getRemovedPlayer().getPlayerId()
+                .roundId(transfer.getRoundId() != null ? transfer.getRoundId() : null)
+                .removed_player_id(transfer.getRemovedPlayerId() != null
+                        ? transfer.getRemovedPlayerId()
                         : null)
-                .added_player_id(transfer.getAddedPlayer() != null
-                        ? transfer.getAddedPlayer().getPlayerId()
+                .added_player_id(transfer.getAddedPlayerId() != null
+                        ? transfer.getAddedPlayerId()
                         : null)
-                .removed_player_name(transfer.getRemovedPlayer() != null
-                        ? transfer.getRemovedPlayer().getPlayerName()
+                .removed_player_name(transfer.getRemovedPlayerId() != null
+                        ? String.valueOf(transfer.getRemovedPlayerId())
                         : null)
-                .added_player_name(transfer.getAddedPlayer() != null
-                        ? transfer.getAddedPlayer().getPlayerName()
+                .added_player_name(transfer.getAddedPlayerId() != null
+                        ? String.valueOf(transfer.getAddedPlayerId())
                         : null)
-                .removed_player_value(transfer.getRemoved_player_value())
-                .added_player_value(transfer.getAdded_player_value())
+                .removed_player_value(transfer.getRemovedPlayerValue())
+                .added_player_value(transfer.getAddedPlayerValue())
                 .valueDifference(valueDifference)
                 .penaltyPoints(transfer.getPenaltyPoints())
                 .status(transfer.getStatus() != null ? transfer.getStatus().name() : null)
                 .transferDate(transfer.getTransferDate())
-                .confirmationDate(transfer.getConfirmationDate())
+                .confirmationDate(transfer.getConfirmedAt())
                 .build();
     }
 

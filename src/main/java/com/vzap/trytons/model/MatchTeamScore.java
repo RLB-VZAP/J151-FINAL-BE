@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -15,9 +16,13 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class MatchTeamScore {
-    private UUID teamScoreId;
+    private UUID scoreId;
     private UUID resultId;
     private UUID teamId;
     private MatchTeamSide teamSide;
-    private int score;
+    private int playerPoints;
+    private int captainBonus;
+    private int transferPenalty;
+    private int totalScore;
+    private LocalDateTime calculatedAt;
 }

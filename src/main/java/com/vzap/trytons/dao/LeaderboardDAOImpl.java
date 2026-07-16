@@ -67,7 +67,7 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
                             .pointsAgainst(rs.getInt("pointsAgainst"))
                             .scoreDifference(rs.getInt("scoreDifference"))
                             .leaguePoints(rs.getInt("leaguePoints"))
-                            .total_fantasy_points(rs.getInt("total_fantasy_points"))
+                            .totalFantasyPoints(rs.getInt("total_fantasy_points"))
                             .updatedAt(rs.getObject("updatedAt", LocalDateTime.class))
                             .build();
                     rankings.add(r);
@@ -102,7 +102,7 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
                             .pointsAgainst(rs.getInt("pointsAgainst"))
                             .scoreDifference(rs.getInt("scoreDifference"))
                             .leaguePoints(rs.getInt("leaguePoints"))
-                            .total_fantasy_points(rs.getInt("total_fantasy_points"))
+                            .totalFantasyPoints(rs.getInt("total_fantasy_points"))
                             .updatedAt(rs.getObject("updatedAt", LocalDateTime.class))
                             .build();
 
@@ -164,7 +164,7 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
             ps.setInt(10, ranking.getPointsFor());
             ps.setInt(11, ranking.getPointsAgainst());
             ps.setInt(12, ranking.getLeaguePoints());
-            ps.setInt(13, ranking.getTotal_fantasy_points());
+            ps.setInt(13, ranking.getTotalFantasyPoints());
             ps.setString(14, ranking.getUpdatedAt().toString());
 
             ps.executeUpdate();
@@ -188,7 +188,7 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
             ps.setInt(7, ranking.getPointsFor());
             ps.setInt(8, ranking.getPointsAgainst());
             ps.setInt(9, ranking.getLeaguePoints());
-            ps.setInt(10, ranking.getTotal_fantasy_points());
+            ps.setInt(10, ranking.getTotalFantasyPoints());
             ps.setString(11, ranking.getUpdatedAt().toString());
             ps.setString(12, ranking.getRankingId().toString());
 

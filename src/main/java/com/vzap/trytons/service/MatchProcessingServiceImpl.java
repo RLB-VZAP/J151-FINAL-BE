@@ -2,16 +2,19 @@ package com.vzap.trytons.service;
 
 import com.vzap.trytons.dao.AdministratorDAO;
 import com.vzap.trytons.dao.FixtureDAO;
+import com.vzap.trytons.dao.MatchTeamScoreDAO;
 import com.vzap.trytons.dto.LeaderboardRefreshResultDTO;
 import com.vzap.trytons.dto.MatchProcessingResultDTO;
 import com.vzap.trytons.dto.MatchResultResponseDTO;
 import com.vzap.trytons.dto.PlayerStatisticsResponseDTO;
+import com.vzap.trytons.dto.TeamScoreUpdateResultDTO;
 import com.vzap.trytons.enums.FixtureStatus;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.BusinessRuleException;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.model.Fixture;
+import com.vzap.trytons.model.MatchTeamScore;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -25,15 +28,14 @@ public class MatchProcessingServiceImpl implements MatchProcessingService {
 
     private static final Logger LOG = Logger.getLogger(MatchProcessingServiceImpl.class.getName());
 
-    // A fixture is a single match between two teams, so a successful run always
-    // refreshes both sides' match_team_score rows.
     private static final int TEAMS_PER_FIXTURE = 2;
 
     @Inject
     private AdministratorDAO administratorDAO;
     @Inject
     private FixtureDAO fixtureDAO;
-
+    @Inject
+    private MatchTeamScoreDAO matchTeamScoreDAO;
     @Inject
     private MatchResultService matchResultService;
     @Inject
@@ -69,18 +71,36 @@ public class MatchProcessingServiceImpl implements MatchProcessingService {
         if (statistics == null || statistics.isEmpty()) {
             throw new BusinessRuleException("Fixture " + fixtureId + " has no player statistics captured for its result.");
         }
+
         fantasyPointCalculationService.calculateForFixture(fixtureId.toString());
-        teamScoreService.refreshTeamScores(actorUserId, fixtureId);
+
+        TeamScoreUpdateResultDTO scoreUpdate = teamScoreService.refreshTeamScores(actorUserId, fixtureId);
+        if (scoreUpdate == null) {
+            throw new BusinessRuleException(
+                    "Team score refresh for fixture " + fixtureId + " returned no result; processing aborted.");
+        }
+
+        List<MatchTeamScore> persistedScores = matchTeamScoreDAO.findByResultId(currentResult.getResultId());
+        int teamsUpdated = persistedScores == null ? 0 : persistedScores.size();
+        if (teamsUpdated != TEAMS_PER_FIXTURE) {
+            throw new BusinessRuleException(
+                    "Fixture " + fixtureId + " has " + teamsUpdated + " persisted team scores but " + TEAMS_PER_FIXTURE + " are required; processing aborted.");
+        }
+
         boolean leaderboardsRefreshed = refreshLeaderboards(actorUserId, fixture);
+        if (!leaderboardsRefreshed) {
+            throw new BusinessRuleException("Leaderboard refresh for fixture " + fixtureId + " did not complete; processing aborted.");
+        }
+
         fixture.setStatus(FixtureStatus.PROCESSED);
         fixtureDAO.updateFixture(fixture);
 
-        LOG.log(Level.INFO, "Processed fixture {0}: {1} statistics scored, {2} team scores refreshed.", new Object[]{fixtureId, statistics.size(), TEAMS_PER_FIXTURE});
+        LOG.log(Level.INFO, "Processed fixture {0}: {1} statistics scored, {2} team scores persisted.", new Object[]{fixtureId, statistics.size(), teamsUpdated});
 
         return MatchProcessingResultDTO.builder()
                 .fixtureId(fixtureId)
                 .pointsCalculated(statistics.size())
-                .teamsUpdated(TEAMS_PER_FIXTURE)
+                .teamsUpdated(teamsUpdated)
                 .leaderboardsRefreshed(leaderboardsRefreshed)
                 .status(fixture.getStatus().name())
                 .build();
@@ -96,8 +116,7 @@ public class MatchProcessingServiceImpl implements MatchProcessingService {
         if (fixture.getLeagueId() == null) {
             return false;
         }
-        LeaderboardRefreshResultDTO refresh =
-                leaderboardService.refreshLeagueLeaderboard(actorUserId, fixture.getLeagueId().getLeagueId());
+        LeaderboardRefreshResultDTO refresh = leaderboardService.refreshLeagueLeaderboard(actorUserId, fixture.getLeagueId());
         return refresh != null && refresh.isSuccess();
     }
 }

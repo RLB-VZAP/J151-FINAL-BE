@@ -12,7 +12,6 @@ import java.util.UUID;
 @Getter
 @Setter
 public class Notification {
-
     private UUID notificationId;
     private NotificationType type;
     private String body;
@@ -20,6 +19,5 @@ public class Notification {
     private Boolean isRead;
     private String relatedEntityType;
     private UUID relatedEntityId;
-
-    private User user;
+    private UUID userId;
 }

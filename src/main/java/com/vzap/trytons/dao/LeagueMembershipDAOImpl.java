@@ -1,5 +1,4 @@
 package com.vzap.trytons.dao;
-import com.vzap.trytons.enums.LeagueMemberRole;
 import com.vzap.trytons.enums.LeagueType;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.FantasyTeam;
@@ -36,7 +35,7 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
         LocalDateTime joinDate = LocalDateTime.now();
 
         String sql = "INSERT INTO leagueMembership (membershipId, leagueId, registered_user_id, teamId, isActive, " +
-                "joinDate)" + " VALUES (?, ?, ?, ?, TRUE, ?, ?)";
+                "joinDate)" + " VALUES (?, ?, ?, ?, TRUE, ?)";
 
         try (Connection con = getConnection();
              PreparedStatement stmt = con.prepareStatement(sql)){
@@ -66,9 +65,9 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
         membership.setMembershipId(newId);
         membership.setIsActive(true);
         membership.setJoinDate(joinDate);
-        membership.setLeague(league);
-        membership.setRegisteredUser(registeredUser);
-        membership.setFantasyTeam(fantasyTeam);
+        membership.setLeagueId(leagueId);
+        membership.setRegisteredUserId(userId);
+        membership.setTeamId(teamId);
 
         return membership;
     }
@@ -245,15 +244,18 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
 
         League league = new League();
         league.setLeagueId(parseUuid(rs.getString("leagueId"), "leagueId"));
-        mem.setLeague(league);
+
+        mem.setLeagueId(parseUuid(rs.getString("leagueId"), "leagueId"));
 
         RegisteredUser registeredUser = new RegisteredUser();
         registeredUser.setUserId(parseUuid(rs.getString("registered_user_id"), "registered_user_id"));
-        mem.setRegisteredUser(registeredUser);
+
+        mem.setRegisteredUserId(parseUuid(rs.getString("registered_user_id"), "registered_user_id"));
 
         FantasyTeam fantasyTeam = new FantasyTeam();
         fantasyTeam.setTeamId(parseUuid(rs.getString("teamId"), "teamId"));
-        mem.setFantasyTeam(fantasyTeam);
+
+        mem.setTeamId(parseUuid(rs.getString("teamId"), "teamId"));
         return mem;
     }
 
