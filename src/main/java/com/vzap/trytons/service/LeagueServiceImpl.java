@@ -9,6 +9,7 @@ import com.vzap.trytons.dto.LeagueMemberResponseDTO;
 import com.vzap.trytons.dto.LeagueRequestDTO;
 import com.vzap.trytons.dto.LeagueResponseDTO;
 import com.vzap.trytons.enums.LeagueType;
+import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.model.FantasyTeam;
@@ -405,12 +406,28 @@ public class LeagueServiceImpl implements LeagueService {
             );
         }
 
-        /*
-         * Returning an empty list is safe for deployment and JSON
-         * serialization. Connect this to the membership DAO once
-         * its exact member-list method is confirmed.
-         */
+        List<LeagueMembership> memberships =
+                membershipDAO.findActiveByLeague(parsedLeagueId);
+
+        List<LeagueMemberResponseDTO> response = new ArrayList<>();
+
+        if (memberships != null) {
+
+            for (LeagueMembership membership : memberships) {
+                response.add(toMemberResponse(membership));
+            }
+        }
         return new ArrayList<>();
+    }
+
+    private LeagueMemberResponseDTO toMemberResponse(LeagueMembership membership) {
+        LeagueMemberResponseDTO dto = new LeagueMemberResponseDTO();
+        dto.setMembershipId(membership.getMembershipId());
+        dto.setUserId(membership.getRegisteredUserId()); // rename: registeredUserId -> userId
+        dto.setTeamId(membership.getTeamId());
+        dto.setJoinDate(membership.getJoinDate());
+        dto.setIsActive(membership.getIsActive());
+        return dto;
     }
 
     @Override
@@ -425,7 +442,7 @@ public class LeagueServiceImpl implements LeagueService {
         UUID parsedLeagueId =
                 parseUuid(leagueId, "leagueId");
 
-        parseUuid(
+        UUID parsedMembershipId = parseUuid(
                 membershipId,
                 "membershipId"
         );
@@ -438,14 +455,25 @@ public class LeagueServiceImpl implements LeagueService {
                 actorId
         );
 
-        /*
-         * Do not falsely report a database removal before the merged
-         * DAO's removal method has been connected.
-         */
-        throw new UnsupportedOperationException(
-                "League-member removal is not yet connected "
-                        + "to the merged membership DAO."
-        );
+        LeagueMembership membership = membershipDAO
+                .findById(parsedMembershipId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "League membership not found."
+                        )
+                );
+
+        if (!parsedLeagueId.equals(membership.getLeagueId())) {
+            throw new ResourceNotFoundException(
+                    "League membership not found."
+            );
+        }
+
+        if (!membershipDAO.deactivateMembership(parsedMembershipId)) {
+            throw new IllegalStateException(
+                    "The league membership could not be removed."
+            );
+        }
     }
 
     @Override
@@ -507,7 +535,7 @@ public class LeagueServiceImpl implements LeagueService {
                 league.getManagerUserId()
         )) {
 
-            throw new ConflictException(
+            throw new AuthorisationException(
                     "Only the league manager may "
                             + "perform this action."
             );
