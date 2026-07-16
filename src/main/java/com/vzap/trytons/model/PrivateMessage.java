@@ -2,14 +2,14 @@ package com.vzap.trytons.model;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
+
+import lombok.*;
 
 @Getter
 @Setter
 @NoArgsConstructor
-
+@AllArgsConstructor
+@Builder
 public class PrivateMessage {
     private UUID messageId;
     private String content;
