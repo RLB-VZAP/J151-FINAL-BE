@@ -19,9 +19,7 @@ public class ViewOwnTeamDTO {
     private BigDecimal remainingBudget;
     private LocalDateTime creationDate;
     private int totalPoints;
-    private int weeklyPoints;
     private Boolean isValid;
-    private Boolean isLocked;
     private String ownerUsername;
     private List<PlayerResponseDTO> players;
 }
