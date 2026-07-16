@@ -1,8 +1,10 @@
 package com.vzap.trytons.dto;
 
-import com.vzap.trytons.model.Club;
-import com.vzap.trytons.model.Position;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -13,9 +15,14 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 public class PlayerResponseDTO {
+
     private UUID playerId;
+    private UUID clubId;
+    private UUID positionId;
+
     private String playerName;
     private BigDecimal value;
+
     private int attackingAbility;
     private int defensiveAbility;
     private int kickingAbility;
@@ -23,13 +30,9 @@ public class PlayerResponseDTO {
     private int consistency;
     private int fitness;
     private int currentForm;
-    private int totalFantasyPoints;
+
     private boolean isActive;
-    private Club club;
-    private Position position;
     private boolean isCaptain;
     private boolean isViceCaptain;
     private boolean isBench;
-
-
 }
