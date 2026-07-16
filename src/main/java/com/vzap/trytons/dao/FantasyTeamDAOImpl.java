@@ -38,7 +38,7 @@ public class FantasyTeamDAOImpl extends BaseDAO implements FantasyTeamDAO {
                 team.setCreationDate(creationDate.toLocalDateTime());
             }
             team.setIsValid(rs.getBoolean("isValid"));
-            team.setOwner_user_id(UUID.fromString(rs.getString("owner_user_id")));
+            team.setOwnerUserId(UUID.fromString(rs.getString("owner_user_id")));
             return team;
         }catch(SQLException e) {
             LOG.log(Level.SEVERE, " Fantasy team cannot be retrieved", e);
@@ -58,7 +58,7 @@ public class FantasyTeamDAOImpl extends BaseDAO implements FantasyTeamDAO {
 
         try (Connection connection = getConnection();PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, teamId.toString());
-            statement.setString(2, team.getOwner_user_id().toString());
+            statement.setString(2, team.getOwnerUserId().toString());
             statement.setString(3, team.getTeamName());
             statement.setBigDecimal(4, team.getRemainingBudget() == null ? BigDecimal.ZERO : team.getRemainingBudget());
             statement.setTimestamp(5, Timestamp.valueOf(creationDate));

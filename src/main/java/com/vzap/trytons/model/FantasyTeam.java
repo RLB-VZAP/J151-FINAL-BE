@@ -20,5 +20,5 @@ public class FantasyTeam {
     private BigDecimal remainingBudget;
     private LocalDateTime creationDate;
     private Boolean isValid;
-    private UUID owner_user_id;
+    private UUID ownerUserId;
 }
