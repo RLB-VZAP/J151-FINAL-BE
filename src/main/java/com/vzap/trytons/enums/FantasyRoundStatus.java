@@ -6,5 +6,6 @@ public enum FantasyRoundStatus {
     LOCKED,
     IN_PROGRESS,
     COMPLETED,
+    PROCESSED,
     CANCELLED;
 }

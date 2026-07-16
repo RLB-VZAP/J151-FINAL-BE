@@ -13,19 +13,7 @@ public interface PlayerDAO {
 
     Optional<Player> getPlayerById(UUID playerId);
     List<Player> getAllPlayers();
-    List<Player> searchPlayers(
-            String playerName,
-            UUID clubId,
-            UUID positionId,
-            BigDecimal minValue,
-            BigDecimal maxValue,
-            Integer minTotalFantasyPoints,
-            Integer maxTotalFantasyPoints,
-            Integer minCurrentForm,
-            Integer maxCurrentForm,
-            AvailabilityStatus availabilityStatus,
-            Boolean isActive);
-
+    List<Player> searchPlayers(String playerName, UUID clubId, UUID positionId, BigDecimal minValue, BigDecimal maxValue, Integer minCurrentForm, Integer maxCurrentForm, AvailabilityStatus availabilityStatus, Boolean isActive);
     Optional<Player> createPlayer(Player player);
     Optional<Player> updatePlayer(Player player);
     boolean deactivatePlayer(UUID playerId);

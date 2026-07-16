@@ -1,16 +1,15 @@
 package com.vzap.trytons.service;
 
+import com.vzap.trytons.dao.*;
 import com.vzap.trytons.dto.LeaderboardRefreshResultDTO;
 import java.util.UUID;
-import com.vzap.trytons.dao.FantasyTeamDAO;
-import com.vzap.trytons.dao.LeaderboardDAO;
-import com.vzap.trytons.dao.LeagueDAO;
-import com.vzap.trytons.dao.LeagueMembershipDAO;
+
 import com.vzap.trytons.dto.LeaderboardEntryResponseDTO;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.model.FantasyTeam;
 import com.vzap.trytons.model.Leaderboard;
 import com.vzap.trytons.model.Ranking;
+import com.vzap.trytons.model.User;
 import jakarta.inject.Inject;
 import java.util.*;
 
@@ -23,6 +22,8 @@ public class LeaderboardServiceImpl implements LeaderboardService{
     private FantasyTeamDAO  fantasyTeamDAO;
     @Inject
     private LeagueDAO leagueDAO;
+    @Inject
+    private UserDAO userDAO;
 
     //New added methods
     //================================================================================================================================================
@@ -62,10 +63,13 @@ public class LeaderboardServiceImpl implements LeaderboardService{
             if (team == null) {
                 continue;
             }
+            String ownerUsername = userDAO.getUserById(team.getOwner_user_id())
+                    .map(User::getUsername)
+                    .orElse(null);
             LeaderboardEntryResponseDTO dto = LeaderboardEntryResponseDTO.builder()
                     .teamId(ranking.getTeamId())
                     .teamName(team.getTeamName())
-                    .owner(team.getOwner().getUsername())
+                    .owner(ownerUsername)
                     .rank(ranking.getCurrentRanking())
                     .rankMovement(calculateRankMovement(ranking.getCurrentRanking(), ranking.getPreviousRanking()))
                     .previousRanking(ranking.getPreviousRanking())
@@ -77,7 +81,7 @@ public class LeaderboardServiceImpl implements LeaderboardService{
                     .pointsAgainst(ranking.getPointsAgainst())
                     .scoreDifference(ranking.getScoreDifference())
                     .leaguePoints(ranking.getLeaguePoints())
-                    .totalFantasyPoints(ranking.getTotal_fantasy_points())
+                    .totalFantasyPoints(ranking.getTotalFantasyPoints())
                     .build();
 
             leaderboardEntryResponseDTOList.add(dto);
@@ -102,10 +106,13 @@ public class LeaderboardServiceImpl implements LeaderboardService{
                 return Optional.empty();
             }
             Ranking ranking = r.get();
+            String ownerUsername = userDAO.getUserById(team.getOwner_user_id())
+                    .map(User::getUsername)
+                    .orElse(null);
             LeaderboardEntryResponseDTO dto = LeaderboardEntryResponseDTO.builder()
                     .teamId(team.getTeamId())
                     .teamName(team.getTeamName())
-                    .owner(team.getOwner().getUsername())
+                    .owner(ownerUsername)
                     .rank(ranking.getCurrentRanking())
                     .rankMovement(calculateRankMovement(ranking.getCurrentRanking(), ranking.getPreviousRanking()))
                     .previousRanking(ranking.getPreviousRanking())
@@ -117,7 +124,7 @@ public class LeaderboardServiceImpl implements LeaderboardService{
                     .pointsAgainst(ranking.getPointsAgainst())
                     .scoreDifference(ranking.getScoreDifference())
                     .leaguePoints(ranking.getLeaguePoints())
-                    .totalFantasyPoints(ranking.getTotal_fantasy_points())
+                    .totalFantasyPoints(ranking.getTotalFantasyPoints())
                     .build();
 
             return Optional.of(dto);

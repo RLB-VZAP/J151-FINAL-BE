@@ -35,6 +35,9 @@ public class FantasyPointCalculationServiceImpl implements FantasyPointCalculati
     @Inject
     FantasyPointBreakdownDAO fantasyPointBreakdownDAO;
 
+    @Inject
+    FantasyRoundDAO fantasyRoundDAO;
+
     @Override
     public FantasyPointCalculationResultDTO calculateForFixture(String fixtureId) {
         UUID currentFixtureId = UUID.fromString(fixtureId);
@@ -49,7 +52,9 @@ public class FantasyPointCalculationServiceImpl implements FantasyPointCalculati
 
         Fixture currentFixture = fixtureDAO.findById(currentFixtureId)
                 .orElseThrow(() -> new ResourceNotFoundException("Fixture was not found"));
-        String season = currentFixture.getRoundId().getSeason();
+
+        FantasyRound round = fantasyRoundDAO.getRoundById(currentFixture.getRoundId()).orElseThrow(() -> new ResourceNotFoundException("Round was not found"));
+        String season = round.getSeason();
 
         List<ScoringRule> scoringRules = scoringRuleDAO.findActiveRules(season);
 
@@ -110,8 +115,8 @@ public class FantasyPointCalculationServiceImpl implements FantasyPointCalculati
                                 .statId(statId)
                                 .totalPoints(total)
                                 .calculationVersion(nextVersion)
-                                .finalVersion(true)
-                                .calculationDate(LocalDateTime.now())
+                                .isFinal(true)
+                                .calculatedAt(LocalDateTime.now())
                                 .build()
                 );
 

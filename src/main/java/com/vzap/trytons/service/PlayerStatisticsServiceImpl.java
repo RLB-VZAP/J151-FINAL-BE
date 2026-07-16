@@ -8,14 +8,7 @@ import com.vzap.trytons.dao.UserDAO;
 import com.vzap.trytons.dto.PlayerStatisticsRequestDTO;
 import com.vzap.trytons.dto.PlayerStatisticsResponseDTO;
 import com.vzap.trytons.enums.UserRole;
-import com.vzap.trytons.exceptions.AuthorisationException;
-import com.vzap.trytons.exceptions.BusinessRuleException;
-import com.vzap.trytons.exceptions.ConflictException;
-import com.vzap.trytons.exceptions.DataAccessException;
-import com.vzap.trytons.exceptions.ResourceNotFoundException;
-import com.vzap.trytons.exceptions.ValidationException;
-import com.vzap.trytons.model.FantasyTeam;
-import com.vzap.trytons.model.FantasyTeamRoundSelection;
+import com.vzap.trytons.exceptions.*;
 import com.vzap.trytons.model.Fixture;
 import com.vzap.trytons.model.MatchResult;
 import com.vzap.trytons.model.PlayerStatistics;
@@ -60,6 +53,10 @@ public class PlayerStatisticsServiceImpl implements PlayerStatisticsService {
         if (teamId == null) {
             throw new ValidationException("Team ID is required.");
         }
+
+        Fixture fixture = fixtureDAO.findFixtureById(result.getFixtureId()).orElseThrow(()-> new ResourceNotFoundException("Fixture was not found for the result."));
+
+        requireTeamInFixture(fixture, teamId);
         return playerStatisticsDAO.findByResultIdAndTeamId(result.getResultId(), teamId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -70,19 +67,27 @@ public class PlayerStatisticsServiceImpl implements PlayerStatisticsService {
         validateRequest(request);
         requireAdmin(actorUserId);
         MatchResult result = requireResult(request.getResultId());
+
+        if (!result.isCurrent()) {
+            throw new BusinessRuleException("Statistics cannot be captured for a historical match result.");
+        }
+
+        if (result.isApproved()) {
+            throw new BusinessRuleException("Statistics cannot be captured after the match result has been approved.");
+        }
+
         Fixture fixture = fixtureDAO.findFixtureById(result.getFixtureId()).orElseThrow(() -> new ResourceNotFoundException("Fixture was not found for the result."));
         requireTeamInFixture(fixture, request.getTeamId());
         if (fixture.getRoundId() == null) {
             throw new BusinessRuleException("The fixture is not linked to a fantasy round.");
         }
-        requirePlayerInLockedSquad(fixture.getRoundId().getRoundId(), request.getTeamId(), request.getPlayerId());
+        requirePlayerInLockedSquad(fixture.getRoundId(), request.getTeamId(), request.getPlayerId());
 
         if (playerStatisticsDAO.findByResultIdAndTeamIdAndPlayerId(request.getResultId(), request.getTeamId(), request.getPlayerId()).isPresent()) {
             throw new ConflictException("Statistics have already been captured for this player in the result.");
         }
 
-        PlayerStatistics saved = playerStatisticsDAO.save(buildStatistics(request))
-                .orElseThrow(() -> new DataAccessException("Failed to persist the captured player statistics.", null));
+        PlayerStatistics saved = playerStatisticsDAO.save(buildStatistics(request)).orElseThrow(() -> new DataAccessException("Failed to persist the captured player statistics.", null));
 
         return mapToResponse(saved);
     }
@@ -114,24 +119,28 @@ public class PlayerStatisticsServiceImpl implements PlayerStatisticsService {
 
     private void requireAdmin(UUID actorUserId) {
         if (actorUserId == null) {
-            throw new AuthorisationException("An authenticated administrator is required to capture player statistics.");
+            throw new AuthenticationException("An authenticated administrator is required to capture player statistics.");
         }
-        User actor = userDAO.getUserById(actorUserId).orElseThrow(() -> new AuthorisationException("An authenticated administrator is required to capture player statistics."));
+
+        User actor = userDAO.getUserById(actorUserId).orElseThrow(() -> new AuthenticationException("An authenticated administrator is required to capture player statistics."));
+
         if (actor.getRole() != UserRole.ADMINISTRATOR) {
             throw new AuthorisationException("Only administrators may capture or correct player statistics.");
         }
     }
 
     private void requireTeamInFixture(Fixture fixture, UUID teamId) {
-        UUID teamAId = fixture.getTeamA() != null ? fixture.getTeamA().getTeamId() : null;
-        UUID teamBId = fixture.getTeamB() != null ? fixture.getTeamB().getTeamId() : null;
+        UUID teamAId = fixture.getTeamAId();
+        UUID teamBId = fixture.getTeamBId();
         if (!teamId.equals(teamAId) && !teamId.equals(teamBId)) {
             throw new ResourceNotFoundException("The team does not belong to the result's fixture.");
         }
     }
 
     private void requirePlayerInLockedSquad(UUID roundId, UUID teamId, UUID playerId) {
-        boolean present = roundSelectionDAO.getSelectionsByRoundIdAndTeamId(roundId, teamId).stream()
+        boolean present = roundSelectionDAO
+                .getSelectionsByRoundIdAndTeamId(roundId, teamId)
+                .stream()
                 .anyMatch(selection -> playerId.equals(selection.getPlayerId()) && selection.getLockedAt() != null);
         if (!present) {
             throw new BusinessRuleException("The player is not part of the team's locked round squad.");
@@ -143,7 +152,6 @@ public class PlayerStatisticsServiceImpl implements PlayerStatisticsService {
     }
 
     private PlayerStatisticsResponseDTO mapToResponse(PlayerStatistics stat) {
-        return new PlayerStatisticsResponseDTO(
-                stat.getStatId(), stat.getResultId(), stat.getTeamId(), stat.getPlayerId(), stat.getTries(), stat.getAssists(), stat.getTackles(), stat.getMissedTackles(), stat.getConversions(), stat.getPenalties(), stat.getMetersGained(), stat.getYellowCards(), stat.getRedCards(), stat.getStatisticDate());
+        return new PlayerStatisticsResponseDTO(stat.getStatId(), stat.getResultId(), stat.getTeamId(), stat.getPlayerId(), stat.getTries(), stat.getAssists(), stat.getTackles(), stat.getMissedTackles(), stat.getConversions(), stat.getPenalties(), stat.getMetersGained(), stat.getYellowCards(), stat.getRedCards(), stat.getStatisticDate());
     }
 }
