@@ -35,6 +35,8 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
 
     @Inject
     private PositionDAO positionDAO;
+    @Inject
+    private LeaderboardDAO leaderboardDAO;
 
     @Inject
     private SquadValidationService squadValidationService;
@@ -66,6 +68,8 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
             Club club = clubDAO.findByClubId(player.getClubId()).orElseThrow(() -> new ResourceNotFoundException("Club Not Found."));
             Position position = positionDAO.findById(player.getPositionId()).orElseThrow(() -> new ResourceNotFoundException("Position Not Found."));
 
+
+
             selectedPlayers.add(FantasyTeamPlayerSelectionResponseDTO.builder()
                     .playerId(player.getPlayerId())
                     .playerName(player.getPlayerName())
@@ -75,7 +79,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                     .clubName(club.getClubName())
                     .value(player.getValue())
                     .isActive(player.isActive())
-                    .totalFantasyPoints(player.getTotalFantasyPoints())
+                    .totalFantasyPoints(0) //TODO:same here
                     .currentForm(player.getCurrentForm())
                     .build());
         }
@@ -150,10 +154,9 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                     .consistency(player.getConsistency())
                     .fitness(player.getFitness())
                     .currentForm(player.getCurrentForm())
-                    .totalFantasyPoints(player.getTotalFantasyPoints())
                     .isActive(player.isActive())
-                    .club(club)
-                    .position(position)
+                    .clubId(player.getClubId())
+                    .positionId(player.getPositionId())
                     .isCaptain(selection.getIsCaptain())
                     .isViceCaptain(selection.getIsViceCaptain())
                     .isBench(selection.getSquadRole() == SquadRole.BENCH)
@@ -198,10 +201,9 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                     .consistency(player.getConsistency())
                     .fitness(player.getFitness())
                     .currentForm(player.getCurrentForm())
-                    .totalFantasyPoints(player.getTotalFantasyPoints())
                     .isActive(player.isActive())
-                    .club(club)
-                    .position(position)
+                    .clubId(player.getClubId())
+                    .positionId(player.getPositionId())
                     .isCaptain(playerResponse.getIsCaptain())
                     .isViceCaptain(playerResponse.getIsViceCaptain())
                     .isBench(playerResponse.getSquadRole() == SquadRole.BENCH)
@@ -217,7 +219,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                     .totalTeamValue(totalTeamValue)
                     .remainingBudget(fantasyTeam.getRemainingBudget())
                     .creationDate(fantasyTeam.getCreationDate())
-                    .totalPoints(0)
+                    .totalPoints(0)//TODO: this is wrong need rank service.
                     .isValid(fantasyTeam.getIsValid())
                     .ownerUsername(owner.getUsername())
                     .players(playerResponsesDTO)
@@ -262,7 +264,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                     .clubName(club.getClubName())
                     .value(player.getValue())
                     .isActive(player.isActive())
-                    .totalFantasyPoints(player.getTotalFantasyPoints())
+                    .totalFantasyPoints(0) //TODO: this is wrong
                     .currentForm(player.getCurrentForm())
                     .build());
         }

@@ -1,11 +1,15 @@
 package com.vzap.trytons.service;
 
 import com.vzap.trytons.dao.PlayerDAO;
+import com.vzap.trytons.dao.PositionDAO;
 import com.vzap.trytons.dto.SquadValidationResultDTO;
+import com.vzap.trytons.enums.AvailabilityStatus;
+import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.model.Player;
+import com.vzap.trytons.model.PlayerAvailability;
+import com.vzap.trytons.model.Position;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
 import java.util.*;
 
 
@@ -26,7 +30,7 @@ public class SquadValidationServiceImpl implements SquadValidationService {
     private static final int MAX_PROPS = 4;
     private static final int MAX_HOOKERS = 2;
     private static final int MAX_LOCKS = 4;
-    private static final int MAX_LOOSE_FORWARDS = 5;
+    private static final int MAX_LOOSE_FORWARDS = 6;
     private static final int MAX_SCRUM_HALVES = 2;
     private static final int MAX_FLY_HALVES = 2;
     private static final int MAX_CENTRES = 4;
@@ -35,6 +39,8 @@ public class SquadValidationServiceImpl implements SquadValidationService {
 
     @Inject
     private PlayerDAO playerDAO;
+    @Inject
+    private PositionDAO positionDAO;
 
     @Override
     public SquadValidationResultDTO validateSquad(List<UUID> proposedPlayerIds) {
@@ -58,14 +64,12 @@ public class SquadValidationServiceImpl implements SquadValidationService {
         return players;
     }
     private Player validatePlayerIdsExist(UUID playerId, SquadValidationResultDTO result) {
-        Player player;
-        try {
-            player = playerDAO.getPlayerById(playerId).orElseThrow(() -> new RuntimeException("PLAYER_NOT_FOUND"));
-        } catch (RuntimeException e) {
-            result.addError(e.getMessage(), "Player not found", "List<UUID> proposedPlayerIds");
+        Optional<Player>player = playerDAO.getPlayerById(playerId);
+        if(player.isEmpty()){
+            result.addError("PLAYER_NOT_FOUND","Player not found.","List<UUID> proposedPlayersIds");
             return null;
         }
-        return player;
+        return player.get();
     }
 
     private void validateSquadSize(List<UUID> players, SquadValidationResultDTO result) {
@@ -76,26 +80,21 @@ public class SquadValidationServiceImpl implements SquadValidationService {
     }
 
     private void validateDuplicatePlayers(List<UUID> proposedPlayerIds, SquadValidationResultDTO result) {
-        int found = 0;
+        Set<UUID> uniquePlayers = new HashSet<>();
         for (UUID playerId : proposedPlayerIds) {
-            for (UUID playerId2 : proposedPlayerIds) {
-                if (playerId.equals(playerId2)) {
-                    found++;
-                }
+            if(!uniquePlayers.add(playerId)){
+                result.addError("DUPLICATE_PLAYERS","Duplicate player found.", "List<UUID> proposedPlayerIds");
+                return;
             }
-            if (found > 1) {
-                result.addError("DUPLICATE_PLAYERS", "Duplicate player found", "List<UUID> proposedPlayerIds");
-            }
-            found = 0;
         }
-
     }
 
 
     private void validatePlayerAvailability(List<Player> players, SquadValidationResultDTO result) {
 
         for (Player player : players) {
-            if (!player.isActive()) {
+            PlayerAvailability availability = playerDAO.getCurrentAvailability(player.getPlayerId()).orElseThrow(() -> new ResourceNotFoundException("Player Not Found."));
+            if (availability.getStatus() != AvailabilityStatus.ACTIVE ){
                 result.addError("PLAYER_NOT_AVAILABLE", "Player is not available: "+player.getPlayerName(), "List<UUID> proposedPlayerIds");
             }
         }
@@ -123,14 +122,13 @@ public class SquadValidationServiceImpl implements SquadValidationService {
         int fullbackCount = 0;
         int invalidCount = 0;
         for (Player player : players) {
-            // TODO: Player.position replaced by positionId (UUID FK) — model now mirrors schema.sql
-            if (player.getPosition() == null || player.getPosition().getPositionName() == null) {
+            Position position = positionDAO.findById(player.getPositionId()).orElseThrow(() -> new ResourceNotFoundException("Position Not Found."));
+            if(position.getPositionName() == null){
                 invalidCount++;
                 continue;
             }
 
-            // TODO: Player.position replaced by positionId (UUID FK) — model now mirrors schema.sql
-            switch (player.getPosition().getPositionName()) {
+            switch (position.getPositionName()) {
                 case "Prop":
                     propCount++;
                     break;
@@ -143,7 +141,8 @@ public class SquadValidationServiceImpl implements SquadValidationService {
                     lockCount++;
                     break;
 
-                case "Loose Forward":
+                case "Flanker":
+                case "Number Eight":
                     looseForwardCount++;
                     break;
 
