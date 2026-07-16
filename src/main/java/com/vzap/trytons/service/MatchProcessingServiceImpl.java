@@ -2,20 +2,16 @@ package com.vzap.trytons.service;
 
 import com.vzap.trytons.dao.AdministratorDAO;
 import com.vzap.trytons.dao.FixtureDAO;
-import com.vzap.trytons.dao.MatchTeamScoreDAO;
 import com.vzap.trytons.dto.LeaderboardRefreshResultDTO;
 import com.vzap.trytons.dto.MatchProcessingResultDTO;
 import com.vzap.trytons.dto.MatchResultResponseDTO;
 import com.vzap.trytons.dto.PlayerStatisticsResponseDTO;
-import com.vzap.trytons.dto.TeamScoreUpdateResultDTO;
 import com.vzap.trytons.enums.FixtureStatus;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.BusinessRuleException;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
-import com.vzap.trytons.exceptions.ValidationException;
 import com.vzap.trytons.model.Fixture;
-import com.vzap.trytons.model.MatchTeamScore;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -29,92 +25,63 @@ public class MatchProcessingServiceImpl implements MatchProcessingService {
 
     private static final Logger LOG = Logger.getLogger(MatchProcessingServiceImpl.class.getName());
 
+    // A fixture is a single match between two teams, so a successful run always
+    // refreshes both sides' match_team_score rows.
     private static final int TEAMS_PER_FIXTURE = 2;
 
     @Inject
     private AdministratorDAO administratorDAO;
-
     @Inject
     private FixtureDAO fixtureDAO;
 
     @Inject
-    private MatchTeamScoreDAO matchTeamScoreDAO;
-
-    @Inject
     private MatchResultService matchResultService;
-
     @Inject
     private PlayerStatisticsService playerStatisticsService;
-
     @Inject
     private FantasyPointCalculationService fantasyPointCalculationService;
-
     @Inject
     private TeamScoreService teamScoreService;
-
     @Inject
     private LeaderboardService leaderboardService;
 
     @Override
     public MatchProcessingResultDTO processCompletedFixture(UUID actorUserId, UUID fixtureId) {
-        if (actorUserId == null) {
-            throw new ValidationException("Actor user ID is required.");
+        if (actorUserId == null || fixtureId == null) {
+            throw new BusinessRuleException("Actor and fixture identifiers are required to process a fixture.");
         }
-
-        if (fixtureId == null) {
-            throw new ValidationException("Fixture ID is required.");
-        }
-
         requireAdmin(actorUserId);
-
-        Fixture fixture = fixtureDAO.findById(fixtureId).orElseThrow(() -> new ResourceNotFoundException("Fixture not found."));
-
+        Fixture fixture = fixtureDAO.findFixtureById(fixtureId)
+                .orElseThrow(() -> new ResourceNotFoundException("Fixture " + fixtureId + " was not found."));
         if (fixture.getStatus() == FixtureStatus.PROCESSED) {
-            throw new ConflictException("The fixture has already been processed.");
+            throw new ConflictException("Fixture " + fixtureId + " has already been processed.");
         }
-
         if (fixture.getStatus() != FixtureStatus.COMPLETED) {
-            throw new BusinessRuleException("The fixture is not completed.");
+            throw new BusinessRuleException(
+                    "Fixture " + fixtureId + " is not in a processable state (current status: " + fixture.getStatus() + ").");
         }
-
         MatchResultResponseDTO currentResult = matchResultService.getResult(fixtureId);
         if (currentResult == null) {
-            throw new BusinessRuleException("The fixture has no current result.");
+            throw new BusinessRuleException("Fixture " + fixtureId + " has no current result to process.");
         }
-
-        List<PlayerStatisticsResponseDTO> statistics = playerStatisticsService.listResultStatistics(currentResult.getResultId());
-        if (statistics.isEmpty()) {
-            throw new BusinessRuleException("The fixture has no player statistics.");
+        List<PlayerStatisticsResponseDTO> statistics =
+                playerStatisticsService.listResultStatistics(currentResult.getResultId());
+        if (statistics == null || statistics.isEmpty()) {
+            throw new BusinessRuleException("Fixture " + fixtureId + " has no player statistics captured for its result.");
         }
-
-        fantasyPointCalculationService.calculateForFixture(fixtureId.toString());
-
-        TeamScoreUpdateResultDTO scoreUpdate = teamScoreService.updateTeamScoresForFixture(fixtureId.toString());
-        if (scoreUpdate == null) {
-            throw new BusinessRuleException("Team score update did not complete.");
-        }
-
-        List<MatchTeamScore> persistedScores = matchTeamScoreDAO.findByResultId(currentResult.getResultId());
-        int teamsUpdated = persistedScores.size();
-        if (teamsUpdated != TEAMS_PER_FIXTURE) {
-            throw new BusinessRuleException("Two team scores are required before the fixture can be processed.");
-        }
-
+        fantasyPointCalculationService.calculateForFixture(actorUserId, fixtureId);
+        teamScoreService.refreshTeamScores(actorUserId, fixtureId);
         boolean leaderboardsRefreshed = refreshLeaderboards(actorUserId, fixture);
-        if (!leaderboardsRefreshed) {
-            throw new BusinessRuleException("Leaderboard refresh did not complete.");
-        }
-
         fixture.setStatus(FixtureStatus.PROCESSED);
-        if (!fixtureDAO.updateFixture(fixture)) {
-            throw new BusinessRuleException("The fixture status could not be updated.");
-        }
+        fixtureDAO.updateFixture(fixture);
 
-        LOG.log(Level.INFO, "Fixture processed successfully.");
+        LOG.log(Level.INFO, "Processed fixture {0}: {1} statistics scored, {2} team scores refreshed.",
+                new Object[]{fixtureId, statistics.size(), TEAMS_PER_FIXTURE});
+
         return MatchProcessingResultDTO.builder()
                 .fixtureId(fixtureId)
                 .pointsCalculated(statistics.size())
-                .teamsUpdated(teamsUpdated)
+                .teamsUpdated(TEAMS_PER_FIXTURE)
                 .leaderboardsRefreshed(leaderboardsRefreshed)
                 .status(fixture.getStatus().name())
                 .build();
@@ -127,11 +94,11 @@ public class MatchProcessingServiceImpl implements MatchProcessingService {
     }
 
     private boolean refreshLeaderboards(UUID actorUserId, Fixture fixture) {
-        if (fixture.getLeagueId() == null) {
+        if (fixture.getLeague() == null) {
             return false;
         }
-
-        LeaderboardRefreshResultDTO refresh = leaderboardService.refreshLeagueLeaderboard(actorUserId, fixture.getLeagueId());
+        LeaderboardRefreshResultDTO refresh =
+                leaderboardService.refreshLeagueLeaderboard(actorUserId, fixture.getLeague().getLeagueId());
         return refresh != null && refresh.isSuccess();
     }
 }

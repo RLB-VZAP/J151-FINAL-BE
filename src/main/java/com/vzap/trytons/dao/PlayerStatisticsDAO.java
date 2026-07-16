@@ -7,8 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface PlayerStatisticsDAO {
-    List<PlayerStatistics> findByResultId(UUID resultId);
-    List<PlayerStatistics> findByResultIdAndTeamId(UUID resultId, UUID teamId);
-    Optional<PlayerStatistics> findByResultIdAndTeamIdAndPlayerId(UUID resultId, UUID teamId, UUID playerId);
-    PlayerStatistics save(PlayerStatistics playerStatistics);
+
+    List<PlayerStatistics> findByFixtureId(UUID fixtureId);
+    Optional<PlayerStatistics> save(PlayerStatistics playerStatistics);
 }

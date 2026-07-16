@@ -1,19 +1,13 @@
 package com.vzap.trytons.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
 public class PlayerStatisticsRequestDTO {
-    private UUID resultId;
-    private UUID teamId;
+    private UUID fixtureId;
     private UUID playerId;
-
     private int tries;
     private int assists;
     private int tackles;

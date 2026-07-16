@@ -42,7 +42,7 @@ public class MatchResultServiceImpl implements MatchResultService {
     public MatchResultResponseDTO captureResult(UUID actorUserId, MatchResultRequestDTO request) {
         validateRequest(request);
         requireAdmin(actorUserId);
-        Fixture fixture = fixtureDAO.findById(request.getFixtureId()).orElseThrow(() -> new ResourceNotFoundException("Fixture was not found."));
+        Fixture fixture = fixtureDAO.findFixtureById(request.getFixtureId()).orElseThrow(() -> new ResourceNotFoundException("Fixture was not found."));
 
         if (!CAPTURABLE_STATES.contains(fixture.getStatus())) {
             throw new ConflictException("A match result cannot be captured while the fixture is " + fixture.getStatus() + ".");
@@ -50,13 +50,13 @@ public class MatchResultServiceImpl implements MatchResultService {
 
         int simulationRunNumber = matchResultDAO.getNextSimulationRunNumber(fixture.getFixtureId());
         matchResultDAO.markAllFixtureResultsNotCurrent(fixture.getFixtureId());
-        MatchResult saved = matchResultDAO.save(buildResult(fixture, request, simulationRunNumber));
+        MatchResult saved = matchResultDAO.save(buildResult(fixture, simulationRunNumber));
 
         if (saved == null) {
             throw new DataAccessException("Failed to persist the captured match result.", null);
         }
 
-        return mapToResponse(saved, fixture);
+        return mapToResponse(saved);
     }
 
     @Override
@@ -66,10 +66,7 @@ public class MatchResultServiceImpl implements MatchResultService {
         }
 
         MatchResult result = matchResultDAO.findCurrentByFixtureId(fixtureId).orElseThrow(() -> new ResourceNotFoundException("No match result exists for the fixture."));
-
-        Fixture fixture = fixtureDAO.findById(fixtureId).orElseThrow(() -> new ResourceNotFoundException("Fixture was not found"));
-
-        return mapToResponse(result, fixture);
+        return mapToResponse(result);
     }
 
     private void validateRequest(MatchResultRequestDTO request) {
@@ -78,9 +75,6 @@ public class MatchResultServiceImpl implements MatchResultService {
         }
         if (request.getFixtureId() == null) {
             throw new ValidationException("Fixture ID is required.");
-        }
-        if (request.getTeamAScore() < 0 || request.getTeamBScore() < 0) {
-            throw new ValidationException("Match scores cannot be negative.");
         }
     }
 
@@ -94,38 +88,41 @@ public class MatchResultServiceImpl implements MatchResultService {
         }
     }
 
-    private MatchResult buildResult(Fixture fixture, MatchResultRequestDTO request, int simulationRunNumber) {
-        int teamAScore = request.getTeamAScore();
-        int teamBScore = request.getTeamBScore();
+    private MatchResult buildResult(Fixture fixture, int simulationRunNumber) {
+        int teamAScore = 0;
+        int teamBScore = 0;
 
         return MatchResult.builder()
                 .resultId(UUID.randomUUID())
                 .fixtureId(fixture.getFixtureId())
+                .teamAId(fixture.getTeamA() != null ? fixture.getTeamA().getTeamId() : null)
+                .teamBId(fixture.getTeamB() != null ? fixture.getTeamB().getTeamId() : null)
                 .simulationRunNumber(simulationRunNumber)
                 .teamAScore(teamAScore)
                 .teamBScore(teamBScore)
                 .winnerSide(resolveWinnerSide(teamAScore, teamBScore))
-                .isDraw(teamAScore == teamBScore)
+                .draw(teamAScore == teamBScore)
                 .approved(false)
-                .isCurrent(true)
+                .current(true)
                 .resultDate(LocalDateTime.now())
-                .approvedByAdminUserId(null)
+                .approvedAt(null)
+                .approvedByAdminId(null)
                 .build();
     }
 
-    private MatchTeamSide resolveWinnerSide(int teamAScore, int teamBScore) {
+    private String resolveWinnerSide(int teamAScore, int teamBScore) {
         if (teamAScore == teamBScore) {
             return null;
         }
-        return teamAScore > teamBScore ? MatchTeamSide.TEAM_A : MatchTeamSide.TEAM_B;
+        return teamAScore > teamBScore ? MatchTeamSide.TEAM_A.name() : MatchTeamSide.TEAM_B.name();
     }
 
-    private MatchResultResponseDTO mapToResponse(MatchResult result, Fixture fixture) {
+    private MatchResultResponseDTO mapToResponse(MatchResult result) {
         return new MatchResultResponseDTO(
                 result.getResultId(),
                 result.getFixtureId(),
-                fixture.getTeamAId(),
-                fixture.getTeamBId(),
+                result.getTeamAId(),
+                result.getTeamBId(),
                 result.getSimulationRunNumber(),
                 result.getTeamAScore(),
                 result.getTeamBScore(),
@@ -134,7 +131,6 @@ public class MatchResultServiceImpl implements MatchResultService {
                 result.isApproved(),
                 result.isCurrent(),
                 result.getResultDate(),
-                result.getApprovedByAdminUserId()
-        );
+                result.getApprovedAt());
     }
 }

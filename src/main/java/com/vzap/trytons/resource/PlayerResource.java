@@ -1,9 +1,12 @@
 package com.vzap.trytons.resource;
 
-import com.vzap.trytons.dto.*;
+import com.vzap.trytons.dto.ErrorResponseDTO;
+import com.vzap.trytons.dto.PlayerRequestDTO;
+import com.vzap.trytons.dto.PlayerResponseDTO;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
+import com.vzap.trytons.model.Player;
 import com.vzap.trytons.service.PlayerService;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -19,26 +22,23 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@Path("/{player}")
+@ApplicationPath("/api")
+@Path("/player")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class PlayerResource {
-    private static final Logger LOGGER = Logger.getLogger(PlayerResource.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(UserResources.class.getName());
     @Inject
     private PlayerService playerService;
 
     @GET
     public Response listPlayers(@QueryParam("search") String search, @QueryParam("clubId") UUID clubId, @QueryParam("positionId") UUID positionId ) {
         try {
-            List<PlayerResponseDTO> players;
             if (search != null || clubId != null || positionId != null) {
-                players = playerService.searchPlayers(search, clubId, positionId);
-            }else{
-                players = playerService.getAllPlayers();
+                List<PlayerResponseDTO> body = playerService.searchPlayers(search, clubId, positionId);
+                return Response.ok(body).build();
             }
-            ApiResponseDTO<List<PlayerResponseDTO>> payload =
-                    ApiResponseDTO.success("Player list retrieved successfully.", players);
-            return Response.ok(payload).build();
+            return Response.ok(playerService.getAllPlayers()).build();
         }catch(DataAccessException e ){
             return serverError("Failed to load players.", e);
         }catch (Exception e) {
@@ -50,10 +50,7 @@ public class PlayerResource {
     @Path("/{id}")
     public Response getPlayer(@PathParam("id") UUID id) {
         try {
-            PlayerResponseDTO player = playerService.getPlayer(id);
-            ApiResponseDTO<PlayerResponseDTO> payload =
-                    ApiResponseDTO.success("Player retrieved successfully.", player);
-            return Response.ok(payload).build();
+            return Response.ok(playerService.getPlayer(id)).build();
         } catch (ResourceNotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
         } catch (DataAccessException e) {
@@ -68,8 +65,7 @@ public class PlayerResource {
         try{
             PlayerResponseDTO created = playerService.createPlayer(playerRequestDTO);
             URI location = uriInfo.getAbsolutePathBuilder().path(created.getPlayerId().toString()).build();
-            ApiResponseDTO<PlayerResponseDTO>payload = ApiResponseDTO.success("Player created successfully.", created);
-            return Response.created(location).entity(payload).build();
+            return Response.created(location).entity(created).build();
         }catch(ConflictException e){
             return Response.status(Response.Status.CONFLICT).build();
         }catch(DataAccessException e){
@@ -80,12 +76,10 @@ public class PlayerResource {
     }
 
     @PUT
-    @Path("/{id}")
+    @Path("{/id}")
     public Response updatePlayer(@PathParam("id") UUID id, @Valid PlayerRequestDTO request){
         try{
-            PlayerResponseDTO updated = playerService.updatePlayer(id, request);
-            ApiResponseDTO<PlayerResponseDTO>payload = ApiResponseDTO.success("Player updated successfully.", updated);
-            return Response.ok(payload).build();
+            return Response.ok(playerService.updatePlayer(id, request)).build();
         }catch (ResourceNotFoundException e){
             return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
     }catch (ConflictException e){
@@ -98,6 +92,14 @@ public class PlayerResource {
     }
 
 
+
+    private PlayerResponseDTO toResponse(Player player) {
+        return new PlayerResponseDTO(
+                player.getPlayerId(), player.getPlayerName(), player.getValue(), player.getAttackingAbility(),
+                player.getDefensiveAbility(), player.getKickingAbility(), player.getDiscipline(), player.getConsistency(),
+                player.getFitness(), player.getCurrentForm(), player.getTotalFantasyPoints(), player.isActive(),
+                player.getClub(), player.getPosition());
+    }
 
     private Response serverError(String message, DataAccessException e) {
         LOGGER.log(Level.SEVERE, message, e);

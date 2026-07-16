@@ -3,151 +3,192 @@ package com.vzap.trytons.dao;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.FantasyTeam;
-import jakarta.enterprise.context.ApplicationScoped;
+import com.vzap.trytons.model.Player;
+import com.vzap.trytons.model.RegisteredUser;
+
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@ApplicationScoped
-public class FantasyTeamDAOImpl extends BaseDAO implements FantasyTeamDAO {
+public class FantasyTeamDAOImpl extends BaseDAO implements FantasyTeamDAO{
 
     private static final Logger LOG = Logger.getLogger(FantasyTeamDAOImpl.class.getName());
+    private static final String FANTASY_TEAM_SELECT = "SELECT "
+                    + "ft.teamId AS teamId, "
+                    + "ft.teamName AS teamName, "
+                    + "ft.total_team_value AS totalTeamValue, "
+                    + "ft.remainingBudget AS remainingBudget, "
+                    + "ft.creationDate AS creationDate, "
+                    + "ft.totalPoints AS totalPoints, "
+                    + "ft.weeklyPoints AS weeklyPoints, "
+                    + "ft.isValid AS isValid, "
+                    + "ft.isLocked AS isLocked, "
+                    + "u.userId AS ownerUserId, "
+                    + "u.username AS ownerUsername "
+                    + "FROM fantasyTeam ft "
+                    + "JOIN user u ON ft.owner_user_id = u.userId ";
 
-    /*
-     * The current schema stores the editable team, owner and remaining budget.
-     * Team value is calculated from the selected players, while fantasy points
-     * are read from the latest available ranking entry.
-     */
+    private FantasyTeam mapTeam (ResultSet rs) throws SQLException {
+        RegisteredUser owner = new RegisteredUser();
+        owner.setUserId(readUuid(rs, "ownerUserId"));
+        owner.setUsername(rs.getString("ownerUsername"));
 
-    private FantasyTeam mapTeam(ResultSet rs){
-        try {
-            FantasyTeam team = new FantasyTeam();
-            team.setTeamId(UUID.fromString(rs.getString("teamId")));
-            team.setTeamName(rs.getString("teamName"));
-            team.setRemainingBudget(rs.getBigDecimal("remainingBudget"));
-            Timestamp creationDate = rs.getTimestamp("creationDate");
-            if(creationDate != null){
-                team.setCreationDate(creationDate.toLocalDateTime());
-            }
-            team.setIsValid(rs.getBoolean("isValid"));
-            team.setOwnerUserId(UUID.fromString(rs.getString("owner_user_id")));
-            return team;
-        }catch(SQLException e) {
-            LOG.log(Level.SEVERE, " Fantasy team cannot be retrieved", e);
-            throw new DataAccessException("Fantasy team cannot be retrieved", e);
-        }
+        FantasyTeam team = new FantasyTeam();
+        team.setTeamId(readUuid(rs, "teamId"));
+        team.setTeamName(rs.getString("teamName"));
+        team.setTotalTeamValue(rs.getBigDecimal("totalTeamValue"));
+        team.setRemainingBudget(rs.getBigDecimal("remainingBudget"));
+
+        Timestamp creationDate = rs.getTimestamp("creationDate");
+        team.setCreationDate(creationDate != null ? creationDate.toLocalDateTime() : null);
+
+        team.setTotalPoints(rs.getInt("totalPoints"));
+        team.setWeeklyPoints(rs.getInt("weeklyPoints"));
+        team.setIsValid(rs.getBoolean("isValid"));
+        team.setIsLocked(rs.getBoolean("isLocked"));
+        team.setOwner(owner);
+
+        return team;
     }
 
+    private UUID readUuid(ResultSet rs, String columnName) throws SQLException {
+        String value = rs.getString(columnName);
+
+        if (value == null){
+            throw new SQLException("Database coloumn " + columnName + " not found");
+        }
+
+        try{
+            return UUID.fromString(value);
+        }catch (IllegalArgumentException e){
+            throw new SQLException("Invalid UUID in coloumn " + columnName + ": " + value, e);
+        }
+
+    }
     @Override
     public Optional<FantasyTeam> createTeam(FantasyTeam team) {
-        UUID teamId = team.getTeamId() == null ? UUID.randomUUID() : team.getTeamId();
-        LocalDateTime creationDate = team.getCreationDate() == null ? LocalDateTime.now() : team.getCreationDate();
-        String sql = """
-                INSERT INTO fantasyTeam
-                    (teamId, owner_user_id, teamName, remainingBudget, creationDate, isValid)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """;
+        UUID  teamId = team.getTeamId() != null ? team.getTeamId() : UUID.randomUUID();
+        LocalDateTime creationDate =  team.getCreationDate() != null ? team.getCreationDate() : LocalDateTime.now();
 
-        try (Connection connection = getConnection();PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, teamId.toString());
-            statement.setString(2, team.getOwnerUserId().toString());
-            statement.setString(3, team.getTeamName());
-            statement.setBigDecimal(4, team.getRemainingBudget() == null ? BigDecimal.ZERO : team.getRemainingBudget());
-            statement.setTimestamp(5, Timestamp.valueOf(creationDate));
-            statement.setBoolean(6, Boolean.TRUE.equals(team.getIsValid()));
+        //This is acting funny, so just keep an eye on it
+        String query = "INSERT INTO fantasyTeam ("
+                + "teamId, owner_user_id, teamName, total_team_value, remainingBudget, "
+                + "creationDate, totalPoints, weeklyPoints, isValid, isLocked"
+                + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-            if (statement.executeUpdate() == 1) {
+        try(Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, teamId.toString());
+            ps.setString(2, team.getOwner().getUserId().toString());
+            ps.setString(3, team.getTeamName());
+            ps.setBigDecimal(4, team.getTotalTeamValue() != null?  team.getTotalTeamValue() : BigDecimal.ZERO);
+            ps.setBigDecimal(5, team.getRemainingBudget() != null?  team.getRemainingBudget() : BigDecimal.ZERO);
+            ps.setTimestamp(6, Timestamp.valueOf(creationDate));
+            ps.setInt(7, team.getTotalPoints());
+            ps.setInt(8, team.getWeeklyPoints());
+            ps.setBoolean(9, team.getIsValid());
+            ps.setBoolean(10, team.getIsLocked());
+
+            if(ps.executeUpdate() == 1){
                 return getTeamById(teamId);
             }
-            return Optional.empty();
         } catch (SQLException e) {
             String message = e.getMessage();
-            if (message != null && message.contains("uk_fantasyTeam_owner")) {
-                throw new ConflictException("This user already owns a fantasy team.");
-            }
-            if (message != null && message.contains("uk_fantasyTeam_teamName")) {
-                throw new ConflictException("This team name is already taken.");
-            }
-            LOG.log(Level.SEVERE, "Unable to create fantasy team.", e);
-            throw new DataAccessException("Unable to create fantasy team.", e);
+
+            if(message != null && message.contains("uk_fantasyTeam_owner"))
+                throw new ConflictException("This user already owns a fantasy team");
+
+            if(message != null && message.contains("uk_fantasyTeam_teamId"))
+                throw new ConflictException("This team name is already taken");
+
+            LOG.log(Level.SEVERE, "Unable to create a fantasy team", e);
+            throw new DataAccessException("Unable to create fantasy team", e);
         }
+        return Optional.empty();
     }
 
     @Override
     public Optional<FantasyTeam> getTeamById(UUID teamId) {
-        String sql = "SELECT * FROM fantasyTeam WHERE teamId = ?";
-        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+        String query = FANTASY_TEAM_SELECT + " WHERE ft.teamId = ?";
 
-            statement.setString(1, teamId.toString());
-            try (ResultSet resultSet = statement.executeQuery()) {
-                return resultSet.next() ? Optional.of(mapTeam(resultSet)) : Optional.empty();
+        try(Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1, teamId.toString());
+
+            try(ResultSet rs = ps.executeQuery()){
+                if(rs.next()){
+                    return Optional.of(mapTeam(rs));
+                }
             }
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to retrieve fantasy team.", e);
-            throw new DataAccessException("Unable to retrieve fantasy team.", e);
+            LOG.log(Level.SEVERE, "Unable to find fantasy team with ID", e);
+            throw new DataAccessException("Unable to find fantasy team with ID", e);
         }
+        return Optional.empty();
     }
 
+    //This naming convention was used in the code - instead of redoing the code I simply mapped
+    //one find method to the other, to reduce redundant code, but made both naming conventions
+    //applicable and usable.
     @Override
     public FantasyTeam findTeamById(UUID teamId) {
         return getTeamById(teamId).orElse(null);
     }
 
     @Override
-    public Optional<FantasyTeam> getTeamByOwner(UUID owner_user_id) {
-        String sql = "SELECT * FROM fantasyTeam WHERE owner_user_id = ?";
-        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, owner_user_id.toString());
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    return Optional.of(mapTeam(resultSet));
-                }
-                return Optional.empty();
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to retrieve fantasy team by owner.", e);
-            throw new DataAccessException("Unable to retrieve fantasy team by owner.", e);
-        }
-    }
+    public boolean updatePoints(UUID teamId, int totalPoints, int weeklyPoints) {
+        String query = "UPDATE fantasyTeam SET totalPoints = ?, weeklyPoints = ? WHERE teamId = ?";
 
-    @Override
-    public boolean updateTeamName(UUID teamId, String teamName) {
-        String query = "UPDATE fantasyTeam SET teamName = ? WHERE teamId = ?";
-        try(Connection conn = getConnection();
-        PreparedStatement ps = conn.prepareStatement(query)){
-            ps.setString(1, teamName);
-            ps.setString(2, teamId.toString());
+        try(Connection con = getConnection();
+        PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setInt(1, totalPoints);
+            ps.setInt(2, weeklyPoints);
+            ps.setString(3, teamId.toString());
+
             return ps.executeUpdate() == 1;
-        }catch(SQLException e) {
-            String message = e.getMessage();
-            if(message != null && message.contains("uk_fantasyTeam_teamName")) {
-                throw new ConflictException("This team name is already taken.");
-            }
-            LOG.log(Level.SEVERE, "Unable to update fantasy team name.", e);
-            throw new DataAccessException("Unable to update fantasy team name.", e);
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to update fantasy team points", e);
+            throw new DataAccessException("Unable to update fantasy team points", e);
         }
-
     }
 
     @Override
-    public boolean updateBudget(UUID teamId, BigDecimal remainingBudget) {
-        String sql = "UPDATE fantasyTeam SET remainingBudget = ? WHERE teamId = ?";
-        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+    public boolean updateLockedStatus(UUID teamId, boolean isLocked) {
+        String query = "UPDATE fantasyTeam SET isLocked = ? WHERE teamId = ?";
 
-            statement.setBigDecimal(1, remainingBudget);
-            statement.setString(2, teamId.toString());
-            return statement.executeUpdate() == 1;
+        try(Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setBoolean(1, isLocked);
+            ps.setString(2, teamId.toString());
+
+            return ps.executeUpdate() == 1;
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to update fantasy team budget.", e);
-            throw new DataAccessException("Unable to update fantasy team budget.", e);
+            LOG.log(Level.SEVERE, "Unable to update fantasy team lock status", e);
+            throw new DataAccessException("Unable to update fantasy team lock status", e);
+        }
+    }
+
+    @Override
+    public boolean updateBudgetAndValue(UUID teamId, BigDecimal totalTeamValue, BigDecimal remainingBudget) {
+        String query =  "UPDATE fantasyTeam SET remainingBudget = ?, total_team_value = ? WHERE teamId = ?";
+
+        try (Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setBigDecimal(1, remainingBudget);
+            ps.setBigDecimal(2, totalTeamValue);
+            ps.setString(3, teamId.toString());
+
+            return  ps.executeUpdate() == 1;
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to update fantasy team budget and value", e);
+            throw new DataAccessException("Unable to update fantasy team budget and value", e);
         }
     }
 }
