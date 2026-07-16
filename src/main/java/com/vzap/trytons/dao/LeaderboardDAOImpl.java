@@ -124,15 +124,21 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
 
             try(ResultSet rs = ps.executeQuery()){
                 if (rs.next()){
-                    Leaderboard lb = Leaderboard.builder()
-                            .leaderboardId(UUID.fromString(rs.getString("leaderboardId")))
-                            .leagueId(UUID.fromString(rs.getString("leagueId")))
-                            .season(rs.getString("season"))
-                            .scope(LeaderboardScope.valueOf(rs.getString("scope")))
-                            .lastUpdated(rs.getObject("lastUpdated", LocalDateTime.class))
-                            .build();
+                    UUID resolvedLeagueId;
+                    if (rs.getString("leagueId") == null){
+                        resolvedLeagueId = null;
+                    }else {
+                        resolvedLeagueId = UUID.fromString(rs.getString("leagueId"));
+                    }
+                        Leaderboard lb = Leaderboard.builder()
+                                .leaderboardId(UUID.fromString(rs.getString("leaderboardId")))
+                                .leagueId(resolvedLeagueId)
+                                .season(rs.getString("season"))
+                                .scope(LeaderboardScope.valueOf(rs.getString("scope")))
+                                .lastUpdated(rs.getObject("lastUpdated", LocalDateTime.class))
+                                .build();
 
-                    return Optional.of(lb);
+                        return Optional.of(lb);
                 }
             }
         }catch (SQLException e){
@@ -231,7 +237,11 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
         String query = "INSERT INTO leaderboard (leaderboardId, leagueId, season, scope, lastUpdated) VALUES (?, ?, ?, ?, ?)";
         try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
             ps.setString(1, leaderboard.getLeaderboardId().toString());
-            ps.setObject(2, leaderboard.getLeagueId());
+            if (leaderboard.getLeagueId() == null) {
+                ps.setNull(2, Types.VARCHAR);
+            }else {
+                ps.setString(2, leaderboard.getLeagueId().toString());
+            }
             ps.setString(3, leaderboard.getSeason());
             ps.setString(4, leaderboard.getScope().toString());
             ps.setString(5, leaderboard.getLastUpdated().toString());
@@ -252,8 +262,15 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
 
             try(ResultSet rs = ps.executeQuery()){
                 if (rs.next()){
+                    UUID resolvedLeagueId;
+                    if (rs.getString("leagueId") == null){
+                        resolvedLeagueId = null;
+                    }else {
+                        resolvedLeagueId = UUID.fromString(rs.getString("leagueId"));
+                    }
                     Leaderboard lb = Leaderboard.builder()
                             .leaderboardId(UUID.fromString(rs.getString("leaderboardId")))
+                            .leagueId(resolvedLeagueId)
                             .season(rs.getString("season"))
                             .scope(LeaderboardScope.valueOf(rs.getString("scope")))
                             .lastUpdated(rs.getObject("lastUpdated", LocalDateTime.class))
