@@ -42,7 +42,7 @@ public class MatchResultServiceImpl implements MatchResultService {
     public MatchResultResponseDTO captureResult(UUID actorUserId, MatchResultRequestDTO request) {
         validateRequest(request);
         requireAdmin(actorUserId);
-        Fixture fixture = fixtureDAO.findFixtureById(request.getFixtureId()).orElseThrow(() -> new ResourceNotFoundException("Fixture was not found."));
+        Fixture fixture = fixtureDAO.findById(request.getFixtureId()).orElseThrow(() -> new ResourceNotFoundException("Fixture was not found."));
 
         if (!CAPTURABLE_STATES.contains(fixture.getStatus())) {
             throw new ConflictException("A match result cannot be captured while the fixture is " + fixture.getStatus() + ".");
@@ -67,7 +67,7 @@ public class MatchResultServiceImpl implements MatchResultService {
 
         MatchResult result = matchResultDAO.findCurrentByFixtureId(fixtureId).orElseThrow(() -> new ResourceNotFoundException("No match result exists for the fixture."));
 
-        Fixture fixture = fixtureDAO.findFixtureById(fixtureId).orElseThrow(() -> new ResourceNotFoundException("Fixture was not found"));
+        Fixture fixture = fixtureDAO.findById(fixtureId).orElseThrow(() -> new ResourceNotFoundException("Fixture was not found"));
 
         return mapToResponse(result, fixture);
     }

@@ -54,7 +54,7 @@ public class PlayerStatisticsServiceImpl implements PlayerStatisticsService {
             throw new ValidationException("Team ID is required.");
         }
 
-        Fixture fixture = fixtureDAO.findFixtureById(result.getFixtureId()).orElseThrow(()-> new ResourceNotFoundException("Fixture was not found for the result."));
+        Fixture fixture = fixtureDAO.findById(result.getFixtureId()).orElseThrow(()-> new ResourceNotFoundException("Fixture was not found for the result."));
 
         requireTeamInFixture(fixture, teamId);
         return playerStatisticsDAO.findByResultIdAndTeamId(result.getResultId(), teamId).stream()
@@ -76,7 +76,7 @@ public class PlayerStatisticsServiceImpl implements PlayerStatisticsService {
             throw new BusinessRuleException("Statistics cannot be captured after the match result has been approved.");
         }
 
-        Fixture fixture = fixtureDAO.findFixtureById(result.getFixtureId()).orElseThrow(() -> new ResourceNotFoundException("Fixture was not found for the result."));
+        Fixture fixture = fixtureDAO.findById(result.getFixtureId()).orElseThrow(() -> new ResourceNotFoundException("Fixture was not found for the result."));
         requireTeamInFixture(fixture, request.getTeamId());
         if (fixture.getRoundId() == null) {
             throw new BusinessRuleException("The fixture is not linked to a fantasy round.");
@@ -87,8 +87,7 @@ public class PlayerStatisticsServiceImpl implements PlayerStatisticsService {
             throw new ConflictException("Statistics have already been captured for this player in the result.");
         }
 
-        PlayerStatistics saved = playerStatisticsDAO.save(buildStatistics(request)).orElseThrow(() -> new DataAccessException("Failed to persist the captured player statistics.", null));
-
+        PlayerStatistics saved = playerStatisticsDAO.save(buildStatistics(request));
         return mapToResponse(saved);
     }
 

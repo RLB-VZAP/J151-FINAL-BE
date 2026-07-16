@@ -47,7 +47,7 @@ public class TeamScoreServiceImpl implements TeamScoreService {
     @Override
     public TeamScoreUpdateResultDTO updateTeamScoresForFixture(String fixtureId) {
 
-        Fixture currentFixture = fixtureDAO.findFixtureById(UUID.fromString(fixtureId)).orElseThrow(() -> new ResourceNotFoundException("Unable to find fixture"));
+        Fixture currentFixture = fixtureDAO.findById(UUID.fromString(fixtureId)).orElseThrow(() -> new ResourceNotFoundException("Unable to find fixture"));
 
         MatchResult currentMatchResult = matchResultDAO.findCurrentByFixtureId(currentFixture.getFixtureId()).orElseThrow(() -> new ResourceNotFoundException("Unable to find match result"));
 
