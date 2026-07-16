@@ -53,13 +53,13 @@ public class TeamScoreServiceImpl implements TeamScoreService {
 
         UUID resultId = currentMatchResult.getResultId();
 
-        UUID currentRoundId = currentFixture.getRoundId().getRoundId();
+        UUID currentRoundId = currentFixture.getRoundId();
 
         //get round squad for Team A and Team B
 
-        UUID teamAId = currentFixture.getTeamA().getTeamId();
+        UUID teamAId = currentFixture.getTeamAId();
 
-        UUID teamBId = currentFixture.getTeamB().getTeamId();
+        UUID teamBId = currentFixture.getTeamBId();
 
         List<FantasyTeamRoundSelection> teamARoundSelection = fantasyTeamRoundSelectionDAO.getSelectionsByRoundIdAndTeamId(currentRoundId, teamAId);
 
@@ -175,7 +175,7 @@ public class TeamScoreServiceImpl implements TeamScoreService {
             }
 
 
-            UUID currentLeagueId = currentFixture.getLeagueId().getLeagueId();
+            UUID currentLeagueId = currentFixture.getLeagueId();
 
             leaderboardService.refreshLeagueLeaderboard(null, currentLeagueId);
 
@@ -207,7 +207,7 @@ public class TeamScoreServiceImpl implements TeamScoreService {
 
         for (Fixture fixture : allFixtures){
 
-            FantasyRound currentRound = fantasyRoundDAO.getRoundById(fixture.getRoundId().getRoundId()).orElseThrow(() -> new ResourceNotFoundException("no round found"));
+            FantasyRound currentRound = fantasyRoundDAO.getRoundById(fixture.getRoundId()).orElseThrow(() -> new ResourceNotFoundException("no round found"));
 
             if (currentRound.getSeason().equals(season)){
                 currentSeasonFixtures.add(fixture);
@@ -225,7 +225,7 @@ public class TeamScoreServiceImpl implements TeamScoreService {
 
             UUID resultUuid = result.getResultId();
 
-            if (fixture.getTeamA().getTeamId().equals(currentTeamId)){
+            if (fixture.getTeamAId().equals(currentTeamId)){
                 team = MatchTeamSide.TEAM_A;
             } else {
                 team = MatchTeamSide.TEAM_B;
