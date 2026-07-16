@@ -63,7 +63,7 @@ public class LeaderboardServiceImpl implements LeaderboardService{
             if (team == null) {
                 continue;
             }
-            String ownerUsername = userDAO.getUserById(team.getOwner_user_id())
+            String ownerUsername = userDAO.getUserById(team.getOwnerUserId())
                     .map(User::getUsername)
                     .orElse(null);
             LeaderboardEntryResponseDTO dto = LeaderboardEntryResponseDTO.builder()
@@ -106,7 +106,7 @@ public class LeaderboardServiceImpl implements LeaderboardService{
                 return Optional.empty();
             }
             Ranking ranking = r.get();
-            String ownerUsername = userDAO.getUserById(team.getOwner_user_id())
+            String ownerUsername = userDAO.getUserById(team.getOwnerUserId())
                     .map(User::getUsername)
                     .orElse(null);
             LeaderboardEntryResponseDTO dto = LeaderboardEntryResponseDTO.builder()
