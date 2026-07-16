@@ -43,11 +43,11 @@ public class AdminUserServiceImpl implements AdminUserService{
 
     private void requireAdmin(UUID actorUserId) {
         if (actorUserId == null) {
-            throw new AuthorisationException("An authenticated administrator is required to capture match results.");
+            throw new AuthorisationException("An authenticated administrator is required.");
         }
-        User actor = userDAO.getUserById(actorUserId).orElseThrow(() -> new AuthorisationException("An authenticated administrator is required to capture match results."));
+        User actor = userDAO.getUserById(actorUserId).orElseThrow(() -> new AuthorisationException("An authenticated administrator is required."));
         if (actor.getRole() != UserRole.ADMINISTRATOR) {
-            throw new AuthorisationException("Only administrators may capture or correct match results.");
+            throw new AuthorisationException("Only administrators may manage user accounts.");
         }
     }
 
