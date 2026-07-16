@@ -3,6 +3,7 @@ package com.vzap.trytons.dao;
 import com.vzap.trytons.model.User;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,5 +21,7 @@ public interface UserDAO {
     boolean usernameExists(String username);
 
     boolean updateLastLogin(UUID userId, LocalDateTime lastLoginAt);
+
+    List<User> searchUsers(String searchTerm);
 
 }
