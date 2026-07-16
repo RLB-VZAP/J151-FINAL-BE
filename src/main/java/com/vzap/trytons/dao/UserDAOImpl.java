@@ -199,4 +199,22 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
         return searchResults;
     }
 
+    @Override
+    public boolean updateActiveStatus(UUID userId, boolean isActive) {
+        String query = "UPDATE user SET isActive = ? WHERE userId = ?";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setBoolean(1, isActive);
+            ps.setString(2, userId.toString());
+
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to update active status.", e);
+            throw new DataAccessException("Failed to update active status.", e);
+        }
+    }
+
 }

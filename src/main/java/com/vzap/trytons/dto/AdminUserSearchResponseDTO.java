@@ -7,8 +7,8 @@ import java.util.UUID;
 
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
 @Setter
+@Getter
 @Builder
 
 public class AdminUserSearchResponseDTO {
