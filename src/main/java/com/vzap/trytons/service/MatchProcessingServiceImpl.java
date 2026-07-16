@@ -1,6 +1,6 @@
 package com.vzap.trytons.service;
 
-import com.vzap.trytons.dao.AdministratorDAO;
+import com.vzap.trytons.dao.AdminDAO;
 import com.vzap.trytons.dao.FixtureDAO;
 import com.vzap.trytons.dao.MatchTeamScoreDAO;
 import com.vzap.trytons.dto.LeaderboardRefreshResultDTO;
@@ -32,7 +32,7 @@ public class MatchProcessingServiceImpl implements MatchProcessingService {
     private static final int TEAMS_PER_FIXTURE = 2;
 
     @Inject
-    private AdministratorDAO administratorDAO;
+    private AdminDAO adminDAO;
 
     @Inject
     private FixtureDAO fixtureDAO;
@@ -121,7 +121,7 @@ public class MatchProcessingServiceImpl implements MatchProcessingService {
     }
 
     private void requireAdmin(UUID actorUserId) {
-        if (administratorDAO.getAdministratorById(actorUserId).isEmpty()) {
+        if (adminDAO.getAdministratorById(actorUserId).isEmpty()) {
             throw new AuthorisationException("Only administrators may process match results.");
         }
     }

@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 
 public class AdminUserResource {
 
-    private static final Logger LOGGER = Logger.getLogger(AuthResource.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(AdminUserResource.class.getName());
 
     //@Inject
     // the service layer
