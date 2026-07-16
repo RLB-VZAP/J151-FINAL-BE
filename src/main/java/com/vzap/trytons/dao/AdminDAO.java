@@ -5,7 +5,7 @@ import com.vzap.trytons.model.Administrator;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface AdministratorDAO {
+public interface AdminDAO {
     Optional<Administrator> getAdministratorById(UUID userId);
 
     boolean deactivateUserAccount(UUID userId);

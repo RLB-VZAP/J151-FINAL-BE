@@ -14,9 +14,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Singleton
-public class AdministratorDAOImpl extends BaseDAO implements AdministratorDAO {
+public class AdminDAOImpl extends BaseDAO implements AdminDAO {
 
-    private static final Logger LOG = Logger.getLogger(AdministratorDAOImpl.class.getName());
+    private static final Logger LOG = Logger.getLogger(AdminDAOImpl.class.getName());
 
     @Override
     public Optional<Administrator> getAdministratorById(UUID userId) {

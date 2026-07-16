@@ -11,7 +11,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-public class Administrator extends User {
+public class Admin extends User {
 
     private int adminLevel;
 }
