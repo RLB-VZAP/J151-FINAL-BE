@@ -121,7 +121,7 @@ public class MatchProcessingServiceImpl implements MatchProcessingService {
     }
 
     private void requireAdmin(UUID actorUserId) {
-        if (adminDAO.getAdministratorById(actorUserId).isEmpty()) {
+        if (adminDAO.getAdminById(actorUserId).isEmpty()) {
             throw new AuthorisationException("Only administrators may process match results.");
         }
     }

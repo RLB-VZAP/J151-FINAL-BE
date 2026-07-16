@@ -90,7 +90,7 @@ public class DeadlineLockServiceImpl implements DeadlineLockService {
         fantasyRoundDAO.getRoundById(roundId).orElseThrow(() -> new ResourceNotFoundException("Fantasy round not found."));
         RoundLock roundLock = new RoundLock();
         roundLock.setRoundId(roundId);
-        if(adminDAO.getAdministratorById(actorAdminUserId).isPresent()) {
+        if(adminDAO.getAdminById(actorAdminUserId).isPresent()) {
             roundLock.setActionByAdminUserId(actorAdminUserId);
         }else{
             throw new AuthorisationException("Only administrators can lock rounds.");
