@@ -1,30 +1,73 @@
 package com.vzap.trytons.service;
 
+import com.vzap.trytons.dao.MatchTeamScoreDAO;
 import com.vzap.trytons.dto.MatchTeamScoreResponseDTO;
 import com.vzap.trytons.enums.MatchTeamSide;
+import com.vzap.trytons.exceptions.ResourceNotFoundException;
+import com.vzap.trytons.exceptions.ValidationException;
+import com.vzap.trytons.model.MatchTeamScore;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class MatchTeamScoreServiceImpl implements MatchTeamScoreService {
 
+    private final MatchTeamScoreDAO matchTeamScoreDAO;
+
+    @Inject
+    public MatchTeamScoreServiceImpl(MatchTeamScoreDAO matchTeamScoreDAO) {
+        this.matchTeamScoreDAO = matchTeamScoreDAO;
+    }
+
     @Override
     public MatchTeamScoreResponseDTO getMatchTeamScoreById(UUID scoreId) {
 
-        throw new UnsupportedOperationException("MatchTeamScoreServiceImpl.getMatchTeamScoreById is a stub for W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after MatchTeamScoreDAO read mapping is confirmed.");
+        if (scoreId == null) {
+            throw new ValidationException("Score ID is required.");
+        }
+
+        MatchTeamScore score = matchTeamScoreDAO.findById(scoreId)
+                .orElseThrow(() -> new ResourceNotFoundException("Match team score was not found."));
+
+        return mapToResponse(score);
     }
 
     @Override
     public List<MatchTeamScoreResponseDTO> listMatchTeamScoresForResult(UUID resultId) {
 
-        throw new UnsupportedOperationException("MatchTeamScoreServiceImpl.listMatchTeamScoresForResult is a stub for W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after MatchTeamScoreDAO result-based lookup and response mapping are confirmed.");
+        if (resultId == null) {
+            throw new ValidationException("Result ID is required.");
+        }
+
+        return matchTeamScoreDAO.findByResultId(resultId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
     public MatchTeamScoreResponseDTO getMatchTeamScoreForResultSide(UUID resultId, MatchTeamSide teamSide) {
 
-        throw new UnsupportedOperationException("MatchTeamScoreServiceImpl.getMatchTeamScoreForResultSide is a stub for W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after MatchTeamScoreDAO result-side lookup and response mapping are confirmed.");
+        if (resultId == null || teamSide == null) {
+            throw new ValidationException("Result ID and team side are required.");
+        }
+
+        MatchTeamScore score = matchTeamScoreDAO.findByResultIdAndTeamSide(resultId, teamSide)
+                .orElseThrow(() -> new ResourceNotFoundException("Match team score was not found for that result and side."));
+
+        return mapToResponse(score);
+    }
+
+    private MatchTeamScoreResponseDTO mapToResponse(MatchTeamScore score) {
+        return new MatchTeamScoreResponseDTO(
+                score.getScoreId(),
+                score.getResultId(),
+                score.getTeamId(),
+                score.getTeamSide(),
+                score.getTotalScore()
+        );
     }
 }
