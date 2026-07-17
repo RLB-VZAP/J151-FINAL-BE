@@ -92,7 +92,7 @@ public class FantasyPointCalculationServiceImpl implements FantasyPointCalculati
                 int eventCount = lookup.countFor(statistic);
                 if (eventCount > 0) {
                     int contribution = eventCount * rule.getPointsAwarded();
-                    if (rule.getIsDeduction()) contribution = -contribution;
+                    if (Boolean.TRUE.equals(rule.getIsDeduction())) contribution = -contribution;
                     total += contribution;
 
                     pointBreakdowns.add(FantasyPointBreakdown.builder()
