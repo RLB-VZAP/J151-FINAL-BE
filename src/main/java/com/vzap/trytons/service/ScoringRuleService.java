@@ -7,10 +7,8 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ScoringRuleService {
-    //STUB
-    List<ScoringRuleResponseDTO> listRules(
-            UUID actorUserId,
-            UUID leagueId);
+
+    List<ScoringRuleResponseDTO>listRules(UUID actorUserId, String season);
 
     ScoringRuleResponseDTO saveRule(
             UUID actorUserId,
