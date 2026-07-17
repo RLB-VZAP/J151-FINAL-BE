@@ -1,6 +1,7 @@
 package com.vzap.trytons.service;
 
 import com.vzap.trytons.dao.DatabaseTestDAO;
+import com.vzap.trytons.exceptions.DataAccessException;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -13,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+//The single supported database health contract for W4-BUG-BE-19.
 @Path("/test/database")
 public class DatabaseHealthResource {
 
@@ -26,20 +28,17 @@ public class DatabaseHealthResource {
             List<String> tables = dao.getTableNames();
 
             if (tables.isEmpty()) {
-                result.put("message", "connection succeeded but no tables were found. has schema.sql been applied?");
+                result.put("status", "WARNING");
+                result.put("message", "Database connection succeeded but no tables were found.");
             } else {
                 result.put("status", "SUCCESS");
-                result.put("message", "connection established. " + tables.size() + " tables found in tryton_fantasy_rugby.");
+                result.put("message", "Database connection established.");
             }
 
-            result.put("tables", tables);
             return Response.ok(result).build();
 
         } catch (SQLException e) {
-            result.put("status", "ERROR");
-            result.put("message", "database connection failed:" + e.getMessage());
-            result.put("tables", e.getMessage());
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(result).build();
+            throw new DataAccessException("Database health check failed.", e);
         }
     }
 }
