@@ -1,7 +1,7 @@
 package com.vzap.trytons.dao;
 
 import com.vzap.trytons.enums.UserRole;
-import com.vzap.trytons.model.Administrator;
+import com.vzap.trytons.model.Admin;
 import jakarta.inject.Singleton;
 
 import java.sql.Connection;
@@ -14,12 +14,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Singleton
-public class AdministratorDAOImpl extends BaseDAO implements AdministratorDAO {
+public class AdminDAOImpl extends BaseDAO implements AdminDAO {
 
-    private static final Logger LOG = Logger.getLogger(AdministratorDAOImpl.class.getName());
+    private static final Logger LOG = Logger.getLogger(AdminDAOImpl.class.getName());
 
     @Override
-    public Optional<Administrator> getAdministratorById(UUID userId) {
+    public Optional<Admin> getAdminById(UUID userId) {
         String query = "SELECT u.*, a.adminLevel FROM user u JOIN administrator a ON u.userId = a.userId WHERE u.userId = ?";
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
             ps.setString(1, userId.toString());
@@ -27,7 +27,7 @@ public class AdministratorDAOImpl extends BaseDAO implements AdministratorDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     String roleValue = rs.getString("role");
-                    Administrator a = Administrator.builder()
+                    Admin a = Admin.builder()
                             .userId(userId)
                             .email(rs.getString("email"))
                             .passwordHash(rs.getString("passwordHash"))

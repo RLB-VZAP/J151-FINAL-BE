@@ -7,6 +7,8 @@ import jakarta.inject.Singleton;
 
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -161,6 +163,57 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Failed to update last login.", e);
             throw new DataAccessException("Failed to update last login.", e);
+        }
+    }
+
+    @Override
+    public List<User> searchUsers(String searchTerm) {
+
+        String query = "SELECT * FROM user WHERE username LIKE ? OR email LIKE ?";
+
+        List<User> searchResults = new ArrayList<>();
+
+        if (searchTerm == null || searchTerm.isBlank()){
+            return searchResults;
+        } // I'm returning an empty list here if the searchTerm is null or blank
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, "%" + searchTerm + "%");
+            ps.setString(2, "%" + searchTerm + "%");
+
+            try(ResultSet rs = ps.executeQuery()){
+                while (rs.next()){
+                    User result = mapUser(rs);
+                    searchResults.add(result);
+                }
+            }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to search users.", e);
+            throw new DataAccessException("Unable to search users.", e);
+        }
+
+
+        return searchResults;
+    }
+
+    @Override
+    public boolean updateActiveStatus(UUID userId, boolean isActive) {
+        String query = "UPDATE user SET isActive = ? WHERE userId = ?";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setBoolean(1, isActive);
+            ps.setString(2, userId.toString());
+
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to update active status.", e);
+            throw new DataAccessException("Failed to update active status.", e);
         }
     }
 

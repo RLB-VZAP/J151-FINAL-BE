@@ -1,9 +1,21 @@
 package com.vzap.trytons.dto;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.vzap.trytons.enums.UserRole;
+import lombok.*;
 
-@Data
+import java.util.UUID;
+
+@AllArgsConstructor
 @NoArgsConstructor
+@Setter
+@Getter
+@Builder
+
 public class AdminUserStatusResponseDTO {
+
+    private UUID userId;
+    private String email;
+    private String username;
+    private UserRole role;
+    private Boolean isActive;
 }
