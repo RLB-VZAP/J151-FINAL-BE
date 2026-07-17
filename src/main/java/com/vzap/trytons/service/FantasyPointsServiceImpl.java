@@ -8,13 +8,13 @@ import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.BusinessRuleException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.model.*;
+import com.vzap.trytons.util.ScoringCalculator;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -65,41 +65,9 @@ public class FantasyPointsServiceImpl implements FantasyPointsService {
             throw new BusinessRuleException("no scoring rules were found");
         }
 
-        interface EventCountLookup {
-            int countFor(PlayerStatistics stats);
-        }
-
-        Map<String, EventCountLookup> countLookups = Map.of(
-                "TRY", PlayerStatistics::getTries,
-                "CONVERSION", PlayerStatistics::getConversions,
-                "PENALTY", PlayerStatistics::getPenalties,
-                "ASSIST", PlayerStatistics::getAssists,
-                "METERS_GAINED", PlayerStatistics::getMetersGained,
-                "TACKLE", PlayerStatistics::getTackles,
-                "RED_CARD", PlayerStatistics::getRedCards,
-                "YELLOW_CARD", PlayerStatistics::getYellowCards
-        );
-
-        int total = 0;
-        List<FantasyPointBreakdown> pointBreakdowns = new ArrayList<>();
-
-        for (ScoringRule rule : scoringRules) {
-            EventCountLookup lookup = countLookups.get(rule.getEventType());
-            if (lookup == null) continue;
-
-            int eventCount = lookup.countFor(statistic);
-            if (eventCount > 0) {
-                int contribution = eventCount * rule.getPointsAwarded();
-                if (Boolean.TRUE.equals(rule.getIsDeduction())) contribution = -contribution;
-                total += contribution;
-
-                pointBreakdowns.add(FantasyPointBreakdown.builder()
-                        .ruleId(rule.getRuleId())
-                        .eventCount(eventCount)
-                        .pointsEarned(contribution)
-                        .build());
-            }
-        }
+        ScoringCalculator.Result scoring = ScoringCalculator.calculate(statistic, scoringRules);
+        int total = scoring.totalPoints();
+        List<FantasyPointBreakdown> pointBreakdowns = scoring.breakdowns();
 
         UUID statId = statistic.getStatId();
         int nextVersion = fantasyPointsDAO.getNextCalculationVersion(statId);
