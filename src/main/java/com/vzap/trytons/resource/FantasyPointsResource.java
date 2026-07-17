@@ -49,8 +49,7 @@ public class FantasyPointsResource {
 
             FantasyPointsResponseDTO result = fantasyPointsService.calculateFantasyPoints(actorUserId, request);
 
-            ApiResponseDTO<FantasyPointsResponseDTO> payload =
-                    ApiResponseDTO.success("Fantasy points calculated successfully.", result);
+            ApiResponseDTO<FantasyPointsResponseDTO> payload = ApiResponseDTO.success("Fantasy points calculated successfully.", result);
 
             return Response.ok(payload).build();
 
@@ -68,8 +67,7 @@ public class FantasyPointsResource {
         try {
             FantasyPointsResponseDTO result = fantasyPointsService.getFantasyPointsById(pointsId);
 
-            ApiResponseDTO<FantasyPointsResponseDTO> payload =
-                    ApiResponseDTO.success("Fantasy points retrieved successfully.", result);
+            ApiResponseDTO<FantasyPointsResponseDTO> payload = ApiResponseDTO.success("Fantasy points retrieved successfully.", result);
 
             return Response.ok(payload).build();
 
@@ -87,8 +85,7 @@ public class FantasyPointsResource {
         try {
             List<FantasyPointsResponseDTO> results = fantasyPointsService.listFantasyPointsForStat(statId);
 
-            ApiResponseDTO<List<FantasyPointsResponseDTO>> payload =
-                    ApiResponseDTO.success("Fantasy points for statistic retrieved successfully.", results);
+            ApiResponseDTO<List<FantasyPointsResponseDTO>> payload = ApiResponseDTO.success("Fantasy points for statistic retrieved successfully.", results);
 
             return Response.ok(payload).build();
 
@@ -106,8 +103,7 @@ public class FantasyPointsResource {
         try {
             FantasyPointsResponseDTO result = fantasyPointsService.getFinalFantasyPointsForStat(statId);
 
-            ApiResponseDTO<FantasyPointsResponseDTO> payload =
-                    ApiResponseDTO.success("Final fantasy points retrieved successfully.", result);
+            ApiResponseDTO<FantasyPointsResponseDTO> payload = ApiResponseDTO.success("Final fantasy points retrieved successfully.", result);
 
             return Response.ok(payload).build();
 
