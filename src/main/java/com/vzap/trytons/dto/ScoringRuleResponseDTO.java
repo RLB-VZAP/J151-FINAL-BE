@@ -16,4 +16,6 @@ public class ScoringRuleResponseDTO {
     private int pointsValue;
     private String season;
     private boolean active;
+    Boolean isDeduction;
+    String description;
 }
