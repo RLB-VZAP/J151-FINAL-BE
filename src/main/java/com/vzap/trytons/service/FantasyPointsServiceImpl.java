@@ -1,36 +1,171 @@
 package com.vzap.trytons.service;
 
+import com.vzap.trytons.dao.*;
 import com.vzap.trytons.dto.FantasyPointsRequestDTO;
 import com.vzap.trytons.dto.FantasyPointsResponseDTO;
+import com.vzap.trytons.enums.UserRole;
+import com.vzap.trytons.exceptions.AuthorisationException;
+import com.vzap.trytons.exceptions.BusinessRuleException;
+import com.vzap.trytons.exceptions.ResourceNotFoundException;
+import com.vzap.trytons.model.*;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
 public class FantasyPointsServiceImpl implements FantasyPointsService {
 
+    @Inject
+    FantasyPointsDAO fantasyPointsDAO;
+
+    @Inject
+    PlayerStatisticsDAO playerStatisticsDAO;
+
+    @Inject
+    MatchResultDAO matchResultDAO;
+
+    @Inject
+    FixtureDAO fixtureDAO;
+
+    @Inject
+    FantasyRoundDAO fantasyRoundDAO;
+
+    @Inject
+    ScoringRuleDAO scoringRuleDAO;
+
+    @Inject
+    FantasyPointBreakdownDAO fantasyPointBreakdownDAO;
+
+    @Inject
+    UserDAO userDAO;
+
     @Override
     public FantasyPointsResponseDTO calculateFantasyPoints(UUID actorUserId, FantasyPointsRequestDTO request) {
+        requireAdmin(actorUserId);
 
-        throw new UnsupportedOperationException("FantasyPointsServiceImpl.calculateFantasyPoints is a stub for W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after scoring-rule lookup, point calculation, versioning, and breakdown rules are confirmed.");
+        PlayerStatistics statistic = playerStatisticsDAO.findById(request.getStatId())
+                .orElseThrow(() -> new ResourceNotFoundException("Player statistic not found."));
+
+        MatchResult result = matchResultDAO.findById(statistic.getResultId())
+                .orElseThrow(() -> new ResourceNotFoundException("Match result not found."));
+
+        Fixture fixture = fixtureDAO.findById(result.getFixtureId())
+                .orElseThrow(() -> new ResourceNotFoundException("Fixture not found."));
+
+        FantasyRound round = fantasyRoundDAO.getRoundById(fixture.getRoundId())
+                .orElseThrow(() -> new ResourceNotFoundException("Round was not found."));
+
+        List<ScoringRule> scoringRules = scoringRuleDAO.findActiveRules(round.getSeason());
+        if (scoringRules.isEmpty()) {
+            throw new BusinessRuleException("no scoring rules were found");
+        }
+
+        interface EventCountLookup {
+            int countFor(PlayerStatistics stats);
+        }
+
+        Map<String, EventCountLookup> countLookups = Map.of(
+                "TRY", PlayerStatistics::getTries,
+                "CONVERSION", PlayerStatistics::getConversions,
+                "PENALTY", PlayerStatistics::getPenalties,
+                "ASSIST", PlayerStatistics::getAssists,
+                "METERS_GAINED", PlayerStatistics::getMetersGained,
+                "TACKLE", PlayerStatistics::getTackles,
+                "RED_CARD", PlayerStatistics::getRedCards,
+                "YELLOW_CARD", PlayerStatistics::getYellowCards
+        );
+
+        int total = 0;
+        List<FantasyPointBreakdown> pointBreakdowns = new ArrayList<>();
+
+        for (ScoringRule rule : scoringRules) {
+            EventCountLookup lookup = countLookups.get(rule.getEventType());
+            if (lookup == null) continue;
+
+            int eventCount = lookup.countFor(statistic);
+            if (eventCount > 0) {
+                int contribution = eventCount * rule.getPointsAwarded();
+                if (Boolean.TRUE.equals(rule.getIsDeduction())) contribution = -contribution;
+                total += contribution;
+
+                pointBreakdowns.add(FantasyPointBreakdown.builder()
+                        .ruleId(rule.getRuleId())
+                        .eventCount(eventCount)
+                        .pointsEarned(contribution)
+                        .build());
+            }
+        }
+
+        UUID statId = statistic.getStatId();
+        int nextVersion = fantasyPointsDAO.getNextCalculationVersion(statId);
+        fantasyPointsDAO.markExistingPointsForStatAsNotFinal(statId);
+
+        FantasyPoints savedPoints = fantasyPointsDAO.save(
+                FantasyPoints.builder()
+                        .statId(statId)
+                        .totalPoints(total)
+                        .calculationVersion(nextVersion)
+                        .isFinal(true)
+                        .calculatedAt(LocalDateTime.now())
+                        .build()
+        );
+
+        for (FantasyPointBreakdown breakdown : pointBreakdowns) {
+            breakdown.setPointsId(savedPoints.getPointsId());
+            fantasyPointBreakdownDAO.save(breakdown);
+        }
+
+        return mapToResponse(savedPoints);
     }
 
     @Override
     public FantasyPointsResponseDTO getFantasyPointsById(UUID pointsId) {
-
-        throw new UnsupportedOperationException("FantasyPointsServiceImpl.getFantasyPointsById is a stub for W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after FantasyPointsDAO read methods and response mapping are confirmed.");
+        FantasyPoints points = fantasyPointsDAO.findById(pointsId)
+                .orElseThrow(() -> new ResourceNotFoundException("Fantasy points not found."));
+        return mapToResponse(points);
     }
 
     @Override
     public List<FantasyPointsResponseDTO> listFantasyPointsForStat(UUID statId) {
-
-        throw new UnsupportedOperationException("FantasyPointsServiceImpl.listFantasyPointsForStat is a stub for W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after FantasyPointsDAO stat-based lookup and response mapping are confirmed.");
+        List<FantasyPointsResponseDTO> responses = new ArrayList<>();
+        for (FantasyPoints points : fantasyPointsDAO.findByStatId(statId)) {
+            responses.add(mapToResponse(points));
+        }
+        return responses;
     }
 
     @Override
     public FantasyPointsResponseDTO getFinalFantasyPointsForStat(UUID statId) {
-
-        throw new UnsupportedOperationException("FantasyPointsServiceImpl.getFinalFantasyPointsForStat is a stub for W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after final-version selection rules are confirmed.");
+        FantasyPoints points = fantasyPointsDAO.findFinalByStatId(statId)
+                .orElseThrow(() -> new ResourceNotFoundException("No final fantasy points exist for this statistic."));
+        return mapToResponse(points);
     }
+
+    private void requireAdmin(UUID actorUserId) {
+        if (actorUserId == null) {
+            throw new AuthorisationException("An authenticated administrator is required.");
+        }
+        User actor = userDAO.getUserById(actorUserId)
+                .orElseThrow(() -> new AuthorisationException("An authenticated administrator is required."));
+        if (actor.getRole() != UserRole.ADMINISTRATOR) {
+            throw new AuthorisationException("Only administrators may trigger fantasy point calculation.");
+        }
+    }
+
+    private FantasyPointsResponseDTO mapToResponse(FantasyPoints points) {
+        return new FantasyPointsResponseDTO(
+                points.getPointsId(),
+                points.getStatId(),
+                points.getTotalPoints(),
+                points.getCalculationVersion(),
+                points.isFinal(),
+                points.getCalculatedAt()
+        );
+    }
+
 }
