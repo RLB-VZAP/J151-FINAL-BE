@@ -39,6 +39,9 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
     private LeaderboardDAO leaderboardDAO;
 
     @Inject
+    private FantasyPointsDAO fantasyPointsDAO;
+
+    @Inject
     private SquadValidationService squadValidationService;
     @Override
     public FantasyTeamResponseDTO createTeam(UUID registeredUserId, FantasyTeamRequestDTO request) {
@@ -47,6 +50,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         List<FantasyTeamPlayerSelectionResponseDTO> selectedPlayers = new ArrayList<>();
 
         BigDecimal totalTeamValue = BigDecimal.ZERO;
+        int totalPoints = 0;
 
         for (FantasyTeamPlayerSelectionRequestDTO requestPlayers : request.getSelectedPlayers()){
             Player player = playerDAO.getPlayerById(requestPlayers.getPlayerId()).orElseThrow(() -> new ResourceNotFoundException("Player Not Found."));
@@ -70,6 +74,8 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
 
 
 
+            int playerPoints = fantasyPointsDAO.getTotalFinalPointsForPlayer(player.getPlayerId());
+            totalPoints += playerPoints;
             selectedPlayers.add(FantasyTeamPlayerSelectionResponseDTO.builder()
                     .playerId(player.getPlayerId())
                     .playerName(player.getPlayerName())
@@ -79,7 +85,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                     .clubName(club.getClubName())
                     .value(player.getValue())
                     .isActive(player.isActive())
-                    .totalFantasyPoints(0) //TODO:same here
+                    .totalFantasyPoints(playerPoints)
                     .currentForm(player.getCurrentForm())
                     .build());
         }
@@ -123,7 +129,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                 .managerUsername(manager.getUsername())
                 .totalTeamValue(totalTeamValue)
                 .remainingBudget(remainingBudget)
-                .totalPoints(0)
+                .totalPoints(totalPoints)
                 .valid(fantasyTeam.getIsValid())
                 .selectedPlayers(selectedPlayers)
                 .build();
@@ -138,8 +144,10 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
 
         List<PlayerResponseDTO> playerResponses = new ArrayList<>();
         List<TeamPlayerSelection> squad = fantasyTeamPlayerDAO.getSquadByTeamId(teamId);
+        int totalPoints = 0;
         for(TeamPlayerSelection selection : squad){
             Player player = playerDAO.getPlayerById(selection.getPlayerId()).orElseThrow(() -> new ResourceNotFoundException("Player Not Found."));
+            totalPoints += fantasyPointsDAO.getTotalFinalPointsForPlayer(player.getPlayerId());
             Club club = clubDAO.findByClubId(player.getClubId()).orElseThrow(() -> new ResourceNotFoundException("Club Not Found."));
             Position position = positionDAO.findById(player.getPositionId()).orElseThrow(() -> new ResourceNotFoundException("Position Not Found."));
 
@@ -167,7 +175,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         return ViewOpponentTeamDTO.builder()
                 .teamId(teamId)
                 .teamName(fantasyTeam.getTeamName())
-                .totalPoints(0)
+                .totalPoints(totalPoints)
                 .weeklyPoints(0)
                 .players(playerResponses)
                 .build();
@@ -185,9 +193,11 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         List<TeamPlayerSelection> squad = fantasyTeamPlayerDAO.getSquadByTeamId(teamId);
         List<PlayerResponseDTO> playerResponsesDTO = new ArrayList<>();
         BigDecimal totalTeamValue = BigDecimal.ZERO;
+        int totalPoints = 0;
         for(TeamPlayerSelection playerResponse : squad) {
             Player player = playerDAO.getPlayerById(playerResponse.getPlayerId()).orElseThrow(() -> new ResourceNotFoundException("Player Not Found."));
             totalTeamValue = totalTeamValue.add(player.getValue());
+            totalPoints += fantasyPointsDAO.getTotalFinalPointsForPlayer(player.getPlayerId());
             Club club = clubDAO.findByClubId(player.getClubId()).orElseThrow(() -> new ResourceNotFoundException("Club Not Found."));
             Position position = positionDAO.findById(player.getPositionId()).orElseThrow(() -> new ResourceNotFoundException("Position Not Found."));
             PlayerResponseDTO response = PlayerResponseDTO.builder()
@@ -219,7 +229,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                     .totalTeamValue(totalTeamValue)
                     .remainingBudget(fantasyTeam.getRemainingBudget())
                     .creationDate(fantasyTeam.getCreationDate())
-                    .totalPoints(0)//TODO: this is wrong need rank service.
+                    .totalPoints(totalPoints)
                     .isValid(fantasyTeam.getIsValid())
                     .ownerUsername(owner.getUsername())
                     .players(playerResponsesDTO)
@@ -237,6 +247,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         List<UUID> selectedPlayerIds = new ArrayList<>();
         List<TeamPlayerSelection> selections = new ArrayList<>();
         List<FantasyTeamPlayerSelectionResponseDTO> selectedResponsePlayers = new ArrayList<>();
+        int totalPoints = 0;
 
         for (FantasyTeamPlayerSelectionRequestDTO requestPlayers : fantasyTeamDTO.getSelectedPlayers()) {
             Player player = playerDAO.getPlayerById(requestPlayers.getPlayerId()).orElseThrow(() -> new ResourceNotFoundException("Player not found."));
@@ -255,6 +266,8 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
 
             selections.add(selection);
 
+            int playerPoints = fantasyPointsDAO.getTotalFinalPointsForPlayer(player.getPlayerId());
+            totalPoints += playerPoints;
             selectedResponsePlayers.add(FantasyTeamPlayerSelectionResponseDTO.builder()
                     .playerId(player.getPlayerId())
                     .playerName(player.getPlayerName())
@@ -264,7 +277,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                     .clubName(club.getClubName())
                     .value(player.getValue())
                     .isActive(player.isActive())
-                    .totalFantasyPoints(0) //TODO: this is wrong
+                    .totalFantasyPoints(playerPoints)
                     .currentForm(player.getCurrentForm())
                     .build());
         }
@@ -300,7 +313,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                 .managerUsername(manager.getUsername())
                 .totalTeamValue(totalTeamValue)
                 .remainingBudget(remainingBudget)
-                .totalPoints(0)
+                .totalPoints(totalPoints)
                 .valid(fantasyTeam.getIsValid())
                 .selectedPlayers(selectedResponsePlayers)
                 .build();
