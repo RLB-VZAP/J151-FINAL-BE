@@ -3,6 +3,7 @@ package com.vzap.trytons.resource;
 import com.vzap.trytons.Annotations.Authenticated;
 import com.vzap.trytons.dto.*;
 import com.vzap.trytons.exceptions.AuthenticationException;
+import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.filter.AuthFilter;
@@ -20,7 +21,6 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -44,14 +44,18 @@ public class PlayerStatisticsResource {
             PlayerStatisticsResponseDTO response = playerStatisticsService.captureStatistic(actorUserId, request);
             ApiResponseDTO<PlayerStatisticsResponseDTO> payload = ApiResponseDTO.success("Statistics captured successfully",response);
             return Response.ok(payload).build();
-        }catch(AuthenticationException e){
+        }catch(AuthenticationException e) {
             LOG.log(Level.WARNING, "Authentication required");
+            return Response.status(Response.Status.UNAUTHORIZED).entity(ErrorResponseDTO.of(e.getMessage(),e.getErrorCode())).build();
+        }catch(ResourceNotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
+        }catch (ConflictException e){
+            return Response.status(Response.Status.CONFLICT).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
         }catch (DataAccessException e){
             return serverError("Unable to capture statistics for player",e);
         }catch(Exception e){
             return unexpected(e);
         }
-        return Response.status(Response.Status.UNAUTHORIZED).build();
     }
 
     @GET
@@ -63,21 +67,29 @@ public class PlayerStatisticsResource {
             ApiResponseDTO<List<PlayerStatisticsResponseDTO>> payload =
                     ApiResponseDTO.success("Player statistics list retrieved successfully.", playersStatistics);
             return Response.ok(payload).build();
-        }catch(DataAccessException e){
-            return serverError("Unable to list statistics for player",e);
-        }catch (ResourceNotFoundException e){
-            LOG.log(Level.WARNING, "Resource not found while retrieving player statistics", e);
-        }catch(Exception e){
+        }catch (ResourceNotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
+        } catch (DataAccessException e) {
+            return serverError("Unable to list statistics for player", e);
+        } catch (Exception e) {
             return unexpected(e);
         }
-        return Response.status(Response.Status.BAD_REQUEST).build();
     }
 
     @GET
     @Path("/result/{resultId}/team/{teamId}")
     public Response listResultStatisticsForTeam(@PathParam("resultId") UUID resultId, @PathParam("teamId") UUID teamId) {
-
-        throw new UnsupportedOperationException("PlayerStatisticsResource.listResultStatisticsForTeam is a stub for W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after PlayerStatisticsServiceImpl team-based result lookup and response mapping are confirmed.");
+    try{
+        List<PlayerStatisticsResponseDTO> playersStatistics = playerStatisticsService.listResultStatisticsForTeam(resultId, teamId);
+        ApiResponseDTO<List<PlayerStatisticsResponseDTO>>payload = ApiResponseDTO.success("Player statistics list retrieved successfully",playersStatistics);
+        return Response.ok(payload).build();
+    }catch (ResourceNotFoundException e) {
+        return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
+    } catch (DataAccessException e) {
+        return serverError("Unable to list statistics for player", e);
+    } catch (Exception e) {
+        return unexpected(e);
+    }
     }
 
     private UUID currentUserId(ContainerRequestContext requestContext) {
