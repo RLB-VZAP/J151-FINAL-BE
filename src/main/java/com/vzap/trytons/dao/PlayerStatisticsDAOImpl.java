@@ -162,4 +162,22 @@ public class PlayerStatisticsDAOImpl extends BaseDAO implements PlayerStatistics
             throw new DataAccessException("Unable to save player statistics.", e);
         }
     }
+
+    @Override
+    public Optional<PlayerStatistics> findById(UUID statId) {
+        String sql = SELECT_COLUMNS + " WHERE statId = ?";
+        try (Connection connection = getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+
+            ps.setString(1, statId.toString());
+
+            try (ResultSet rs = ps.executeQuery()) {
+
+                return rs.next() ? Optional.of(mapRow(rs)) : Optional.empty();
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to retrieve player statistic by ID.", e);
+            throw new DataAccessException("Unable to retrieve player statistic by ID.", e);
+        }
+    }
 }

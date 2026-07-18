@@ -54,7 +54,7 @@ public class ScoringRuleDAOImpl extends BaseDAO implements ScoringRuleDAO {
     }
 
     @Override
-    public Optional<ScoringRule> findById(String ruleId) {
+    public Optional<ScoringRule> findById(UUID ruleId) {
 
         String query =
                 "SELECT ruleId, season, eventType, pointsAwarded, " +
@@ -65,7 +65,7 @@ public class ScoringRuleDAOImpl extends BaseDAO implements ScoringRuleDAO {
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {
 
-            ps.setString(1, ruleId);
+            ps.setString(1, ruleId.toString());
 
             try (ResultSet rs = ps.executeQuery()) {
 
