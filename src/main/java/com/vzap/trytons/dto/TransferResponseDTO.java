@@ -12,11 +12,18 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class TransferResponseDTO {
-    private  UUID transferId, teamId, roundId, removed_player_id, added_player_id;
-    private String removed_player_name, added_player_name;
-    private BigDecimal removed_player_value, added_player_value, valueDifference;
+    private UUID transferId;
+    private UUID teamId;
+    private UUID roundId;
+    private UUID removedPlayerId;
+    private UUID addedPlayerId;
+    private String removedPlayerName;
+    private String addedPlayerName;
+    private BigDecimal removedPlayerValue;
+    private BigDecimal addedPlayerValue;
+    private BigDecimal valueDifference;
     private int penaltyPoints;
     private String status;
-    private LocalDateTime transferDate, confirmationDate;
-
+    private LocalDateTime transferDate;
+    private LocalDateTime confirmationDate;
 }

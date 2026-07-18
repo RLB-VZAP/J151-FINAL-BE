@@ -10,6 +10,6 @@ public class PlayerStatisticsCorrectionRequestDTO {
     private UUID statId;
     private UUID correctionByAdminUserId;
     private String reason;
-    private Map<String, Object> oldValueJason;
-    private Map<String, Object> newValueJason;
+    // Old values are read from the database (captured server-side), not supplied by the client.
+    private Map<String, Object> newValuesJson;
 }
