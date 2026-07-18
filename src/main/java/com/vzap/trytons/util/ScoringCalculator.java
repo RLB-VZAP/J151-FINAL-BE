@@ -24,7 +24,8 @@ public final class ScoringCalculator {
                 "METERS_GAINED", PlayerStatistics::getMetersGained,
                 "TACKLE", PlayerStatistics::getTackles,
                 "RED_CARD", PlayerStatistics::getRedCards,
-                "YELLOW_CARD", PlayerStatistics::getYellowCards
+                "YELLOW_CARD", PlayerStatistics::getYellowCards,
+                "MISSED_TACKLE", PlayerStatistics::getMissedTackles
         );
 
         int total = 0;
