@@ -13,7 +13,7 @@ public class ScoringRuleResponseDTO {
 
     private UUID ruleId;
     private String eventType;
-    private int pointsValue;
+    private int pointsAwarded;
     private String season;
     private boolean active;
     Boolean isDeduction;

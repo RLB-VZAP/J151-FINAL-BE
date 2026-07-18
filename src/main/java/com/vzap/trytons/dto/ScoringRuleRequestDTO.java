@@ -19,7 +19,7 @@ public class ScoringRuleRequestDTO {
     @NotBlank(message = "Event type is required")
     @Size(max = 50, message = "Event type cannot exceed 50 characters")
     private String eventType;
-    private int pointsValue;
+    private int pointsAwarded;
     @NotBlank(message = "Season is required")
     @Size(max = 20, message = "Season cannot exceed 20 characters")
     private String season;
