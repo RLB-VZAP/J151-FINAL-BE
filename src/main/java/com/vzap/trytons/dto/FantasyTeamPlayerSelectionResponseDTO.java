@@ -20,8 +20,14 @@ public class FantasyTeamPlayerSelectionResponseDTO {
     private String clubName;
     private BigDecimal value;
     private Boolean isActive;
-    private Integer totalFantasyPoints;
+    private Integer attackingAbility;
+    private Integer defensiveAbility;
+    private Integer kickingAbility;
+    private Integer discipline;
+    private Integer consistency;
+    private Integer fitness;
     private Integer currentForm;
+    private Integer totalFantasyPoints;
     private SquadRole squadRole;
     private Boolean isCaptain;
     private Boolean isViceCaptain;

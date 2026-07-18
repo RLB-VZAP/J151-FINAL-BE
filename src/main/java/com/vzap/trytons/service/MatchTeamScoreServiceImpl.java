@@ -67,7 +67,11 @@ public class MatchTeamScoreServiceImpl implements MatchTeamScoreService {
                 score.getResultId(),
                 score.getTeamId(),
                 score.getTeamSide(),
-                score.getTotalScore()
+                score.getPlayerPoints(),
+                score.getCaptainBonus(),
+                score.getTransferPenalty(),
+                score.getTotalScore(),
+                score.getCalculatedAt()
         );
     }
 }
