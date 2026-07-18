@@ -1,5 +1,6 @@
 package com.vzap.trytons.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.vzap.trytons.enums.NotificationType;
 import lombok.*;
 
@@ -16,6 +17,7 @@ public class NotificationResponseDTO {
     private NotificationType type;
     private String body;
     private LocalDateTime createdAt;
+    @JsonProperty("isRead")
     private boolean isRead;
     private String relatedEntityType;
     private UUID relatedEntityId;

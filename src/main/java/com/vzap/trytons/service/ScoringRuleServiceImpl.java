@@ -45,7 +45,7 @@ public class ScoringRuleServiceImpl implements ScoringRuleService {
                     .orElseThrow(() -> new ResourceNotFoundException("Scoring rule not found."));
 
             existing.setEventType(request.getEventType());
-            existing.setPointsAwarded(request.getPointsValue());
+            existing.setPointsAwarded(request.getPointsAwarded());
             existing.setSeason(request.getSeason());
             existing.setIsActive(request.isActive());
             existing.setIsDeduction(request.getIsDeduction());
@@ -57,7 +57,7 @@ public class ScoringRuleServiceImpl implements ScoringRuleService {
 
         ScoringRule newRule = ScoringRule.builder()
                 .eventType(request.getEventType())
-                .pointsAwarded(request.getPointsValue())
+                .pointsAwarded(request.getPointsAwarded())
                 .season(request.getSeason())
                 .isActive(request.isActive())
                 .isDeduction(request.getIsDeduction())
@@ -83,7 +83,7 @@ public class ScoringRuleServiceImpl implements ScoringRuleService {
         ScoringRuleResponseDTO response = new ScoringRuleResponseDTO();
         response.setRuleId(rule.getRuleId());
         response.setEventType(rule.getEventType());
-        response.setPointsValue(rule.getPointsAwarded());
+        response.setPointsAwarded(rule.getPointsAwarded());
         response.setSeason(rule.getSeason());
         response.setActive(Boolean.TRUE.equals(rule.getIsActive()));
         response.setIsDeduction(rule.getIsDeduction());

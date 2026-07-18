@@ -14,35 +14,38 @@ import java.util.logging.Logger;
 @Singleton
 public class PlayerStatisticsCorrectionDAOImpl extends BaseDAO implements PlayerStatisticsCorrectionDAO {
     private static final Logger LOG = Logger.getLogger(PlayerStatisticsCorrectionDAOImpl.class.getName());
-    private static DBConnectionManager dbConnectionManager ;
     private ObjectMapper objectMapper = new ObjectMapper();
 
-//    private UUID correctionId;
-//    private UUID statId;
-//    private UUID ;
-//    private String reason;
-//    private HashMap<String , Object > oldValueJason;
-//    private HashMap<String , Object > newValueJason;
-//    private LocalDateTime correctionTime;
     private static final String SELECT_COLUMNS = """
-        SELECT correctionId, statId, correctionByAdminUserId, reason, oldValueJason, newValueJason, correctionTime FROM playerStatistics
+        SELECT correctionId, statId, corrected_by_admin_user_id, reason, old_values_json, new_values_json, correctedAt FROM player_statistics_correction
         """;
 
     private PlayerStatisticsCorrection mapRow(ResultSet rs) throws SQLException {
-        Timestamp correctionTimestamp = rs.getTimestamp("correctionTime");
-        return PlayerStatisticsCorrection.builder().correctionId(UUID.fromString(rs.getString("correctionId"))).statId(UUID.fromString(rs.getString("statId"))).correctionByAdminUserId(UUID.fromString(rs.getString("correctionByAdminUserId"))).reason(rs.getString("reason")).oldValueJason(parseJsonToMap(rs.getString("oldValueJason"))).newValueJason(parseJsonToMap(rs.getString("newValueJason"))).correctionTime(correctionTimestamp == null ? null : correctionTimestamp.toLocalDateTime()).build();
+        Timestamp correctionTimestamp = rs.getTimestamp("correctedAt");
+        String adminUserId = rs.getString("corrected_by_admin_user_id");
+        return PlayerStatisticsCorrection.builder()
+                .correctionId(UUID.fromString(rs.getString("correctionId")))
+                .statId(UUID.fromString(rs.getString("statId")))
+                .correctionByAdminUserId(adminUserId == null ? null : UUID.fromString(adminUserId))
+                .reason(rs.getString("reason"))
+                .oldValuesJson(parseJsonToMap(rs.getString("old_values_json")))
+                .newValuesJson(parseJsonToMap(rs.getString("new_values_json")))
+                .correctionTime(correctionTimestamp == null ? null : correctionTimestamp.toLocalDateTime())
+                .build();
     }
 
     @Override
     public Optional<PlayerStatisticsCorrection> save(PlayerStatisticsCorrection playerStatisticsCorrection) {
-        String query ="INSERT INTO player_statistics_correction (correctionId ,statId,correctionByAdminUserId,reason,oldValueJason,newValueJason,correctionTime) VALUES (?,?,?,?,?,?,?)";
-        try(Connection con = DBConnectionManager.getConnection(); PreparedStatement ps = con.prepareStatement(query) ){
+        String query = "INSERT INTO player_statistics_correction (correctionId, statId, corrected_by_admin_user_id, reason, old_values_json, new_values_json, correctedAt) VALUES (?,?,?,?,?,?,?)";
+        try (Connection con = DBConnectionManager.getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
             ps.setString(1, playerStatisticsCorrection.getCorrectionId().toString());
             ps.setString(2, playerStatisticsCorrection.getStatId().toString());
-            ps.setString(3, playerStatisticsCorrection.getCorrectionByAdminUserId().toString());
+            ps.setString(3, playerStatisticsCorrection.getCorrectionByAdminUserId() == null
+                    ? null
+                    : playerStatisticsCorrection.getCorrectionByAdminUserId().toString());
             ps.setString(4, playerStatisticsCorrection.getReason());
-            ps.setObject(5, playerStatisticsCorrection.getOldValueJason());
-            ps.setObject(6, playerStatisticsCorrection.getNewValueJason());
+            ps.setString(5, mapToJson(playerStatisticsCorrection.getOldValuesJson()));
+            ps.setString(6, mapToJson(playerStatisticsCorrection.getNewValuesJson()));
             ps.setTimestamp(7, Timestamp.valueOf(LocalDateTime.now()));
             ps.executeUpdate();
             return Optional.of(playerStatisticsCorrection);
@@ -53,7 +56,7 @@ public class PlayerStatisticsCorrectionDAOImpl extends BaseDAO implements Player
 
     @Override
     public Optional<PlayerStatisticsCorrection> findById(UUID correctionId) {
-        String query ="SELECT * FROM player_statistics_correction WHERE correctionId = ?";
+        String query = "SELECT * FROM player_statistics_correction WHERE correctionId = ?";
         try(Connection con = DBConnectionManager.getConnection(); PreparedStatement ps = con.prepareStatement(query) ){
             ps.setString(1, correctionId.toString());
             try(ResultSet rs =  ps.executeQuery()){
@@ -70,7 +73,7 @@ public class PlayerStatisticsCorrectionDAOImpl extends BaseDAO implements Player
 
     @Override
     public Optional<List<PlayerStatisticsCorrection>> findByAdminUserId(UUID correctionByAdminUserId) {
-        String query = "SELECT correctionId, statId, correctionByAdminUserId, reason, oldValueJason, newValueJason, correctionTime FROM playerStatistics WHERE correctionByAdminUserId = ?";
+        String query = SELECT_COLUMNS + " WHERE corrected_by_admin_user_id = ?";
         try (Connection con = DBConnectionManager.getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
             ps.setString(1, correctionByAdminUserId.toString());
             try (ResultSet rs = ps.executeQuery()) {
@@ -114,6 +117,17 @@ public class PlayerStatisticsCorrectionDAOImpl extends BaseDAO implements Player
             });
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse JSON column to Map", e);
+        }
+    }
+
+    private String mapToJson(Map<String, Object> values) {
+        if (values == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(values);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialise Map to JSON column", e);
         }
     }
 }

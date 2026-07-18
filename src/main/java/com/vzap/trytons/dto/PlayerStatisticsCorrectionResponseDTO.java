@@ -17,7 +17,7 @@ public class PlayerStatisticsCorrectionResponseDTO {
     private UUID statId;
     private UUID correctionByAdminUserId;
     private String reason;
-    private Map<String, Object> oldValueJason;
-    private Map<String, Object> newValueJason;
+    private Map<String, Object> oldValuesJson;
+    private Map<String, Object> newValuesJson;
     private LocalDateTime correctionTime;
 }

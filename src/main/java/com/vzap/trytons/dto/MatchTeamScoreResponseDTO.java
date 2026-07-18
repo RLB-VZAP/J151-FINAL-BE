@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -15,5 +16,9 @@ public class MatchTeamScoreResponseDTO {
     private UUID resultId;
     private UUID teamId;
     private MatchTeamSide teamSide;
-    private int score;
+    private int playerPoints;
+    private int captainBonus;
+    private int transferPenalty;
+    private int totalScore;
+    private LocalDateTime calculatedAt;
 }
