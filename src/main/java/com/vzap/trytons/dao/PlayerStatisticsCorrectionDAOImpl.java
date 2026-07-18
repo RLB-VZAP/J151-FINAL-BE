@@ -1,12 +1,11 @@
 package com.vzap.trytons.dao;
 
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vzap.trytons.model.PlayerStatisticsCorrection;
 import com.vzap.trytons.util.DBConnectionManager;
 import jakarta.ejb.Singleton;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
-
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -77,7 +76,7 @@ public class PlayerStatisticsCorrectionDAOImpl extends BaseDAO implements Player
             try (ResultSet rs = ps.executeQuery()) {
                 List<PlayerStatisticsCorrection> list = new ArrayList<>();
                 while (rs.next()) {
-                   list.add(mapRow(rs));
+                    list.add(mapRow(rs));
                 }
                 return list.isEmpty() ? Optional.empty() : Optional.of(list);
             } catch (SQLException e) {
@@ -106,7 +105,6 @@ public class PlayerStatisticsCorrectionDAOImpl extends BaseDAO implements Player
                 throw new RuntimeException(e);
             }
     }
-   
     private Map<String, Object> parseJsonToMap(String json) {
         if (json == null || json.isBlank()) {
             return null;
