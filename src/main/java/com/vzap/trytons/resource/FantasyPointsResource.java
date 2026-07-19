@@ -1,7 +1,6 @@
 package com.vzap.trytons.resource;
 
 import com.vzap.trytons.Annotations.Authenticated;
-import com.vzap.trytons.dto.ApiResponseDTO;
 import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.dto.FantasyPointsRequestDTO;
 import com.vzap.trytons.dto.FantasyPointsResponseDTO;
@@ -10,7 +9,6 @@ import com.vzap.trytons.exceptions.AuthenticationException;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
 import com.vzap.trytons.service.FantasyPointsService;
-import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -49,9 +47,7 @@ public class FantasyPointsResource {
 
             FantasyPointsResponseDTO result = fantasyPointsService.calculateFantasyPoints(actorUserId, request);
 
-            ApiResponseDTO<FantasyPointsResponseDTO> payload = ApiResponseDTO.success("Fantasy points calculated successfully.", result);
-
-            return Response.ok(payload).build();
+            return Response.ok(result).build();
 
         } catch (ApplicationException e) {
             return handledApplicationError(e);
@@ -67,9 +63,7 @@ public class FantasyPointsResource {
         try {
             FantasyPointsResponseDTO result = fantasyPointsService.getFantasyPointsById(pointsId);
 
-            ApiResponseDTO<FantasyPointsResponseDTO> payload = ApiResponseDTO.success("Fantasy points retrieved successfully.", result);
-
-            return Response.ok(payload).build();
+            return Response.ok(result).build();
 
         } catch (ApplicationException e) {
             return handledApplicationError(e);
@@ -84,10 +78,7 @@ public class FantasyPointsResource {
     public Response listFantasyPointsForStat(@PathParam("statId") UUID statId) {
         try {
             List<FantasyPointsResponseDTO> results = fantasyPointsService.listFantasyPointsForStat(statId);
-
-            ApiResponseDTO<List<FantasyPointsResponseDTO>> payload = ApiResponseDTO.success("Fantasy points for statistic retrieved successfully.", results);
-
-            return Response.ok(payload).build();
+            return Response.ok(results).build();
 
         } catch (ApplicationException e) {
             return handledApplicationError(e);
@@ -103,9 +94,7 @@ public class FantasyPointsResource {
         try {
             FantasyPointsResponseDTO result = fantasyPointsService.getFinalFantasyPointsForStat(statId);
 
-            ApiResponseDTO<FantasyPointsResponseDTO> payload = ApiResponseDTO.success("Final fantasy points retrieved successfully.", result);
-
-            return Response.ok(payload).build();
+            return Response.ok(result).build();
 
         } catch (ApplicationException e) {
             return handledApplicationError(e);

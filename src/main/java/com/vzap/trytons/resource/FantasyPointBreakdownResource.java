@@ -1,6 +1,5 @@
 package com.vzap.trytons.resource;
 
-import com.vzap.trytons.dto.ApiResponseDTO;
 import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.dto.FantasyPointBreakdownResponseDTO;
 import com.vzap.trytons.exceptions.ApplicationException;
@@ -35,9 +34,7 @@ public class FantasyPointBreakdownResource {
         try {
             FantasyPointBreakdownResponseDTO result = fantasyPointBreakdownService.getBreakdownById(breakdownId);
 
-            ApiResponseDTO<FantasyPointBreakdownResponseDTO> payload = ApiResponseDTO.success("Fantasy point breakdown retrieved successfully.", result);
-
-            return Response.ok(payload).build();
+            return Response.ok(result).build();
 
         } catch (ApplicationException e) {
             return handledApplicationError(e);
@@ -53,9 +50,7 @@ public class FantasyPointBreakdownResource {
         try {
             List<FantasyPointBreakdownResponseDTO> results = fantasyPointBreakdownService.listBreakdownsForPoints(pointsId);
 
-            ApiResponseDTO<List<FantasyPointBreakdownResponseDTO>> payload = ApiResponseDTO.success("Fantasy point breakdowns retrieved successfully.", results);
-
-            return Response.ok(payload).build();
+            return Response.ok(results).build();
 
         } catch (ApplicationException e) {
             return handledApplicationError(e);

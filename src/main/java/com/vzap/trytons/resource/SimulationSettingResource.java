@@ -2,7 +2,6 @@ package com.vzap.trytons.resource;
 
 import com.vzap.trytons.Annotations.AdminOnly;
 import com.vzap.trytons.Annotations.Authenticated;
-import com.vzap.trytons.dto.ApiResponseDTO;
 import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.dto.SimulationSettingRequestDTO;
 import com.vzap.trytons.dto.SimulationSettingResponseDTO;
@@ -53,10 +52,10 @@ public class SimulationSettingResource {
             }
 
             SimulationSettingResponseDTO response = simulationSettingService.createSimulationSetting(principal.getUserId(), request);
-            ApiResponseDTO<SimulationSettingResponseDTO> payload = ApiResponseDTO.success("Settings created successfully", response);
+
 
             return Response.status(Response.Status.CREATED)
-                    .entity(payload)
+                    .entity(response)
                     .build();
         } catch (ApplicationException e) {
             return handledApplicationError(e);
@@ -75,10 +74,10 @@ public class SimulationSettingResource {
                 throw new AuthenticationException("The authenticated user could not be identified.");
             }
             SimulationSettingResponseDTO response =  simulationSettingService.updateSimulationSetting(principal.getUserId(), simulationSettingsId, request);
-            ApiResponseDTO<SimulationSettingResponseDTO> payload = ApiResponseDTO.success("Settings updated successfully", response);
+
 
             return Response.status(Response.Status.OK)
-                    .entity(payload)
+                    .entity(response)
                     .build();
         } catch (ApplicationException e) {
             return handledApplicationError(e);
@@ -94,10 +93,9 @@ public class SimulationSettingResource {
         try {
             SimulationSettingResponseDTO response = simulationSettingService.getSimulationSettingById(simulationSettingsId);
 
-            ApiResponseDTO<SimulationSettingResponseDTO> payload = ApiResponseDTO.success("Settings found successfully", response);
 
             return Response.status(Response.Status.OK)
-                    .entity(payload)
+                    .entity(response)
                     .build();
         } catch (ApplicationException e) {
             return handledApplicationError(e);
@@ -112,10 +110,9 @@ public class SimulationSettingResource {
     public Response getActiveSimulationSetting() {
         try {
             SimulationSettingResponseDTO response = simulationSettingService.getActiveSimulationSetting();
-            ApiResponseDTO<SimulationSettingResponseDTO> payload = ApiResponseDTO.success("Settings found successfully", response);
 
             return Response.status(Response.Status.OK)
-                    .entity(payload)
+                    .entity(response)
                     .build();
         } catch (ApplicationException e) {
             return handledApplicationError(e);
@@ -129,10 +126,9 @@ public class SimulationSettingResource {
     public Response listSimulationSettings() {
         try {
             List<SimulationSettingResponseDTO> responseList = simulationSettingService.listSimulationSettings();
-            ApiResponseDTO<List<SimulationSettingResponseDTO>> payload = ApiResponseDTO.success("Settings found successfully", responseList);
 
             return  Response.status(Response.Status.OK)
-                    .entity(payload)
+                    .entity(responseList)
                     .build();
         } catch (ApplicationException e) {
             return handledApplicationError(e);

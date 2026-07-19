@@ -1,6 +1,5 @@
 package com.vzap.trytons.resource;
 
-import com.vzap.trytons.dto.ApiResponseDTO;
 import com.vzap.trytons.dto.DeadlineStatusResponseDTO;
 import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.dto.LockStatusResponseDTO;
@@ -27,10 +26,9 @@ public class LockStatusResource {
     @GET
     @Path("/{roundId}")
     public Response getLockStatus(@PathParam("roundId") UUID roundId) {
-        LockStatusResponseDTO response = deadlineLockService.getLockStatus(roundId);
         try {
-            ApiResponseDTO<LockStatusResponseDTO> payload = ApiResponseDTO.success("Lock status retrieved successfully.", response);
-            return Response.ok(payload).build();
+            LockStatusResponseDTO response = deadlineLockService.getLockStatus(roundId);
+            return Response.ok(response).build();
         }catch (ResourceNotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
         } catch (DataAccessException e) {
@@ -43,10 +41,9 @@ public class LockStatusResource {
     @GET
     @Path("/deadline/{roundId}")
     public Response getDeadlineStatus(@PathParam("roundId") UUID roundId) {
-        DeadlineStatusResponseDTO response = deadlineLockService.getDeadlineStatus(roundId);
         try{
-            ApiResponseDTO<DeadlineStatusResponseDTO> payload = ApiResponseDTO.success("Deadline status retrieved successfully.",response);
-            return Response.ok(payload).build();
+            DeadlineStatusResponseDTO response = deadlineLockService.getDeadlineStatus(roundId);;
+            return Response.ok(response).build();
         }catch (ResourceNotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
         } catch (DataAccessException e) {
