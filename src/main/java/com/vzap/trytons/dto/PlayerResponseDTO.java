@@ -1,5 +1,6 @@
 package com.vzap.trytons.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -31,8 +32,6 @@ public class PlayerResponseDTO {
     private int fitness;
     private int currentForm;
 
+    @JsonProperty("isActive")
     private boolean isActive;
-    private boolean isCaptain;
-    private boolean isViceCaptain;
-    private boolean isBench;
 }

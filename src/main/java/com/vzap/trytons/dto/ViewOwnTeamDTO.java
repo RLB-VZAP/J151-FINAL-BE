@@ -21,5 +21,5 @@ public class ViewOwnTeamDTO {
     private int totalPoints;
     private Boolean isValid;
     private String ownerUsername;
-    private List<PlayerResponseDTO> players;
+    private List<FantasyTeamPlayerSelectionResponseDTO> players;
 }

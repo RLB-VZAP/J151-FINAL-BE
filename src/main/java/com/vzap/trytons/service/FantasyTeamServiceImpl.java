@@ -142,7 +142,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
             throw new ResourceNotFoundException("Fantasy Team not found.");
         }
 
-        List<PlayerResponseDTO> playerResponses = new ArrayList<>();
+        List<FantasyTeamPlayerSelectionResponseDTO> playerResponses = new ArrayList<>();
         List<TeamPlayerSelection> squad = fantasyTeamPlayerDAO.getSquadByTeamId(teamId);
         int totalPoints = 0;
         for(TeamPlayerSelection selection : squad){
@@ -151,10 +151,15 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
             Club club = clubDAO.findByClubId(player.getClubId()).orElseThrow(() -> new ResourceNotFoundException("Club Not Found."));
             Position position = positionDAO.findById(player.getPositionId()).orElseThrow(() -> new ResourceNotFoundException("Position Not Found."));
 
-            PlayerResponseDTO response  = PlayerResponseDTO.builder()
+            FantasyTeamPlayerSelectionResponseDTO response  = FantasyTeamPlayerSelectionResponseDTO.builder()
                     .playerId(player.getPlayerId())
                     .playerName(player.getPlayerName())
+                    .positionId(player.getPositionId())
+                    .positionName(position.getPositionName())
+                    .clubId(player.getClubId())
+                    .clubName(club.getClubName())
                     .value(player.getValue())
+                    .isActive(player.isActive())
                     .attackingAbility(player.getAttackingAbility())
                     .defensiveAbility(player.getDefensiveAbility())
                     .kickingAbility(player.getKickingAbility())
@@ -162,12 +167,10 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                     .consistency(player.getConsistency())
                     .fitness(player.getFitness())
                     .currentForm(player.getCurrentForm())
-                    .isActive(player.isActive())
-                    .clubId(player.getClubId())
-                    .positionId(player.getPositionId())
+                    .totalFantasyPoints(0)
+                    .squadRole(selection.getSquadRole())
                     .isCaptain(selection.getIsCaptain())
                     .isViceCaptain(selection.getIsViceCaptain())
-                    .isBench(selection.getSquadRole() == SquadRole.BENCH)
                     .build();
             playerResponses.add(response);
         }
@@ -191,7 +194,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
             throw new BusinessRuleException("You are not the owner of this fantasy team.");
         }
         List<TeamPlayerSelection> squad = fantasyTeamPlayerDAO.getSquadByTeamId(teamId);
-        List<PlayerResponseDTO> playerResponsesDTO = new ArrayList<>();
+        List<FantasyTeamPlayerSelectionResponseDTO> playerResponsesDTO = new ArrayList<>();
         BigDecimal totalTeamValue = BigDecimal.ZERO;
         int totalPoints = 0;
         for(TeamPlayerSelection playerResponse : squad) {
@@ -200,10 +203,15 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
             totalPoints += fantasyPointsDAO.getTotalFinalPointsForPlayer(player.getPlayerId());
             Club club = clubDAO.findByClubId(player.getClubId()).orElseThrow(() -> new ResourceNotFoundException("Club Not Found."));
             Position position = positionDAO.findById(player.getPositionId()).orElseThrow(() -> new ResourceNotFoundException("Position Not Found."));
-            PlayerResponseDTO response = PlayerResponseDTO.builder()
+            FantasyTeamPlayerSelectionResponseDTO response = FantasyTeamPlayerSelectionResponseDTO.builder()
                     .playerId(player.getPlayerId())
                     .playerName(player.getPlayerName())
+                    .positionId(player.getPositionId())
+                    .positionName(position.getPositionName())
+                    .clubId(player.getClubId())
+                    .clubName(club.getClubName())
                     .value(player.getValue())
+                    .isActive(player.isActive())
                     .attackingAbility(player.getAttackingAbility())
                     .defensiveAbility(player.getDefensiveAbility())
                     .kickingAbility(player.getKickingAbility())
@@ -211,12 +219,10 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                     .consistency(player.getConsistency())
                     .fitness(player.getFitness())
                     .currentForm(player.getCurrentForm())
-                    .isActive(player.isActive())
-                    .clubId(player.getClubId())
-                    .positionId(player.getPositionId())
+                    .totalFantasyPoints(0)
+                    .squadRole(playerResponse.getSquadRole())
                     .isCaptain(playerResponse.getIsCaptain())
                     .isViceCaptain(playerResponse.getIsViceCaptain())
-                    .isBench(playerResponse.getSquadRole() == SquadRole.BENCH)
                     .build();
             playerResponsesDTO.add(response);
         }

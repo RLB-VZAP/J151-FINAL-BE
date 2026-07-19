@@ -1,5 +1,6 @@
 package com.vzap.trytons.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.vzap.trytons.enums.MatchTeamSide;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -20,8 +21,10 @@ public class MatchResultResponseDTO {
     private int teamAScore;
     private int teamBScore;
     private MatchTeamSide winnerSide;
+    @JsonProperty("isDraw")
     private boolean isDraw;
     private boolean approved;
+    @JsonProperty("isCurrent")
     private boolean isCurrent;
     private LocalDateTime resultDate;
     private UUID approvedByAdminUserId;

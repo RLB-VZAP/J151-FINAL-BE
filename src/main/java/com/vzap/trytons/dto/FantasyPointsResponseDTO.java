@@ -1,5 +1,6 @@
 package com.vzap.trytons.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,6 +17,7 @@ public class FantasyPointsResponseDTO {
     private UUID statId;
     private int totalPoints;
     private int calculationVersion;
+    @JsonProperty("isFinal")
     private boolean isFinal;
     private LocalDateTime calculatedAt;
 }

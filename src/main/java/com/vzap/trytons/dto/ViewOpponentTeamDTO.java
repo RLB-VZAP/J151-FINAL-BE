@@ -15,5 +15,5 @@ public class ViewOpponentTeamDTO {
     private String teamName;
     private int totalPoints;
     private int weeklyPoints;
-    private List<PlayerResponseDTO> players;
+    private List<FantasyTeamPlayerSelectionResponseDTO> players;
 }
