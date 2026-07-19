@@ -1,6 +1,6 @@
 package com.vzap.trytons.mapper;
 
-import com.vzap.trytons.dto.ErrorResponseDTO;
+import com.vzap.trytons.dto.shared.ErrorResponseDTO;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.core.Response;
