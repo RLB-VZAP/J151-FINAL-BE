@@ -48,6 +48,13 @@
             <version>2.22.1</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>2.22.1</version>
+            <scope>compile</scope>
+        </dependency>
+
         <!-- MySQL JDBC Driver for DAO/JDBC database access -->
         <dependency>
             <groupId>com.mysql</groupId>
