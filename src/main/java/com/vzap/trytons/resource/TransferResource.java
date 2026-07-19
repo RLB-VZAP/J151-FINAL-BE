@@ -1,7 +1,6 @@
 package com.vzap.trytons.resource;
 
 import com.vzap.trytons.Annotations.Authenticated;
-import com.vzap.trytons.dto.ApiResponseDTO;
 import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.dto.TransferRequestDTO;
 import com.vzap.trytons.dto.TransferResponseDTO;
