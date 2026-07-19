@@ -35,9 +35,7 @@ public class PlayerResource {
             }else{
                 players = playerService.getAllPlayers();
             }
-            ApiResponseDTO<List<PlayerResponseDTO>> payload =
-                    ApiResponseDTO.success("Player list retrieved successfully.", players);
-            return Response.ok(payload).build();
+            return Response.ok(players).build();
         }catch(DataAccessException e ){
             return serverError("Failed to load players.", e);
         }catch (Exception e) {
@@ -50,9 +48,7 @@ public class PlayerResource {
     public Response getPlayer(@PathParam("id") UUID id) {
         try {
             PlayerResponseDTO player = playerService.getPlayer(id);
-            ApiResponseDTO<PlayerResponseDTO> payload =
-                    ApiResponseDTO.success("Player retrieved successfully.", player);
-            return Response.ok(payload).build();
+            return Response.ok(player).build();
         } catch (ResourceNotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
         } catch (DataAccessException e) {
@@ -67,8 +63,8 @@ public class PlayerResource {
         try{
             PlayerResponseDTO created = playerService.createPlayer(playerRequestDTO);
             URI location = uriInfo.getAbsolutePathBuilder().path(created.getPlayerId().toString()).build();
-            ApiResponseDTO<PlayerResponseDTO>payload = ApiResponseDTO.success("Player created successfully.", created);
-            return Response.created(location).entity(payload).build();
+
+            return Response.created(location).entity(created).build();
         }catch(ConflictException e){
             return Response.status(Response.Status.CONFLICT).build();
         }catch(DataAccessException e){
@@ -83,8 +79,8 @@ public class PlayerResource {
     public Response updatePlayer(@PathParam("id") UUID id, @Valid PlayerRequestDTO request){
         try{
             PlayerResponseDTO updated = playerService.updatePlayer(id, request);
-            ApiResponseDTO<PlayerResponseDTO>payload = ApiResponseDTO.success("Player updated successfully.", updated);
-            return Response.ok(payload).build();
+
+            return Response.ok(updated).build();
         }catch (ResourceNotFoundException e){
             return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
     }catch (ConflictException e){
