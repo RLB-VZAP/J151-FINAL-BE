@@ -38,3 +38,6 @@ database.properties
 *.bak
 *.swp
 env
+
+# Serena MCP (local code-navigation cache/config)
+.serena/
