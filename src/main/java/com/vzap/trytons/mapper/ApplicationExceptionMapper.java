@@ -1,6 +1,6 @@
 package com.vzap.trytons.mapper;
 
-import com.vzap.trytons.dto.ErrorResponseDTO;
+import com.vzap.trytons.dto.shared.ErrorResponseDTO;
 import com.vzap.trytons.exceptions.ApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
