@@ -16,6 +16,7 @@ public class RestApplication extends Application {
     @Override
     public Set<Class<?>> getClasses() {
         return Set.of(
+                ObjectMapperProvider.class,
                 AdminUserResource.class,
                 AuthResource.class,
                 ClubResource.class,
@@ -39,7 +40,6 @@ public class RestApplication extends Application {
                 TransferResource.class,
                 UserHistoryResource.class,
                 UserResources.class,
-
                 AuthFilter.class,
                 RoleFilter.class,
                 ApplicationExceptionMapper.class,
