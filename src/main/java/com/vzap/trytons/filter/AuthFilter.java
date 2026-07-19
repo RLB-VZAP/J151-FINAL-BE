@@ -1,8 +1,8 @@
 package com.vzap.trytons.filter;
 
-import com.vzap.trytons.dao.UserDAO;
+import com.vzap.trytons.dao.auth.UserDAO;
 import com.vzap.trytons.exceptions.AuthenticationException;
-import com.vzap.trytons.model.User;
+import com.vzap.trytons.model.auth.User;
 import com.vzap.trytons.security.AuthPrincipal;
 import com.vzap.trytons.security.AuthTokenPayload;
 import com.vzap.trytons.Annotations.Authenticated;
