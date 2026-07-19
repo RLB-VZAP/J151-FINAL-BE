@@ -1,8 +1,8 @@
 package com.vzap.trytons.util;
 
-import com.vzap.trytons.model.FantasyPointBreakdown;
-import com.vzap.trytons.model.PlayerStatistics;
-import com.vzap.trytons.model.ScoringRule;
+import com.vzap.trytons.model.scoring.FantasyPointBreakdown;
+import com.vzap.trytons.model.results.PlayerStatistics;
+import com.vzap.trytons.model.scoring.ScoringRule;
 
 import java.util.ArrayList;
 import java.util.List;
