@@ -147,7 +147,8 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         int totalPoints = 0;
         for(TeamPlayerSelection selection : squad){
             Player player = playerDAO.getPlayerById(selection.getPlayerId()).orElseThrow(() -> new ResourceNotFoundException("Player Not Found."));
-            totalPoints += fantasyPointsDAO.getTotalFinalPointsForPlayer(player.getPlayerId());
+            int playerPoints = fantasyPointsDAO.getTotalFinalPointsForPlayer(player.getPlayerId());
+            totalPoints += playerPoints;
             Club club = clubDAO.findByClubId(player.getClubId()).orElseThrow(() -> new ResourceNotFoundException("Club Not Found."));
             Position position = positionDAO.findById(player.getPositionId()).orElseThrow(() -> new ResourceNotFoundException("Position Not Found."));
 
@@ -167,7 +168,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                     .consistency(player.getConsistency())
                     .fitness(player.getFitness())
                     .currentForm(player.getCurrentForm())
-                    .totalFantasyPoints(0)
+                    .totalFantasyPoints(playerPoints)
                     .squadRole(selection.getSquadRole())
                     .isCaptain(selection.getIsCaptain())
                     .isViceCaptain(selection.getIsViceCaptain())
@@ -200,7 +201,8 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         for(TeamPlayerSelection playerResponse : squad) {
             Player player = playerDAO.getPlayerById(playerResponse.getPlayerId()).orElseThrow(() -> new ResourceNotFoundException("Player Not Found."));
             totalTeamValue = totalTeamValue.add(player.getValue());
-            totalPoints += fantasyPointsDAO.getTotalFinalPointsForPlayer(player.getPlayerId());
+            int playerPoints = fantasyPointsDAO.getTotalFinalPointsForPlayer(player.getPlayerId());
+            totalPoints += playerPoints;
             Club club = clubDAO.findByClubId(player.getClubId()).orElseThrow(() -> new ResourceNotFoundException("Club Not Found."));
             Position position = positionDAO.findById(player.getPositionId()).orElseThrow(() -> new ResourceNotFoundException("Position Not Found."));
             FantasyTeamPlayerSelectionResponseDTO response = FantasyTeamPlayerSelectionResponseDTO.builder()
@@ -219,7 +221,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                     .consistency(player.getConsistency())
                     .fitness(player.getFitness())
                     .currentForm(player.getCurrentForm())
-                    .totalFantasyPoints(0)
+                    .totalFantasyPoints(playerPoints)
                     .squadRole(playerResponse.getSquadRole())
                     .isCaptain(playerResponse.getIsCaptain())
                     .isViceCaptain(playerResponse.getIsViceCaptain())
