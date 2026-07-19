@@ -4,6 +4,7 @@ import com.vzap.trytons.Annotations.Authenticated;
 import com.vzap.trytons.dto.ApiResponseDTO;
 import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.dto.LeaderboardEntryResponseDTO;
+import com.vzap.trytons.dto.LeaderboardRefreshResultDTO;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
@@ -80,20 +81,58 @@ public class LeaderboardResource {
     @POST
     @Path("/{leagueId}/refresh")
     public Response refreshLeagueLeaderboard(@PathParam("leagueId") UUID leagueId) {
-        return Response.ok().build();
+        UUID actorUserId = ((AuthPrincipal) requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY)).getUserId();
+        try{
+            LeaderboardRefreshResultDTO result = leaderboardService.refreshLeagueLeaderboard(actorUserId, leagueId);
+            ApiResponseDTO<LeaderboardRefreshResultDTO> payload = ApiResponseDTO.success("Leaderboard refreshed successfully", result);
+            return Response.ok(payload).build();
+        }catch(ResourceNotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), "NOT_FOUND")).build();
+        }catch(AuthorisationException e) {
+            return Response.status(Response.Status.FORBIDDEN).entity(ErrorResponseDTO.of(e.getMessage(), "FORBIDDEN")).build();
+        }catch(DataAccessException e){
+            return serverError("Failed to refresh leaderboard for league " + leagueId, e);
+        }catch(Exception e){
+            return unexpected(e);
+        }
     }
 
     @GET
     @Path("/master")
     public Response getOverallLeaderboard(){
-        return Response.ok().build();
+        UUID requestingUserId = ((AuthPrincipal) requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY)).getUserId();
+        try{
+            List<LeaderboardEntryResponseDTO> leaderboard = leaderboardService.getOverallLeaderboard(requestingUserId);
+            ApiResponseDTO<List<LeaderboardEntryResponseDTO>> payload = ApiResponseDTO.success("Overall leaderboard retrieved successfully", leaderboard);
+            return Response.ok(payload).build();
+        }catch(ResourceNotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), "NOT_FOUND")).build();
+        }catch(AuthorisationException e) {
+            return Response.status(Response.Status.FORBIDDEN).entity(ErrorResponseDTO.of(e.getMessage(), "FORBIDDEN")).build();
+        }catch(DataAccessException e){
+            return serverError("Failed to load overall leaderboard", e);
+        }catch(Exception e){
+            return unexpected(e);
+        }
     }
 
     @POST
     @Path("/master/refresh")
     public Response refreshMaterLeaderboard() {
-        //Complete this one , I have no idea
-        return Response.accepted().build();
+        UUID actorUserId = ((AuthPrincipal) requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY)).getUserId();
+        try{
+            LeaderboardRefreshResultDTO result = leaderboardService.refreshOverallLeaderboard(actorUserId);
+            ApiResponseDTO<LeaderboardRefreshResultDTO> payload = ApiResponseDTO.success("Overall leaderboard refreshed successfully", result);
+            return Response.ok(payload).build();
+        }catch(ResourceNotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), "NOT_FOUND")).build();
+        }catch(AuthorisationException e) {
+            return Response.status(Response.Status.FORBIDDEN).entity(ErrorResponseDTO.of(e.getMessage(), "FORBIDDEN")).build();
+        }catch(DataAccessException e){
+            return serverError("Failed to refresh overall leaderboard", e);
+        }catch(Exception e){
+            return unexpected(e);
+        }
     }
 
 
