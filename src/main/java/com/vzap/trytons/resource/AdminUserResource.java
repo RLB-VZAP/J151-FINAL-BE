@@ -41,10 +41,7 @@ public class AdminUserResource {
 
             List<AdminUserSearchResponseDTO> results = adminUserService.searchUsers(actorUserId, searchTerm);
 
-            ApiResponseDTO<List<AdminUserSearchResponseDTO>> payload =
-                    ApiResponseDTO.success("User search results retrieved successfully.", results);
-
-            return Response.ok(payload).build();
+            return Response.ok(results).build();
 
         } catch (ApplicationException e) {
             return handledApplicationError(e);
@@ -64,10 +61,7 @@ public class AdminUserResource {
             UUID actorUserId = currentUserId(requestContext);
             AdminUserStatusResponseDTO result = adminUserService.updateUserStatus(actorUserId, targetUserId, request);
 
-            ApiResponseDTO<AdminUserStatusResponseDTO> payload =
-                    ApiResponseDTO.success("Search executed successfully.", result);
-
-            return Response.ok(payload).build();
+            return Response.ok(result).build();
 
         } catch (ApplicationException e) {
             return handledApplicationError(e);
