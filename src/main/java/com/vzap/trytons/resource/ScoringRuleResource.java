@@ -1,7 +1,6 @@
 package com.vzap.trytons.resource;
 
 import com.vzap.trytons.Annotations.Authenticated;
-import com.vzap.trytons.dto.ApiResponseDTO;
 import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.dto.ScoringRuleRequestDTO;
 import com.vzap.trytons.dto.ScoringRuleResponseDTO;
@@ -22,7 +21,6 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -48,10 +46,7 @@ public class ScoringRuleResource {
 
             List<ScoringRuleResponseDTO> results = scoringRuleService.listRules(actorUserId, season);
 
-            ApiResponseDTO<List<ScoringRuleResponseDTO>> payload =
-                    ApiResponseDTO.success("Scoring rules retrieved successfully.", results);
-
-            return Response.ok(payload).build();
+            return Response.ok(results).build();
 
         } catch (ApplicationException e) {
             return handledApplicationError(e);
@@ -70,10 +65,7 @@ public class ScoringRuleResource {
 
             ScoringRuleResponseDTO result = scoringRuleService.saveRule(actorUserId, request);
 
-            ApiResponseDTO<ScoringRuleResponseDTO> payload =
-                    ApiResponseDTO.success("Scoring rule saved successfully.", result);
-
-            return Response.ok(payload).build();
+            return Response.ok(result).build();
 
         } catch (ApplicationException e) {
             return handledApplicationError(e);

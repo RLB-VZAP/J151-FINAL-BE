@@ -1,7 +1,6 @@
 package com.vzap.trytons.resource;
 
 import com.vzap.trytons.Annotations.Authenticated;
-import com.vzap.trytons.dto.ApiResponseDTO;
 import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.dto.LeaderboardEntryResponseDTO;
 import com.vzap.trytons.dto.LeaderboardRefreshResultDTO;
@@ -43,8 +42,8 @@ public class LeaderboardResource {
         UUID requestingUserId = ((AuthPrincipal) requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY)).getUserId();
         try{
             List<LeaderboardEntryResponseDTO> leaderboard = leaderboardService.getLeaderboardForLeague(leagueId, requestingUserId);
-            ApiResponseDTO<List<LeaderboardEntryResponseDTO>> payload = ApiResponseDTO.success("Leaderboard retrieved successfully", leaderboard);
-            return Response.ok(payload).build();
+
+            return Response.ok(leaderboard).build();
         }catch(ResourceNotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), "NOT_FOUND")).build();
         }catch(AuthorisationException e) {
@@ -65,8 +64,8 @@ public class LeaderboardResource {
             if (result.isEmpty()) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
-            ApiResponseDTO<LeaderboardEntryResponseDTO>payload = ApiResponseDTO.success("Ranking retrieved successfully", result.get());
-            return Response.ok(payload).build();
+
+            return Response.ok(result).build();
         }catch(ResourceNotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), "NOT_FOUND")).build();
         }catch(AuthorisationException e) {
@@ -84,8 +83,8 @@ public class LeaderboardResource {
         UUID actorUserId = ((AuthPrincipal) requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY)).getUserId();
         try{
             LeaderboardRefreshResultDTO result = leaderboardService.refreshLeagueLeaderboard(actorUserId, leagueId);
-            ApiResponseDTO<LeaderboardRefreshResultDTO> payload = ApiResponseDTO.success("Leaderboard refreshed successfully", result);
-            return Response.ok(payload).build();
+
+            return Response.ok(result).build();
         }catch(ResourceNotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), "NOT_FOUND")).build();
         }catch(AuthorisationException e) {
@@ -103,8 +102,8 @@ public class LeaderboardResource {
         UUID requestingUserId = ((AuthPrincipal) requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY)).getUserId();
         try{
             List<LeaderboardEntryResponseDTO> leaderboard = leaderboardService.getOverallLeaderboard(requestingUserId);
-            ApiResponseDTO<List<LeaderboardEntryResponseDTO>> payload = ApiResponseDTO.success("Overall leaderboard retrieved successfully", leaderboard);
-            return Response.ok(payload).build();
+
+            return Response.ok(leaderboard).build();
         }catch(ResourceNotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), "NOT_FOUND")).build();
         }catch(AuthorisationException e) {
@@ -122,8 +121,8 @@ public class LeaderboardResource {
         UUID actorUserId = ((AuthPrincipal) requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY)).getUserId();
         try{
             LeaderboardRefreshResultDTO result = leaderboardService.refreshOverallLeaderboard(actorUserId);
-            ApiResponseDTO<LeaderboardRefreshResultDTO> payload = ApiResponseDTO.success("Overall leaderboard refreshed successfully", result);
-            return Response.ok(payload).build();
+
+            return Response.ok(result).build();
         }catch(ResourceNotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), "NOT_FOUND")).build();
         }catch(AuthorisationException e) {

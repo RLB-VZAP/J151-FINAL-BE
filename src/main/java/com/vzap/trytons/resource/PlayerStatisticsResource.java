@@ -42,8 +42,7 @@ public class PlayerStatisticsResource {
         try{
             UUID actorUserId = currentUserId(containerRequestContext);
             PlayerStatisticsResponseDTO response = playerStatisticsService.captureStatistic(actorUserId, request);
-            ApiResponseDTO<PlayerStatisticsResponseDTO> payload = ApiResponseDTO.success("Statistics captured successfully",response);
-            return Response.ok(payload).build();
+            return Response.ok(response).build();
         }catch(AuthenticationException e) {
             LOG.log(Level.WARNING, "Authentication required");
             return Response.status(Response.Status.UNAUTHORIZED).entity(ErrorResponseDTO.of(e.getMessage(),e.getErrorCode())).build();
@@ -64,9 +63,8 @@ public class PlayerStatisticsResource {
         try{
             List<PlayerStatisticsResponseDTO> playersStatistics;
             playersStatistics = playerStatisticsService.listResultStatistics(resultId);
-            ApiResponseDTO<List<PlayerStatisticsResponseDTO>> payload =
-                    ApiResponseDTO.success("Player statistics list retrieved successfully.", playersStatistics);
-            return Response.ok(payload).build();
+
+            return Response.ok(playersStatistics).build();
         }catch (ResourceNotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
         } catch (DataAccessException e) {
@@ -81,8 +79,8 @@ public class PlayerStatisticsResource {
     public Response listResultStatisticsForTeam(@PathParam("resultId") UUID resultId, @PathParam("teamId") UUID teamId) {
     try{
         List<PlayerStatisticsResponseDTO> playersStatistics = playerStatisticsService.listResultStatisticsForTeam(resultId, teamId);
-        ApiResponseDTO<List<PlayerStatisticsResponseDTO>>payload = ApiResponseDTO.success("Player statistics list retrieved successfully",playersStatistics);
-        return Response.ok(payload).build();
+
+        return Response.ok(playersStatistics).build();
     }catch (ResourceNotFoundException e) {
         return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
     } catch (DataAccessException e) {

@@ -1,7 +1,6 @@
 package com.vzap.trytons.resource;
 
 import com.vzap.trytons.Annotations.Authenticated;
-import com.vzap.trytons.dto.ApiResponseDTO;
 import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.dto.TransferRequestDTO;
 import com.vzap.trytons.dto.TransferResponseDTO;
@@ -47,10 +46,7 @@ public class TransferResource {
 
             TransferResponseDTO response = transferService.executeTransfer(actorUserId, request);
 
-            ApiResponseDTO<TransferResponseDTO> payload =
-                    ApiResponseDTO.success("Transfer executed successfully.", response);
-
-            return Response.ok(payload).build();
+            return Response.ok(response).build();
 
         } catch (ApplicationException e) {
             return handledApplicationError(e);
@@ -71,10 +67,7 @@ public class TransferResource {
             List<TransferResponseDTO> history =
                     transferService.listTransferHistory(actorUserId, teamId);
 
-            ApiResponseDTO<List<TransferResponseDTO>> payload =
-                    ApiResponseDTO.success("Transfer history retrieved successfully.", history);
-
-            return Response.ok(payload).build();
+            return Response.ok(history).build();
 
         } catch (ApplicationException e) {
             return handledApplicationError(e);

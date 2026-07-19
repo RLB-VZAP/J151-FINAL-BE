@@ -1,7 +1,6 @@
 package com.vzap.trytons.resource;
 
 import com.vzap.trytons.Annotations.Authenticated;
-import com.vzap.trytons.dto.ApiResponseDTO;
 import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.dto.MatchResultRequestDTO;
 import com.vzap.trytons.dto.MatchResultResponseDTO;
@@ -43,9 +42,8 @@ public class MatchResultResource {
         try {
             UUID actorUserId = currentUserId(requestContext);
             MatchResultResponseDTO result = matchResultService.captureResult(actorUserId, request);
-            ApiResponseDTO<MatchResultResponseDTO> payload = ApiResponseDTO.success("Match result captured successfully.", result);
 
-            return Response.ok(payload).build();
+            return Response.ok(result).build();
         } catch (ApplicationException e) {
             return handledApplicationError(e);
         } catch (Exception e) {
@@ -58,9 +56,8 @@ public class MatchResultResource {
     public Response getResult(@PathParam("fixtureId") UUID fixtureId) {
         try {
             MatchResultResponseDTO result = matchResultService.getResult(fixtureId);
-            ApiResponseDTO<MatchResultResponseDTO> payload = ApiResponseDTO.success("Match result retrieved successfully.", result);
 
-            return Response.ok(payload).build();
+            return Response.ok(result).build();
         } catch (ApplicationException e) {
             return handledApplicationError(e);
         } catch (Exception e) {
