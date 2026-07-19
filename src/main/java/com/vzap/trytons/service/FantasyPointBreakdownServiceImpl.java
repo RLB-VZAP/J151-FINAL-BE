@@ -1,23 +1,60 @@
 package com.vzap.trytons.service;
 
+import com.vzap.trytons.dao.FantasyPointBreakdownDAO;
+import com.vzap.trytons.dao.ScoringRuleDAO;
 import com.vzap.trytons.dto.FantasyPointBreakdownResponseDTO;
+import com.vzap.trytons.exceptions.ResourceNotFoundException;
+import com.vzap.trytons.exceptions.ValidationException;
+import com.vzap.trytons.model.FantasyPointBreakdown;
+import com.vzap.trytons.model.ScoringRule;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @ApplicationScoped
 public class FantasyPointBreakdownServiceImpl implements FantasyPointBreakdownService {
 
+    @Inject
+    FantasyPointBreakdownDAO fantasyPointBreakdownDAO;
+
+    @Inject
+    ScoringRuleDAO scoringRuleDAO;
+
     @Override
     public FantasyPointBreakdownResponseDTO getBreakdownById(UUID breakdownId) {
+        if (breakdownId == null) {
+            throw new ValidationException("Breakdown ID is required.");
+        }
 
-        throw new UnsupportedOperationException("FantasyPointBreakdownServiceImpl.getBreakdownById is a stub for W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after FantasyPointBreakdownDAO read mapping is confirmed.");
+        FantasyPointBreakdown breakdown = fantasyPointBreakdownDAO.findById(breakdownId).orElseThrow(() -> new ResourceNotFoundException("Fantasy point breakdown not found."));
+        return mapToResponse(breakdown);
     }
 
     @Override
     public List<FantasyPointBreakdownResponseDTO> listBreakdownsForPoints(UUID pointsId) {
+        if (pointsId == null) {
+            throw new ValidationException("Points ID is required.");
+        }
 
-        throw new UnsupportedOperationException("FantasyPointBreakdownServiceImpl.listBreakdownsForPoints is a stub for W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after FantasyPointBreakdownDAO points-based lookup and response mapping are confirmed.");
+        List<FantasyPointBreakdownResponseDTO> responses = new ArrayList<>();
+        for (FantasyPointBreakdown breakdown : fantasyPointBreakdownDAO.findByPointsId(pointsId)) {
+            responses.add(mapToResponse(breakdown));
+        }
+        return responses;
+    }
+
+    private FantasyPointBreakdownResponseDTO mapToResponse(FantasyPointBreakdown breakdown) {
+        ScoringRule rule = scoringRuleDAO.findById(breakdown.getRuleId()).orElseThrow(() -> new ResourceNotFoundException("Scoring rule not found."));
+
+        return new FantasyPointBreakdownResponseDTO(
+                breakdown.getBreakdownId(),
+                breakdown.getPointsId(),
+                rule.getEventType(),
+                breakdown.getPointsEarned(),
+                rule.getDescription()
+        );
     }
 }
