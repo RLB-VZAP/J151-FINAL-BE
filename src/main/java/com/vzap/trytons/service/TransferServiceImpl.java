@@ -385,20 +385,20 @@ public class TransferServiceImpl implements TransferService {
                         ? transfer.getTeamId()
                         : fallbackTeamId)
                 .roundId(transfer.getRoundId() != null ? transfer.getRoundId() : null)
-                .removed_player_id(transfer.getRemovedPlayerId() != null
+                .removedPlayerId(transfer.getRemovedPlayerId() != null
                         ? transfer.getRemovedPlayerId()
                         : null)
-                .added_player_id(transfer.getAddedPlayerId() != null
+                .addedPlayerId(transfer.getAddedPlayerId() != null
                         ? transfer.getAddedPlayerId()
                         : null)
-                .removed_player_name(transfer.getRemovedPlayerId() != null
+                .removedPlayerName(transfer.getRemovedPlayerId() != null
                         ? String.valueOf(transfer.getRemovedPlayerId())
                         : null)
-                .added_player_name(transfer.getAddedPlayerId() != null
+                .addedPlayerName(transfer.getAddedPlayerId() != null
                         ? String.valueOf(transfer.getAddedPlayerId())
                         : null)
-                .removed_player_value(transfer.getRemovedPlayerValue())
-                .added_player_value(transfer.getAddedPlayerValue())
+                .removedPlayerValue(transfer.getRemovedPlayerValue())
+                .addedPlayerValue(transfer.getAddedPlayerValue())
                 .valueDifference(valueDifference)
                 .penaltyPoints(transfer.getPenaltyPoints())
                 .status(transfer.getStatus() != null ? transfer.getStatus().name() : null)
