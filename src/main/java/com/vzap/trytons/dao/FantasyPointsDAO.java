@@ -13,4 +13,5 @@ public interface FantasyPointsDAO {
     Optional<FantasyPoints> findFinalByStatId(UUID statId);
     int markExistingPointsForStatAsNotFinal(UUID statId);
     int getNextCalculationVersion(UUID statId);
+    int getTotalFinalPointsForPlayer(UUID playerId);
 }
