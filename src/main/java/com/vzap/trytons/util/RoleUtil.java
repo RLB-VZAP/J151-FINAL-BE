@@ -1,7 +1,7 @@
 package com.vzap.trytons.util;
 
 import com.vzap.trytons.enums.UserRole;
-import com.vzap.trytons.model.User;
+import com.vzap.trytons.model.auth.User;
 import com.vzap.trytons.security.AuthPrincipal;
 
 public final class RoleUtil {
