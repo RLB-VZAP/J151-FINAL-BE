@@ -29,8 +29,7 @@ public class FantasyPointBreakdownServiceImpl implements FantasyPointBreakdownSe
             throw new ValidationException("Breakdown ID is required.");
         }
 
-        FantasyPointBreakdown breakdown = fantasyPointBreakdownDAO.findById(breakdownId)
-                .orElseThrow(() -> new ResourceNotFoundException("Fantasy point breakdown not found."));
+        FantasyPointBreakdown breakdown = fantasyPointBreakdownDAO.findById(breakdownId).orElseThrow(() -> new ResourceNotFoundException("Fantasy point breakdown not found."));
         return mapToResponse(breakdown);
     }
 
@@ -48,8 +47,7 @@ public class FantasyPointBreakdownServiceImpl implements FantasyPointBreakdownSe
     }
 
     private FantasyPointBreakdownResponseDTO mapToResponse(FantasyPointBreakdown breakdown) {
-        ScoringRule rule = scoringRuleDAO.findById(breakdown.getRuleId())
-                .orElseThrow(() -> new ResourceNotFoundException("Scoring rule not found."));
+        ScoringRule rule = scoringRuleDAO.findById(breakdown.getRuleId()).orElseThrow(() -> new ResourceNotFoundException("Scoring rule not found."));
 
         return new FantasyPointBreakdownResponseDTO(
                 breakdown.getBreakdownId(),
