@@ -149,4 +149,23 @@ public class FantasyPointsDAOImpl extends BaseDAO implements FantasyPointsDAO {
             throw new DataAccessException("Unable to determine the next fantasy-points version.", e);
         }
     }
+
+    @Override
+    public int getTotalFinalPointsForPlayer(UUID playerId) {
+        String sql = "SELECT COALESCE(SUM(fp.totalPoints), 0) AS total "
+                + "FROM fantasyPoints fp "
+                + "JOIN playerStatistics ps ON fp.statId = ps.statId "
+                + "WHERE ps.playerId = ? AND fp.isFinal = TRUE";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, playerId.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? resultSet.getInt("total") : 0;
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to total final fantasy points for player.", e);
+            throw new DataAccessException("Unable to total final fantasy points for player.", e);
+        }
+    }
 }
