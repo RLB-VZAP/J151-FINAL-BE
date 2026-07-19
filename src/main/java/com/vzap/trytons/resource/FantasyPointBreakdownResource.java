@@ -1,6 +1,5 @@
 package com.vzap.trytons.resource;
 
-import com.vzap.trytons.dto.ApiResponseDTO;
 import com.vzap.trytons.dto.ErrorResponseDTO;
 import com.vzap.trytons.dto.FantasyPointBreakdownResponseDTO;
 import com.vzap.trytons.exceptions.ApplicationException;
