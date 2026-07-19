@@ -35,9 +35,7 @@ public class FantasyPointBreakdownResource {
         try {
             FantasyPointBreakdownResponseDTO result = fantasyPointBreakdownService.getBreakdownById(breakdownId);
 
-            ApiResponseDTO<FantasyPointBreakdownResponseDTO> payload = ApiResponseDTO.success("Fantasy point breakdown retrieved successfully.", result);
-
-            return Response.ok(payload).build();
+            return Response.ok(result).build();
 
         } catch (ApplicationException e) {
             return handledApplicationError(e);
@@ -53,9 +51,7 @@ public class FantasyPointBreakdownResource {
         try {
             List<FantasyPointBreakdownResponseDTO> results = fantasyPointBreakdownService.listBreakdownsForPoints(pointsId);
 
-            ApiResponseDTO<List<FantasyPointBreakdownResponseDTO>> payload = ApiResponseDTO.success("Fantasy point breakdowns retrieved successfully.", results);
-
-            return Response.ok(payload).build();
+            return Response.ok(results).build();
 
         } catch (ApplicationException e) {
             return handledApplicationError(e);
