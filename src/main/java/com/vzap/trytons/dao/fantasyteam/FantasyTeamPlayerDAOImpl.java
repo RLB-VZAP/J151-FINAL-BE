@@ -4,6 +4,7 @@ import com.vzap.trytons.enums.SquadRole;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
+import com.vzap.trytons.model.fantasyteam.PlayerSelectionCount;
 import com.vzap.trytons.model.fantasyteam.TeamPlayerSelection;
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -337,6 +338,30 @@ public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlay
         }catch(SQLException e){
             LOG.log(Level.SEVERE, "Could not clear vice captain", e);
             throw new DataAccessException("Could not clear vice captain", e);
+        }
+    }
+
+    @Override
+    public List<PlayerSelectionCount> findMostSelectedPlayers(int limit) {
+        String query = """
+            SELECT playerId, COUNT(*) AS selectionCount
+            FROM team_player_selection
+            GROUP BY playerId
+            ORDER BY selectionCount DESC
+            LIMIT ?""";
+        try(Connection con = getConnection();
+        PreparedStatement ps = con.prepareStatement(query)){
+            ps.setInt(1, limit);
+            try(ResultSet rs = ps.executeQuery()){
+                List<PlayerSelectionCount> playerSelectionCounts = new ArrayList<>();
+                while(rs.next()){
+                playerSelectionCounts.add(new PlayerSelectionCount(UUID.fromString(rs.getString("playerId")), rs.getInt("selectionCount")));
+                }
+                return playerSelectionCounts;
+            }
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE, "Could not find most selected players", e);
+            throw new DataAccessException("Could not find most selected players", e);
         }
     }
 }

@@ -2,6 +2,7 @@ package com.vzap.trytons.dao.fantasyteam;
 
 
 import com.vzap.trytons.enums.SquadRole;
+import com.vzap.trytons.model.fantasyteam.PlayerSelectionCount;
 import com.vzap.trytons.model.fantasyteam.TeamPlayerSelection;
 import java.util.List;
 import java.util.Optional;
@@ -18,4 +19,5 @@ public interface FantasyTeamPlayerDAO {
     boolean setViceCaptain(UUID teamId, UUID playerId);
     boolean clearCaptain(UUID teamId);
     boolean clearViceCaptain(UUID teamId);
+    List<PlayerSelectionCount> findMostSelectedPlayers(int limit);
 }

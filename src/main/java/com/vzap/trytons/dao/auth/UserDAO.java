@@ -25,5 +25,6 @@ public interface UserDAO {
     List<User> searchUsers(String searchTerm);
 
     boolean updateActiveStatus(UUID userId, boolean isActive);
+    List<User> getActiveUsers();
 
 }
