@@ -40,7 +40,6 @@ DROP TABLE IF EXISTS `simulationSettings`;
 DROP TABLE IF EXISTS `roundLock`;
 DROP TABLE IF EXISTS `log`;
 DROP TABLE IF EXISTS `notification`;
-DROP TABLE IF EXISTS `leagueInvitation`;
 DROP TABLE IF EXISTS `fantasy_team_round_selection`;
 DROP TABLE IF EXISTS `player_statistics_correction`;
 DROP TABLE IF EXISTS `fantasy_point_breakdown`;
@@ -355,53 +354,6 @@ CREATE TABLE `league`
         CHECK (
             (`leagueType` = 'PRIVATE' AND `leagueCode` IS NOT NULL)
                 OR (`leagueType` = 'PUBLIC' AND `leagueCode` IS NULL)
-            )
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_0900_ai_ci;
-
-/* Invitations are part of league membership management, not a messaging system. */
-CREATE TABLE `leagueInvitation`
-(
-    `invitationId`       VARCHAR(36) NOT NULL,
-    `leagueId`           VARCHAR(36) NOT NULL,
-    `invited_user_id`    VARCHAR(36) NOT NULL,
-    `invited_by_user_id` VARCHAR(36) NOT NULL,
-    `status`             ENUM('PENDING', 'ACCEPTED', 'DECLINED', 'EXPIRED', 'REVOKED') NOT NULL DEFAULT 'PENDING',
-    `sentDate`           DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `expiresAt`          DATETIME             DEFAULT NULL,
-    `status_changed_at`  DATETIME             DEFAULT NULL,
-
-    PRIMARY KEY (`invitationId`),
-    KEY                  `idx_leagueInvitation_league_status` (`leagueId`, `status`),
-    KEY                  `idx_leagueInvitation_invited_user` (`invited_user_id`, `status`),
-    KEY                  `idx_leagueInvitation_inviter` (`invited_by_user_id`),
-
-    CONSTRAINT `fk_leagueInvitation_league`
-        FOREIGN KEY (`leagueId`) REFERENCES `league` (`leagueId`)
-            ON DELETE CASCADE
-            ON UPDATE CASCADE,
-
-    CONSTRAINT `fk_leagueInvitation_invited_user`
-        FOREIGN KEY (`invited_user_id`) REFERENCES `registeredUser` (`userId`)
-            ON DELETE RESTRICT
-            ON UPDATE CASCADE,
-
-    CONSTRAINT `fk_leagueInvitation_inviter`
-        FOREIGN KEY (`invited_by_user_id`) REFERENCES `registeredUser` (`userId`)
-            ON DELETE RESTRICT
-            ON UPDATE CASCADE,
-
-    CONSTRAINT `chk_leagueInvitation_users_different`
-        CHECK (`invited_user_id` <> `invited_by_user_id`),
-
-    CONSTRAINT `chk_leagueInvitation_expiry`
-        CHECK (`expiresAt` IS NULL OR `expiresAt` > `sentDate`),
-
-    CONSTRAINT `chk_leagueInvitation_status_date`
-        CHECK (
-            (`status` = 'PENDING' AND `status_changed_at` IS NULL)
-                OR (`status` <> 'PENDING' AND `status_changed_at` IS NOT NULL)
             )
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
@@ -1010,7 +962,6 @@ CREATE TABLE `notification`
                                 'PLAYER_AVAILABILITY',
                                 'TRANSFER_DEADLINE',
                                 'ROUND_LOCK',
-                                'LEAGUE_INVITATION',
                                 'SYSTEM'
                             ) NOT NULL,
     `body`                TEXT        NOT NULL,
@@ -1304,50 +1255,6 @@ BEGIN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'League manager must be an active member of the league';
 END IF;
-END$$
-
-CREATE TRIGGER `trg_leagueInvitation_integrity_insert`
-    BEFORE INSERT
-    ON `leagueInvitation`
-    FOR EACH ROW
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM `league`
-        WHERE `leagueId` = NEW.`leagueId`
-          AND `manager_user_id` = NEW.`invited_by_user_id`
-          AND `isActive` = TRUE
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Only the active league manager may create a league invitation';
-    END IF;
-
-    IF EXISTS (
-        SELECT 1
-        FROM `leagueMembership`
-        WHERE `leagueId` = NEW.`leagueId`
-          AND `registered_user_id` = NEW.`invited_user_id`
-          AND `isActive` = TRUE
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'An active league member cannot be invited again';
-    END IF;
-
-    IF EXISTS (
-        SELECT 1
-        FROM `leagueInvitation`
-        WHERE `leagueId` = NEW.`leagueId`
-          AND `invited_user_id` = NEW.`invited_user_id`
-          AND `status` = 'PENDING'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'A pending invitation already exists for this user and league';
-    END IF;
-
-    IF NEW.`status` <> 'PENDING' THEN
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'A new league invitation must start in PENDING status';
-    END IF;
 END$$
 
 CREATE TRIGGER `trg_leagueMembership_manager_update`
