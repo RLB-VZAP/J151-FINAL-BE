@@ -24,6 +24,8 @@ public class Transfer {
     private UUID roundId;
     private UUID teamId;
     private UUID removedPlayerId;
+    private String removedPlayerName;
+    private String addedPlayerName;
     private UUID addedPlayerId;
     private UUID createdByUserId;
 

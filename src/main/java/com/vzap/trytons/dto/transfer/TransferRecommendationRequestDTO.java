@@ -11,6 +11,7 @@ import java.util.UUID;
 @Getter
 @Setter
 public class TransferRecommendationRequestDTO {
+    @NotNull(message = "Team ID is required")
     private UUID teamId;
     private UUID currentPlayerId;
 }
