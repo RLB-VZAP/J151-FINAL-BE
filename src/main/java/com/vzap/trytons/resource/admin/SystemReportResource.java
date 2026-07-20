@@ -1,7 +1,7 @@
 package com.vzap.trytons.resource.admin;
 
-import com.vzap.trytons.Annotations.AdminOnly;
-import com.vzap.trytons.Annotations.Authenticated;
+import com.vzap.trytons.annotations.AdminOnly;
+import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dto.admin.SystemReportRequestDTO;
 import com.vzap.trytons.dto.admin.SystemReportResponseDTO;
 import com.vzap.trytons.dto.shared.ErrorResponseDTO;

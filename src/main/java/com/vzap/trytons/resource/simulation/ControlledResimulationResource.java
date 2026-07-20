@@ -1,7 +1,7 @@
 package com.vzap.trytons.resource.simulation;
 
-import com.vzap.trytons.Annotations.AdminOnly;
-import com.vzap.trytons.Annotations.Authenticated;
+import com.vzap.trytons.annotations.AdminOnly;
+import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dto.shared.ErrorResponseDTO;
 import com.vzap.trytons.dto.simulation.ResimulationRequestDTO;
 import com.vzap.trytons.dto.simulation.ResimulationResponseDTO;

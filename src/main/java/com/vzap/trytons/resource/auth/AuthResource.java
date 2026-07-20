@@ -1,6 +1,6 @@
 package com.vzap.trytons.resource.auth;
 
-import com.vzap.trytons.Annotations.Authenticated;
+import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dto.auth.AuthStatusResponseDTO;
 import com.vzap.trytons.dto.auth.LoginRequestDTO;
 import com.vzap.trytons.dto.auth.LoginResponseDTO;

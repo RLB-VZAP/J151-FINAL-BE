@@ -1,6 +1,6 @@
 package com.vzap.trytons.resource.results;
 
-import com.vzap.trytons.Annotations.Authenticated;
+import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dto.shared.ErrorResponseDTO;
 import com.vzap.trytons.dto.results.PlayerStatisticsRequestDTO;
 import com.vzap.trytons.dto.results.PlayerStatisticsResponseDTO;

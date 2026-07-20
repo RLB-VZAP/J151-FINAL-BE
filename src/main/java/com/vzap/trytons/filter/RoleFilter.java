@@ -1,6 +1,6 @@
 package com.vzap.trytons.filter;
 
-import com.vzap.trytons.Annotations.AdminOnly;
+import com.vzap.trytons.annotations.AdminOnly;
 import com.vzap.trytons.exceptions.AuthenticationException;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.security.AuthPrincipal;
