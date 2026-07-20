@@ -5,6 +5,7 @@ import com.vzap.trytons.filter.RoleFilter;
 import com.vzap.trytons.mapper.ApplicationExceptionMapper;
 import com.vzap.trytons.mapper.JAXExceptionMapper;
 import com.vzap.trytons.resource.admin.AdminUserResource;
+import com.vzap.trytons.resource.admin.SystemReportResource;
 import com.vzap.trytons.resource.auth.AuthResource;
 import com.vzap.trytons.resource.auth.UserResources;
 import com.vzap.trytons.resource.catalog.ClubResource;
@@ -59,6 +60,7 @@ public class RestApplication extends Application {
                 PositionResource.class,
                 ScoringRuleResource.class,
                 SimulationSettingResource.class,
+                SystemReportResource.class,
                 TransferRecommendationResource.class,
                 TransferResource.class,
                 UserHistoryResource.class,

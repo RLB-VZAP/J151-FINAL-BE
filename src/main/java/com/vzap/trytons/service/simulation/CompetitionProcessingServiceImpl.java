@@ -10,6 +10,6 @@ public class CompetitionProcessingServiceImpl implements CompetitionProcessingSe
 
     @Override
     public CompetitionProcessingSummaryDTO processDueWork(UUID actorUserId) {
-        return new CompetitionProcessingSummaryDTO();
+        // TODO: Find fixtures and rounds whose scheduled processing is due, run the appropriate simulation/scoring/leaderboard-refresh work for each, and return a CompetitionProcessingSummaryDTO describing what was processed.
     }
 }

@@ -21,12 +21,12 @@ public class ControlledResimulationResource {
 
     @POST
     public Response resimulateFixture(ResimulationRequestDTO request) {
-        throw new UnsupportedOperationException("ControlledResimulationResource.resimulateFixture is a stub for W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after ControlledResimulationServiceImpl orchestration rules are confirmed.");
+        // TODO (W3-BE-DATABASE-LOGIC-FIX-05A): Resolve the authenticated administrator, call ControlledResimulationServiceImpl.resimulateFixture with their id and the request, and return the resulting ResimulationResponseDTO.
     }
 
     @GET
     @Path("/fixture/{fixtureId}")
     public Response listResimulationsForFixture(@PathParam("fixtureId") UUID fixtureId) {
-        throw new UnsupportedOperationException("ControlledResimulationResource.listResimulationsForFixture is a stub for W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after result-history and resimulation response mapping are confirmed.");
+        // TODO (W3-BE-DATABASE-LOGIC-FIX-05A): Call ControlledResimulationServiceImpl.listResimulationsForFixture with the given fixtureId and return the list of ResimulationResponseDTO.
     }
 }

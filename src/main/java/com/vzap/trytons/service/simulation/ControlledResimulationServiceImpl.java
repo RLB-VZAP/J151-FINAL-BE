@@ -12,11 +12,11 @@ public class ControlledResimulationServiceImpl implements ControlledResimulation
 
     @Override
     public ResimulationResponseDTO resimulateFixture(UUID actorUserId, ResimulationRequestDTO request) {
-        throw new UnsupportedOperationException("ControlledResimulationServiceImpl.resimulateFixture is a stub for W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after MatchResultServiceImpl orchestration, result versioning, and approval rules are confirmed.");
+        // TODO (W3-BE-DATABASE-LOGIC-FIX-05A): Validate the actor is an authorised administrator, re-run the simulation for the requested fixture, version the previous result, apply the approval/resimulation-count rules from MatchResultServiceImpl orchestration, and return the new ResimulationResponseDTO.
     }
 
     @Override
     public List<ResimulationResponseDTO> listResimulationsForFixture(UUID fixtureId) {
-        throw new UnsupportedOperationException("ControlledResimulationServiceImpl.listResimulationsForFixture is a stub for W3-BE-DATABASE-LOGIC-FIX-05A. " + "Implement after MatchResultDAO result-history methods are ready.");
+        // TODO (W3-BE-DATABASE-LOGIC-FIX-05A): Load the result history for the given fixture from MatchResultDAO and map each entry to a ResimulationResponseDTO.
     }
 }
