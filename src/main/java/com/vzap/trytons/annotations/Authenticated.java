@@ -1,4 +1,4 @@
-package com.vzap.trytons.Annotations;
+package com.vzap.trytons.annotations;
 
 import jakarta.ws.rs.NameBinding;
 
@@ -13,5 +13,5 @@ import java.lang.annotation.Target;
         ElementType.TYPE,
         ElementType.METHOD
 })
-public @interface AdminOnly {
+public @interface Authenticated {
 }
