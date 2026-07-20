@@ -5,6 +5,7 @@ import com.vzap.trytons.filter.RoleFilter;
 import com.vzap.trytons.mapper.ApplicationExceptionMapper;
 import com.vzap.trytons.mapper.JAXExceptionMapper;
 import com.vzap.trytons.resource.admin.AdminUserResource;
+import com.vzap.trytons.resource.admin.DatabaseHealthResource;
 import com.vzap.trytons.resource.admin.SystemReportResource;
 import com.vzap.trytons.resource.auth.AuthResource;
 import com.vzap.trytons.resource.auth.UserResources;
@@ -21,6 +22,7 @@ import com.vzap.trytons.resource.notification.NotificationResource;
 import com.vzap.trytons.resource.results.MatchResultResource;
 import com.vzap.trytons.resource.results.MatchTeamScoreResource;
 import com.vzap.trytons.resource.results.PlayerStatisticsResource;
+import com.vzap.trytons.resource.shared.ProtectedResource;
 import com.vzap.trytons.resource.scoring.FantasyPointBreakdownResource;
 import com.vzap.trytons.resource.scoring.FantasyPointsResource;
 import com.vzap.trytons.resource.scoring.ScoringRuleResource;
@@ -45,6 +47,7 @@ public class RestApplication extends Application {
                 AuthResource.class,
                 ClubResource.class,
                 ControlledResimulationResource.class,
+                DatabaseHealthResource.class,
                 FantasyPointBreakdownResource.class,
                 FantasyPointsResource.class,
                 FantasyTeamResource.class,
@@ -58,6 +61,7 @@ public class RestApplication extends Application {
                 PlayerResource.class,
                 PlayerStatisticsResource.class,
                 PositionResource.class,
+                ProtectedResource.class,
                 ScoringRuleResource.class,
                 SimulationSettingResource.class,
                 SystemReportResource.class,
