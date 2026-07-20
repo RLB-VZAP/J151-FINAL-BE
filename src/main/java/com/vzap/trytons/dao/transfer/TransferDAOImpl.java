@@ -264,15 +264,11 @@ public class TransferDAOImpl extends BaseDAO implements TransferDAO {
         round.setRoundId(UUID.fromString(rs.getString("roundId")));
         transfer.setRoundId(round.getRoundId());
 
-        Player removed = new Player();
-        removed.setPlayerId(UUID.fromString(rs.getString("removed_player_id")));
-        removed.setPlayerName(rs.getString("removed_player_name"));
-        transfer.setRemovedPlayerId(removed.getPlayerId());
+        transfer.setRemovedPlayerId(UUID.fromString(rs.getString("removed_player_id")));
+        transfer.setRemovedPlayerName(rs.getString("removed_player_name"));
 
-        Player added = new Player();
-        added.setPlayerId(UUID.fromString(rs.getString("added_player_id")));
-        added.setPlayerName(rs.getString("added_player_name"));
-        transfer.setAddedPlayerId(added.getPlayerId());
+        transfer.setAddedPlayerId(UUID.fromString(rs.getString("added_player_id")));
+        transfer.setAddedPlayerName(rs.getString("added_player_name"));
 
         RegisteredUser createdBy = new RegisteredUser();
         createdBy.setUserId(UUID.fromString(rs.getString("created_by_user_id")));
