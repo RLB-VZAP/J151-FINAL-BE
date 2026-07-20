@@ -311,13 +311,13 @@ CREATE TABLE `playerRecommendation`
 
     CONSTRAINT `fk_playerRecommendation_current_player`
         FOREIGN KEY (`current_player_id`) REFERENCES `player` (`playerId`)
-            ON DELETE SET NULL
-            ON UPDATE CASCADE,
+            ON DELETE RESTRICT
+            ON UPDATE RESTRICT,
 
     CONSTRAINT `fk_playerRecommendation_recommended_player`
         FOREIGN KEY (`recommended_player_id`) REFERENCES `player` (`playerId`)
             ON DELETE RESTRICT
-            ON UPDATE CASCADE,
+            ON UPDATE RESTRICT,
 
     CONSTRAINT `chk_playerRecommendation_players_different`
         CHECK (`current_player_id` IS NULL OR `current_player_id` <> `recommended_player_id`)
@@ -462,12 +462,12 @@ CREATE TABLE `transfer`
     CONSTRAINT `fk_transfer_removed_player`
         FOREIGN KEY (`removed_player_id`) REFERENCES `player` (`playerId`)
             ON DELETE RESTRICT
-            ON UPDATE CASCADE,
+            ON UPDATE RESTRICT,
 
     CONSTRAINT `fk_transfer_added_player`
         FOREIGN KEY (`added_player_id`) REFERENCES `player` (`playerId`)
             ON DELETE RESTRICT
-            ON UPDATE CASCADE,
+            ON UPDATE RESTRICT,
 
     CONSTRAINT `chk_transfer_players_different`
         CHECK (`removed_player_id` <> `added_player_id`),
@@ -659,7 +659,7 @@ CREATE TABLE `matchResult`
     CONSTRAINT `fk_matchResult_approved_by_admin`
         FOREIGN KEY (`approved_by_admin_user_id`) REFERENCES `administrator` (`userId`)
             ON DELETE RESTRICT
-            ON UPDATE CASCADE,
+            ON UPDATE RESTRICT,
 
     CONSTRAINT `chk_matchResult_simulation_run`
         CHECK (`simulation_run_number` > 0),
@@ -769,7 +769,7 @@ CREATE TABLE `playerStatistics`
     CONSTRAINT `fk_playerStatistics_corrected_by_admin`
         FOREIGN KEY (`corrected_by_admin_user_id`) REFERENCES `administrator` (`userId`)
             ON DELETE RESTRICT
-            ON UPDATE CASCADE,
+            ON UPDATE RESTRICT,
 
     CONSTRAINT `chk_playerStatistics_non_negative`
         CHECK (
