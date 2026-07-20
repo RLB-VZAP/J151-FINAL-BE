@@ -1,6 +1,6 @@
 package com.vzap.trytons.resource.notification;
 
-import com.vzap.trytons.Annotations.Authenticated;
+import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dto.notification.NotificationResponseDTO;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;

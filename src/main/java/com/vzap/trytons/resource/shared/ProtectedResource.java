@@ -1,6 +1,6 @@
 package com.vzap.trytons.resource.shared;
 
-import com.vzap.trytons.Annotations.Authenticated;
+import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
 import jakarta.servlet.http.HttpServlet;
@@ -14,7 +14,7 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.Map;
 
-// Protected-endpoint smoke test: confirms AuthFilter/@Authenticated is wired end to end by echoing
+// Protected-endpoint smoke test: confims AuthFilter/@Authenticated is wired end to end by echoing
 // back the identity it resolved for the caller (see FTL-Architecture-and-Auth-Flow.md, "Backend architecture").
 @Authenticated
 @Path("/protected")

@@ -1,6 +1,6 @@
 package com.vzap.trytons.resource.admin;
 
-import com.vzap.trytons.Annotations.Authenticated;
+import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dto.admin.AdminUserSearchResponseDTO;
 import com.vzap.trytons.dto.admin.AdminUserStatusRequestDTO;
 import com.vzap.trytons.dto.admin.AdminUserStatusResponseDTO;
