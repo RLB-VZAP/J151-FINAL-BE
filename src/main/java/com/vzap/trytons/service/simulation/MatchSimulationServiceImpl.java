@@ -164,6 +164,5 @@ public class MatchSimulationServiceImpl implements MatchSimulationService {
         long randomSeed = fixtureId.hashCode() + simulationRunNumber;
         Random random = new Random(randomSeed);
 
-        Random random = new Random(randomSeed);
     }
 }
