@@ -1,5 +1,6 @@
 package com.vzap.trytons.service.league;
 
+import com.vzap.trytons.dao.auth.RegisteredUserDAO;
 import com.vzap.trytons.dao.fantasyteam.FantasyTeamDAO;
 import com.vzap.trytons.dao.league.LeagueDAO;
 import com.vzap.trytons.dao.league.LeagueMembershipDAO;
@@ -14,6 +15,7 @@ import com.vzap.trytons.exceptions.BusinessRuleException;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.exceptions.ValidationException;
+import com.vzap.trytons.model.auth.RegisteredUser;
 import com.vzap.trytons.model.fantasyteam.FantasyTeam;
 import com.vzap.trytons.model.league.League;
 import com.vzap.trytons.model.league.LeagueMembership;
@@ -35,6 +37,9 @@ public class LeagueServiceImpl implements LeagueService {
 
     @Inject
     private FantasyTeamDAO fantasyTeamDAO;
+
+    @Inject
+    private RegisteredUserDAO registeredUserDAO;
 
     @Override
     public LeagueResponseDTO createLeague(LeagueRequestDTO request, UUID currentUserId) {
@@ -124,6 +129,24 @@ public class LeagueServiceImpl implements LeagueService {
             if (league.getLeagueType() == LeagueType.PUBLIC
                     || isLeagueMember(league.getLeagueId(), currentUserId)) {
 
+                responses.add(toResponse(league));
+            }
+        }
+
+        return responses;
+    }
+
+    @Override
+    public List<LeagueResponseDTO> getMyLeagues(UUID currentUserId) {
+        if (currentUserId == null) {
+            throw new ValidationException("Current user ID is required.");
+        }
+
+        List<League> leagues = leagueDAO.findAllLeagues();
+        List<LeagueResponseDTO> responses = new ArrayList<>();
+
+        for (League league : leagues) {
+            if (isLeagueMember(league.getLeagueId(), currentUserId)) {
                 responses.add(toResponse(league));
             }
         }
@@ -355,8 +378,17 @@ public class LeagueServiceImpl implements LeagueService {
 
         LeagueMemberResponseDTO response = new LeagueMemberResponseDTO();
         response.setMembershipId(membership.getMembershipId());
-        response.setUserId(membership.getRegisteredUserId());
-        response.setTeamId(membership.getTeamId());
+
+        String teamDisplayName = fantasyTeamDAO.getTeamById(membership.getTeamId())
+                .map(FantasyTeam::getTeamName)
+                .orElse("Unknown Team");
+        response.setTeamDisplayName(teamDisplayName);
+
+        String userDisplayName = registeredUserDAO.getRegisteredUserById(membership.getRegisteredUserId())
+                .map(RegisteredUser::getUsername)
+                .orElse("Unknown User");
+        response.setUserDisplayName(userDisplayName);
+
         response.setJoinDate(membership.getJoinDate());
         response.setIsActive(membership.getIsActive());
         return response;

@@ -14,8 +14,8 @@ import java.util.UUID;
 @AllArgsConstructor
 public class LeagueMemberResponseDTO {
     private UUID membershipId;
-    private UUID userId;
-    private UUID teamId;
+    private String userDisplayName;
+    private String teamDisplayName;
     private LocalDateTime joinDate;
     private Boolean isActive;
 }

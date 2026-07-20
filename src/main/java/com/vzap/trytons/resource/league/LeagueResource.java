@@ -77,9 +77,12 @@ public class LeagueResource {
     }
 
     @GET
-    public Response getAllLeagues() {
+    public Response getAllLeagues(@QueryParam("mine") boolean mine) {
         try{
-            return Response.ok(leagueService.getAllLeagues(getCurrentUserId())).build();
+            List<LeagueResponseDTO> leagues = mine
+                    ? leagueService.getMyLeagues(getCurrentUserId())
+                    : leagueService.getAllLeagues(getCurrentUserId());
+            return Response.ok(leagues).build();
         }catch(DataAccessException e){
             return serverError("Failed to get Leagues", e);
         } catch (Exception e) {

@@ -19,6 +19,8 @@ public interface LeagueService {
 
     List<LeagueResponseDTO> getAllLeagues(UUID currentUserId);
 
+    List<LeagueResponseDTO> getMyLeagues(UUID currentUserId);
+
     JoinLeagueResponseDTO joinLeague(JoinLeagueRequestDTO request, UUID currentUserId);
 
     List<LeagueMemberResponseDTO> listMembers(String actorUserId, String leagueId);
