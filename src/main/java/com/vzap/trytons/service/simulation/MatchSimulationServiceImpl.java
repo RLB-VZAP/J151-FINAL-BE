@@ -9,6 +9,6 @@ import java.util.UUID;
 public class MatchSimulationServiceImpl implements MatchSimulationService {
     @Override
     public MatchResultResponseDTO simulateFixture(UUID actorUserId, UUID fixtureId) {
-        throw new UnsupportedOperationException("MatchSimulationServiceImpl.simulateFixture is a stub.");
+        // TODO: Generate a simulated match result for the fixture from the locked squad snapshots, using player abilities, form, fitness and availability plus the active simulation settings, persist the result, and return it as a MatchResultResponseDTO.
     }
 }
