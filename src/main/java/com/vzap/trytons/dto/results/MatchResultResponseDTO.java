@@ -3,6 +3,7 @@ package com.vzap.trytons.dto.results;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.vzap.trytons.enums.MatchTeamSide;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -12,6 +13,7 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class MatchResultResponseDTO {
     private UUID resultId;
     private UUID fixtureId;
