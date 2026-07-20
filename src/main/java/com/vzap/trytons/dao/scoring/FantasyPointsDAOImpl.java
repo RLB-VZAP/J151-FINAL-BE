@@ -2,6 +2,7 @@ package com.vzap.trytons.dao.scoring;
 
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.scoring.FantasyPoints;
+import com.vzap.trytons.model.scoring.PlayerPointSummary;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.sql.Connection;
@@ -167,6 +168,27 @@ public class FantasyPointsDAOImpl extends BaseDAO implements FantasyPointsDAO {
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to total final fantasy points for player.", e);
             throw new DataAccessException("Unable to total final fantasy points for player.", e);
+        }
+    }
+
+    @Override
+    public List<PlayerPointSummary> findTopPlayerByFinalPoints(int limit) {
+        String query = "SELECT ps.playerId AS playerId, SUM(fp.totalPoints) AS totalPoints FROM fantasyPoints fp JOIN" +
+                "playerStatistics ps ON ps.statId = fp.statId WHERE fp.isFinal = TRUE" +
+                " GROUP BY ps.playerId ORDER BY totalPoints DESC LIMIT ?";
+        try(Connection con = getConnection();
+        PreparedStatement ps = con.prepareStatement(query)){
+            ps.setInt(1, limit);
+            try(ResultSet rs = ps.executeQuery()){
+                List<PlayerPointSummary> summaries = new ArrayList<>();
+                while(rs.next()){
+                    summaries.add(new PlayerPointSummary(UUID.fromString(rs.getString("playerId")), rs.getBigDecimal("totalPoints")));
+                }
+                return summaries;
+            }
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE, "Unable to find players by final points.", e);
+            throw new DataAccessException("Unable to find players by final points.", e);
         }
     }
 }
