@@ -1,6 +1,6 @@
 package com.vzap.trytons.resource.league;
 
-import com.vzap.trytons.Annotations.Authenticated;
+import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dto.shared.ErrorResponseDTO;
 import com.vzap.trytons.dto.league.JoinLeagueRequestDTO;
 import com.vzap.trytons.dto.league.JoinLeagueResponseDTO;

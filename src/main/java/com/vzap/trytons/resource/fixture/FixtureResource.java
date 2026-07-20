@@ -1,7 +1,7 @@
 package com.vzap.trytons.resource.fixture;
 
-import com.vzap.trytons.Annotations.AdminOnly;
-import com.vzap.trytons.Annotations.Authenticated;
+import com.vzap.trytons.annotations.AdminOnly;
+import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dto.shared.ErrorResponseDTO;
 import com.vzap.trytons.dto.fixture.FixtureRequestDTO;
 import com.vzap.trytons.dto.fixture.FixtureResponseDTO;
