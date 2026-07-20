@@ -1,7 +1,9 @@
 USE
-tryton_fantasy_rugby;
+`tryton_fantasy_rugby`;
 
-    SET
+START TRANSACTION;
+
+SET
 @adminId = UUID();
     SET
 @johnId = UUID();
@@ -27,7 +29,7 @@ david	david@test.com	David@12345
 lisa	lisa@test.com	Lisa@12345
 tom	tom@test.com	Tom@12345
  */
-INSERT INTO user
+INSERT INTO `user`
     (userId, email, passwordHash, username, role)
 VALUES (@adminId, 'admin@tritan.com', '$2a$12$ToCAGmBUmoJd5p1LWWewHeCDD8sy/lQmYzUUCv9Wf701EtxoqIpIC', 'admin',
         'ADMINISTRATOR'),
@@ -46,10 +48,10 @@ VALUES (@adminId, 'admin@tritan.com', '$2a$12$ToCAGmBUmoJd5p1LWWewHeCDD8sy/lQmYz
        (@tomId, 'tom@test.com', '$2a$12$F30/FCjnU6wbrvgMoaL2j.RaU8YQdqhz51NgaGBAoLNFCg.OIzmY6', 'tom',
         'REGISTERED_USER');
 
-INSERT INTO administrator(userId, adminLevel)
+INSERT INTO `administrator`(userId, adminLevel)
 VALUES (@adminId, 5);
 
-INSERT INTO registeredUser(userId, registrationStatus)
+INSERT INTO `registeredUser`(userId, registrationStatus)
 VALUES (@johnId, 'ACTIVE'),
        (@sarahId, 'ACTIVE'),
        (@mikeId, 'ACTIVE'),
@@ -72,7 +74,7 @@ SET
     SET
 @pumasClub = UUID();
 
-INSERT INTO club
+INSERT INTO `club`
     (clubId, clubName, location, homeVenue)
 VALUES (@bullsClub, 'Bulls', 'Pretoria', 'Loftus Versfeld'),
        (@sharksClub, 'Sharks', 'Durban', 'Kings Park'),
@@ -100,7 +102,7 @@ SET
     SET
 @fullbackId = UUID();
 
-INSERT INTO position
+INSERT INTO `position`
     (positionId, positionName, positionCategory, minRequired, maxAllowed)
 VALUES (@propId, 'Prop', 'FORWARD', 2, 4),
        (@hookerId, 'Hooker', 'FORWARD', 1, 2),
@@ -179,7 +181,7 @@ SET
     SET
 @p33 = UUID();
 
-INSERT INTO player
+INSERT INTO `player`
 (playerId, clubId, positionId, playerName, value,
  attackingAbility, defensiveAbility, kickingAbility,
  discipline, consistency, fitness, currentForm)
@@ -223,7 +225,7 @@ VALUES (@p1, @bullsClub, @flyhalfId, 'Johan van Wyk', 12.5, 88, 72, 91, 80, 85, 
        (@p32, @sharksClub, @scrumhalfId, 'Thabo Mokoena', 10.7, 83, 75, 72, 84, 82, 88, 84),
        (@p33, @stormersClub, @scrumhalfId, 'Daniel van Zyl', 10.3, 81, 74, 70, 85, 83, 87, 82);
 
-INSERT INTO playerAvailability
+INSERT INTO `playerAvailability`
     (availabilityId, playerId, status, effectiveDate)
 VALUES (UUID(), @p1, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p2, 'ACTIVE', CURRENT_DATE()),
@@ -270,7 +272,7 @@ SET
     SET
 @team5 = UUID();
 
-INSERT INTO fantasyTeam
+INSERT INTO `fantasyTeam`
 (teamId,
  owner_user_id,
  teamName,
@@ -282,41 +284,72 @@ VALUES (@team1, @johnId, 'John Warriors', 5.00, TRUE),
        (@team4, @emmaId, 'Emma Eagles', 6.00, TRUE),
        (@team5, @davidId, 'David Dragons', 11.00, TRUE);
 
-INSERT INTO team_player_selection
+INSERT INTO `team_player_selection`
     (selectionId, teamId, playerId, squadRole, isCaptain, is_vice_captain)
-SELECT UUID(), teams.teamId, players.playerId,
+SELECT UUID(),
+       teams.teamId,
+       players.playerId,
        CASE
            WHEN players.playerId IN (@p31, @p24, @p25, @p33, @p6) THEN 'BENCH'
            ELSE 'STARTING'
-       END,
+           END,
        players.playerId = @p1,
        players.playerId = @p3
-FROM (
-         SELECT @team1 AS teamId UNION ALL
-         SELECT @team2 UNION ALL
-         SELECT @team3 UNION ALL
-         SELECT @team4 UNION ALL
-         SELECT @team5
-     ) AS teams
-CROSS JOIN (
-         SELECT @p5 AS playerId UNION ALL
-         SELECT @p20 UNION ALL SELECT @p31 UNION ALL
-         SELECT @p9 UNION ALL SELECT @p24 UNION ALL
-         SELECT @p4 UNION ALL SELECT @p14 UNION ALL SELECT @p25 UNION ALL
-         SELECT @p10 UNION ALL SELECT @p19 UNION ALL SELECT @p29 UNION ALL
-         SELECT @p32 UNION ALL SELECT @p33 UNION ALL
-         SELECT @p1 UNION ALL SELECT @p6 UNION ALL
-         SELECT @p3 UNION ALL SELECT @p7 UNION ALL
-         SELECT @p2 UNION ALL SELECT @p8 UNION ALL
-         SELECT @p15
-     ) AS players;
+FROM (SELECT @team1 AS teamId
+      UNION ALL
+      SELECT @team2
+      UNION ALL
+      SELECT @team3
+      UNION ALL
+      SELECT @team4
+      UNION ALL
+      SELECT @team5) AS teams
+         CROSS JOIN (SELECT @p5 AS playerId
+                     UNION ALL
+                     SELECT @p20
+                     UNION ALL
+                     SELECT @p31
+                     UNION ALL
+                     SELECT @p9
+                     UNION ALL
+                     SELECT @p24
+                     UNION ALL
+                     SELECT @p4
+                     UNION ALL
+                     SELECT @p14
+                     UNION ALL
+                     SELECT @p25
+                     UNION ALL
+                     SELECT @p10
+                     UNION ALL
+                     SELECT @p19
+                     UNION ALL
+                     SELECT @p29
+                     UNION ALL
+                     SELECT @p32
+                     UNION ALL
+                     SELECT @p33
+                     UNION ALL
+                     SELECT @p1
+                     UNION ALL
+                     SELECT @p6
+                     UNION ALL
+                     SELECT @p3
+                     UNION ALL
+                     SELECT @p7
+                     UNION ALL
+                     SELECT @p2
+                     UNION ALL
+                     SELECT @p8
+                     UNION ALL
+                     SELECT @p15) AS players;
 
 SET
 @publicLeague = UUID();
     SET
 @privateLeague = UUID();
 
-INSERT INTO league
+INSERT INTO `league`
 (leagueId,
  manager_user_id,
  leagueName,
@@ -330,7 +363,7 @@ VALUES (@publicLeague,
         'PUBLIC',
         100);
 
-INSERT INTO league
+INSERT INTO `league`
 (leagueId,
  manager_user_id,
  leagueName,
@@ -341,13 +374,13 @@ INSERT INTO league
 VALUES (@privateLeague,
         NULL,
         'Friends Rugby League',
-        'Private invite-only league',
+        'Private code-entry league',
         'PRIVATE',
         'ABC123',
         20);
 
 
-INSERT INTO leagueMembership
+INSERT INTO `leagueMembership`
 (membershipId,
  leagueId,
  registered_user_id,
@@ -362,29 +395,42 @@ VALUES (UUID(), @publicLeague, @johnId, @team1),
        (UUID(), @privateLeague, @johnId, @team1),
        (UUID(), @privateLeague, @mikeId, @team3);
 
-UPDATE league SET manager_user_id = @johnId WHERE leagueId = @publicLeague;
-UPDATE league SET manager_user_id = @sarahId WHERE leagueId = @privateLeague;
+UPDATE `league`
+SET manager_user_id = @johnId
+WHERE leagueId = @publicLeague;
+UPDATE `league`
+SET manager_user_id = @sarahId
+WHERE leagueId = @privateLeague;
 
-SET @round1 = UUID();
-SET @round2 = UUID();
+SET
+@round1 = UUID();
+SET
+@round2 = UUID();
 
-INSERT INTO fantasyRound
+INSERT INTO `fantasyRound`
     (roundId, season, roundNumber, openDate, lockDeadline, endDate, status)
 VALUES (@round1, '2026', 1, '2026-07-01 00:00:00', '2026-07-07 23:59:59', '2026-07-14 23:59:59', 'LOCKED'),
        (@round2, '2026', 2, '2026-07-15 00:00:00', '2026-07-21 23:59:59', '2026-07-28 23:59:59', 'OPEN');
 
-INSERT INTO fantasy_team_round_selection
-    (selectionId, roundId, teamId, playerId, isCaptain, is_vice_captain)
-SELECT UUID(), @round1, currentSelection.teamId, currentSelection.playerId,
-       currentSelection.isCaptain, currentSelection.is_vice_captain
-FROM team_player_selection AS currentSelection
+INSERT INTO `fantasy_team_round_selection`
+(selectionId, roundId, teamId, playerId, squadRole, isCaptain, is_vice_captain)
+SELECT UUID(),
+       @round1,
+       currentSelection.teamId,
+       currentSelection.playerId,
+       currentSelection.squadRole,
+       currentSelection.isCaptain,
+       currentSelection.is_vice_captain
+FROM `team_player_selection` AS currentSelection
 WHERE currentSelection.teamId IN (@team1, @team2, @team3, @team4, @team5);
 
-INSERT INTO roundLock
+INSERT INTO `roundLock`
     (lockId, roundId, lockAction, action_by_admin_user_id, reason)
 VALUES (UUID(), @round1, 'LOCKED', @adminId, 'Round 1 locked for seed simulation data');
 
-UPDATE fantasyRound SET status = 'COMPLETED' WHERE roundId = @round1;
+UPDATE `fantasyRound`
+SET status = 'COMPLETED'
+WHERE roundId = @round1;
 
 SET
 @fixture1 = UUID();
@@ -393,7 +439,7 @@ SET
     SET
 @fixture3 = UUID();
 
-INSERT INTO fixture
+INSERT INTO `fixture`
 (fixtureId,
  leagueId,
  roundId,
@@ -448,7 +494,7 @@ SET
     SET
 @ruleRedCard = UUID();
 
-INSERT INTO scoringRule
+INSERT INTO `scoringRule`
 (ruleId,
  season,
  eventType,
@@ -511,7 +557,7 @@ SET
     SET
 @privateLeaderboard = UUID();
 
-INSERT INTO leaderboard
+INSERT INTO `leaderboard`
 (leaderboardId,
  leagueId,
  season,
@@ -529,7 +575,7 @@ VALUES (@masterLeaderboard,
         '2026',
         'LEAGUE');
 
-INSERT INTO ranking
+INSERT INTO `ranking`
 (rankingId,
  leaderboardId,
  teamId,
@@ -559,34 +605,7 @@ VALUES (UUID(), @masterLeaderboard, @team2, 1, NULL, 2, 1, 0, 1, 55, 55, 4, 55),
        (UUID(), @privateLeaderboard, @team3, 2, NULL, 0, 0, 0, 0, 0, 0, 0, 0),
        (UUID(), @privateLeaderboard, @team1, 3, NULL, 1, 0, 0, 1, 27, 31, 0, 27);
 
-SET
-@chat1 = UUID();
-    SET
-@chat2 = UUID();
-    SET
-@chat3 = UUID();
-
-INSERT INTO chatMessage
-(messageId,
- leagueId,
- sender_user_id,
- content)
-VALUES (@chat1,
-        @publicLeague,
-        @johnId,
-        'Welcome to the Global Fantasy Rugby League!'),
-
-       (@chat2,
-        @publicLeague,
-        @sarahId,
-        'Good luck everyone this season.'),
-
-       (@chat3,
-        @privateLeague,
-        @sarahId,
-        'Welcome to the private friends league.');
-
-INSERT INTO notification
+INSERT INTO `notification`
 (notificationId,
  userId,
  type,
@@ -602,10 +621,10 @@ VALUES (UUID(),
 
        (UUID(),
         @sarahId,
-        'LEAGUE_INVITATION',
-        'You have invited new members.',
-        'LEAGUE',
-        @privateLeague),
+        'ROUND_LOCK',
+        'Round 1 has been locked.',
+        'ROUND',
+        @round1),
 
        (UUID(),
         @mikeId,
@@ -621,23 +640,13 @@ VALUES (UUID(),
         'FIXTURE',
         @fixture1);
 
-INSERT INTO report
-(reportId,
- reporter_user_id,
- messageId,
- reported_user_id,
- reportReason,
- status)
-VALUES (UUID(),
-        @johnId,
-        @chat2,
-        @sarahId,
-        'Test moderation report',
-        'OPEN');
+SET
+@simulationSettingsId = UUID();
 
-INSERT INTO simulationSettings
+INSERT INTO `simulationSettings`
 (settingsId,
  season,
+ settingsVersion,
  player_ability_weight,
  player_form_weight,
  team_balance_weight,
@@ -646,8 +655,9 @@ INSERT INTO simulationSettings
  allowResimulation,
  maxResimulations,
  isActive)
-VALUES (UUID(),
+VALUES (@simulationSettingsId,
         '2026',
+        1,
         35.00,
         25.00,
         20.00,
@@ -660,12 +670,15 @@ VALUES (UUID(),
 
 SET
 @result1 = UUID();
-SET @result2 = UUID();
-SET @result3 = UUID();
+SET
+@result2 = UUID();
+SET
+@result3 = UUID();
 
-INSERT INTO matchResult
+INSERT INTO `matchResult`
 (resultId,
  fixtureId,
+ settingsId,
  team_a_score,
  team_b_score,
  winnerSide,
@@ -674,6 +687,7 @@ INSERT INTO matchResult
  simulation_run_number)
 VALUES (@result1,
         @fixture1,
+        @simulationSettingsId,
         28,
         24,
         'TEAM_A',
@@ -682,6 +696,7 @@ VALUES (@result1,
         1),
        (@result2,
         @fixture2,
+        @simulationSettingsId,
         18,
         18,
         NULL,
@@ -690,6 +705,7 @@ VALUES (@result1,
         1),
        (@result3,
         @fixture3,
+        @simulationSettingsId,
         31,
         27,
         'TEAM_A',
@@ -697,8 +713,8 @@ VALUES (@result1,
         FALSE,
         1);
 
-INSERT INTO match_team_score
-    (scoreId, resultId, teamId, teamSide, playerPoints, captainBonus, transferPenalty)
+INSERT INTO `match_team_score`
+(scoreId, resultId, teamId, teamSide, playerPoints, captainBonus, transferPenalty)
 VALUES (UUID(), @result1, @team1, 'TEAM_A', 25, 3, 0),
        (UUID(), @result1, @team2, 'TEAM_B', 22, 2, 0),
        (UUID(), @result2, @team3, 'TEAM_A', 16, 2, 0),
@@ -706,19 +722,25 @@ VALUES (UUID(), @result1, @team1, 'TEAM_A', 25, 3, 0),
        (UUID(), @result3, @team2, 'TEAM_A', 28, 3, 0),
        (UUID(), @result3, @team1, 'TEAM_B', 25, 2, 0);
 
-UPDATE matchResult
-SET approved = TRUE,
+UPDATE `matchResult`
+SET approved                  = TRUE,
     approved_by_admin_user_id = @adminId
 WHERE resultId IN (@result1, @result2, @result3);
 
-SET @stat1 = UUID();
-SET @stat2 = UUID();
-SET @stat3 = UUID();
-SET @stat4 = UUID();
-SET @stat5 = UUID();
-SET @stat6 = UUID();
+SET
+@stat1 = UUID();
+SET
+@stat2 = UUID();
+SET
+@stat3 = UUID();
+SET
+@stat4 = UUID();
+SET
+@stat5 = UUID();
+SET
+@stat6 = UUID();
 
-INSERT INTO playerStatistics
+INSERT INTO `playerStatistics`
 (statId,
  resultId,
  teamId,
@@ -788,14 +810,20 @@ VALUES (@stat1,
         2,
         110);
 
-SET @points1 = UUID();
-SET @points2 = UUID();
-SET @points3 = UUID();
-SET @points4 = UUID();
-SET @points5 = UUID();
-SET @points6 = UUID();
+SET
+@points1 = UUID();
+SET
+@points2 = UUID();
+SET
+@points3 = UUID();
+SET
+@points4 = UUID();
+SET
+@points5 = UUID();
+SET
+@points6 = UUID();
 
-INSERT INTO fantasyPoints
+INSERT INTO `fantasyPoints`
 (pointsId,
  statId,
  totalPoints,
@@ -808,7 +836,7 @@ VALUES (@points1, @stat1, 15, 1, TRUE),
        (@points5, @stat5, 18, 1, TRUE),
        (@points6, @stat6, 15, 1, TRUE);
 
-INSERT INTO fantasy_point_breakdown
+INSERT INTO `fantasy_point_breakdown`
     (breakdownId, pointsId, ruleId, eventCount, pointsEarned)
 VALUES (UUID(), @points1, @ruleTry, 1, 5),
        (UUID(), @points1, @ruleAssist, 1, 3),
@@ -827,7 +855,7 @@ VALUES (UUID(), @points1, @ruleTry, 1, 5),
        (UUID(), @points6, @ruleConversion, 2, 4),
        (UUID(), @points6, @ruleTackle, 6, 6);
 
-INSERT INTO systemReport
+INSERT INTO `systemReport`
 (reportId,
  generated_by_admin_user_id,
  reportType,
@@ -837,7 +865,7 @@ VALUES (UUID(),
         'ACTIVE_USERS',
         'Active Users Report');
 
-INSERT INTO log
+INSERT INTO `log`
 (logId,
  userId,
  entityType,
@@ -858,3 +886,4 @@ VALUES (UUID(),
         'CREATE',
         'Created private league');
 
+COMMIT;
