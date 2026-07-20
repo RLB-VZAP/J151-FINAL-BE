@@ -32,19 +32,6 @@ public class CompetitionProcessingResource {
     @Context
     private SecurityContext securityContext;
 
-    /**
-     * Finds and processes all competition work that is currently due.
-     *
-     * This may include:
-     * - locking eligible rounds;
-     * - simulating unprocessed locked fixtures;
-     * - persisting results and player statistics;
-     * - calculating fantasy points and team scores;
-     * - refreshing leaderboards.
-     *
-     * The underlying service must ensure that repeating this request does not
-     * duplicate previously completed processing.
-     */
     @POST
     @Path("/due-work")
     public Response processDueWork() {
@@ -55,9 +42,6 @@ public class CompetitionProcessingResource {
         return Response.ok(summary).build();
     }
 
-    /**
-     * Retrieves the authenticated administrator's user ID from the request.
-     */
     private UUID getAuthenticatedActorUserId() {
         if (securityContext == null) {
             throw new AuthenticationException("An authenticated administrator is required.");
