@@ -3,6 +3,8 @@ package com.vzap.trytons.dto.admin;
 import com.vzap.trytons.enums.SystemReportType;
 import lombok.*;
 
+import java.util.Map;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Setter
@@ -12,5 +14,5 @@ import lombok.*;
 public class SystemReportRequestDTO {
     private SystemReportType reportType;
     private String reportTitle;
-    private String parametersJson;
+    private Map<String , Object > parametersJson;
 }
