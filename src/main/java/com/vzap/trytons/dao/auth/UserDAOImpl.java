@@ -218,4 +218,22 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
         }
     }
 
+    @Override
+    public List<User> getActiveUsers() {
+        String query = "SELECT * FROM user WHERE isActive = TRUE";
+        try(Connection con = getConnection();
+        PreparedStatement ps = con.prepareStatement(query);
+        ResultSet rs = ps.executeQuery()){
+            List<User> users = new ArrayList<>();
+            while (rs.next()){
+                users.add(mapUser(rs));
+            }
+            return users;
+
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE, "Unable to find active users.", e);
+            throw new DataAccessException("Unable to find active users.", e);
+        }
+    }
+
 }
