@@ -186,6 +186,8 @@ public class TransferServiceImpl implements TransferService {
         transfer.setTeamId(team.getTeamId());
         transfer.setRemovedPlayerId(removedPlayer.getPlayerId());
         transfer.setAddedPlayerId(addedPlayer.getPlayerId());
+        transfer.setRemovedPlayerName(removedPlayer.getPlayerName());
+        transfer.setAddedPlayerName(addedPlayer.getPlayerName());
         transfer.setRemovedPlayerValue(removedValue);
         transfer.setAddedPlayerValue(addedValue);
         transfer.setValueDifference(addedValue.subtract(removedValue));
@@ -398,12 +400,8 @@ public class TransferServiceImpl implements TransferService {
                 .addedPlayerId(transfer.getAddedPlayerId() != null
                         ? transfer.getAddedPlayerId()
                         : null)
-                .removedPlayerName(transfer.getRemovedPlayerId() != null
-                        ? String.valueOf(transfer.getRemovedPlayerId())
-                        : null)
-                .addedPlayerName(transfer.getAddedPlayerId() != null
-                        ? String.valueOf(transfer.getAddedPlayerId())
-                        : null)
+                .removedPlayerName(transfer.getRemovedPlayerName())
+                .addedPlayerName(transfer.getAddedPlayerName())
                 .removedPlayerValue(transfer.getRemovedPlayerValue())
                 .addedPlayerValue(transfer.getAddedPlayerValue())
                 .valueDifference(valueDifference)
