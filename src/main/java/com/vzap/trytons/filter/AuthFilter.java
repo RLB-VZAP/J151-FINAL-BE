@@ -5,7 +5,7 @@ import com.vzap.trytons.exceptions.AuthenticationException;
 import com.vzap.trytons.model.auth.User;
 import com.vzap.trytons.security.AuthPrincipal;
 import com.vzap.trytons.security.AuthTokenPayload;
-import com.vzap.trytons.Annotations.Authenticated;
+import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.util.AuthTokenUtil;
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
