@@ -1,5 +1,6 @@
 package com.vzap.trytons.resource.admin;
 
+import com.vzap.trytons.annotations.AdminOnly;
 import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dto.admin.AdminUserSearchResponseDTO;
 import com.vzap.trytons.dto.admin.AdminUserStatusRequestDTO;
@@ -27,6 +28,7 @@ import java.util.logging.Logger;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 @Authenticated
+@AdminOnly
 
 public class AdminUserResource {
 
@@ -55,7 +57,7 @@ public class AdminUserResource {
     }
 
     @PUT
-    @Path("{targetUserId}/status")
+    @Path("/{targetUserId}/status")
     @Valid
     public Response updateUserStatus(
             @PathParam("targetUserId") UUID targetUserId, AdminUserStatusRequestDTO request,

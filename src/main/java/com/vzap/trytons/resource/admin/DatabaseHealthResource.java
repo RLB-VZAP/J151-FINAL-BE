@@ -1,5 +1,7 @@
 package com.vzap.trytons.resource.admin;
 
+import com.vzap.trytons.annotations.AdminOnly;
+import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dao.admin.DatabaseTestDAO;
 import com.vzap.trytons.exceptions.DataAccessException;
 
@@ -16,6 +18,8 @@ import java.util.Map;
 
 //The single supported database health contract for W4-BUG-BE-19.
 @Path("/test/database")
+@Authenticated
+@AdminOnly
 public class DatabaseHealthResource {
 
     @GET
