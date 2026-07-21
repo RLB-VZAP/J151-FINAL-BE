@@ -27,4 +27,8 @@ public interface UserDAO {
     boolean updateActiveStatus(UUID userId, boolean isActive);
     List<User> getActiveUsers();
 
+    boolean updateProfileDetails(UUID userId, String username, String email, String profilePic);
+
+    boolean updatePasswordHash(UUID userId, String newPasswordHash);
+
 }
