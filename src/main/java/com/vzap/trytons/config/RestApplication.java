@@ -8,6 +8,7 @@ import com.vzap.trytons.resource.admin.AdminUserResource;
 import com.vzap.trytons.resource.admin.DatabaseHealthResource;
 import com.vzap.trytons.resource.admin.SystemReportResource;
 import com.vzap.trytons.resource.auth.AuthResource;
+import com.vzap.trytons.resource.auth.ProfileResource;
 import com.vzap.trytons.resource.auth.UserResources;
 import com.vzap.trytons.resource.catalog.ClubResource;
 import com.vzap.trytons.resource.catalog.PlayerResource;
@@ -28,6 +29,7 @@ import com.vzap.trytons.resource.scoring.FantasyPointsResource;
 import com.vzap.trytons.resource.scoring.ScoringRuleResource;
 import com.vzap.trytons.resource.simulation.CompetitionProcessingResource;
 import com.vzap.trytons.resource.simulation.ControlledResimulationResource;
+import com.vzap.trytons.resource.simulation.SimulationResource;
 import com.vzap.trytons.resource.simulation.SimulationSettingResource;
 import com.vzap.trytons.resource.transfer.TransferRecommendationResource;
 import com.vzap.trytons.resource.transfer.TransferResource;
@@ -46,6 +48,7 @@ public class RestApplication extends Application {
                 AdminUserResource.class,
                 AuthResource.class,
                 ClubResource.class,
+                CompetitionProcessingResource.class,
                 ControlledResimulationResource.class,
                 DatabaseHealthResource.class,
                 FantasyPointBreakdownResource.class,
@@ -61,8 +64,10 @@ public class RestApplication extends Application {
                 PlayerResource.class,
                 PlayerStatisticsResource.class,
                 PositionResource.class,
+                ProfileResource.class,
                 ProtectedResource.class,
                 ScoringRuleResource.class,
+                SimulationResource.class,
                 SimulationSettingResource.class,
                 SystemReportResource.class,
                 TransferRecommendationResource.class,
