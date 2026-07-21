@@ -236,4 +236,38 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
         }
     }
 
+    @Override
+    public boolean updateProfileDetails(UUID userId, String username, String email, String profilePic) {
+        String query = "UPDATE user SET username = ?, email = ?, profilePic = ? WHERE userId = ?";
+
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setString(1, username);
+            ps.setString(2, email);
+            ps.setString(3, profilePic);
+            ps.setString(4, userId.toString());
+
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to update user profile details.", e);
+            throw new DataAccessException("Unable to update user profile details.", e);
+        }
+    }
+
+    @Override
+    public boolean updatePasswordHash(UUID userId, String newPasswordHash) {
+        String query = "UPDATE user SET passwordHash = ? WHERE userId = ?";
+
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setString(1, newPasswordHash);
+            ps.setString(2, userId.toString());
+
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to update password hash.", e);
+            throw new DataAccessException("Unable to update password hash.", e);
+        }
+    }
+
 }
