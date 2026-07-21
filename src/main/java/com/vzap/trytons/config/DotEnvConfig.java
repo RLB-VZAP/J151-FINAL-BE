@@ -11,18 +11,10 @@ public final class DotEnvConfig {
     }
 
     public static String getRequired(String key) {
-        String value = firstNonBlank(
-                System.getProperty(key),
-                System.getenv(key),
-                DOTENV.get(key)
-        );
+        String value = firstNonBlank(System.getProperty(key), System.getenv(key), DOTENV.get(key));
 
         if (value == null) {
-            throw new IllegalStateException(
-                    "Missing required configuration value: " + key
-                            + ". Set it as a GlassFish JVM -D property, an environment variable, "
-                            + "or in the configured env file."
-            );
+            throw new IllegalStateException("Missing required configuration value: " + key + ". Set it as a GlassFish JVM -D property, an environment variable, " + "or in the configured env file.");
         }
         return value;
     }
@@ -44,19 +36,10 @@ public final class DotEnvConfig {
     }
 
     private static Dotenv loadDotenv() {
-        String filename = firstNonBlank(
-                System.getProperty("TRYTONS_ENV_FILE"),
-                System.getenv("TRYTONS_ENV_FILE"),
-                "env"
-        );
-        String directory = firstNonBlank(
-                System.getProperty("TRYTONS_ENV_DIR"),
-                System.getenv("TRYTONS_ENV_DIR")
-        );
+        String filename = firstNonBlank(System.getProperty("TRYTONS_ENV_FILE"), System.getenv("TRYTONS_ENV_FILE"), ".env");
+        String directory = firstNonBlank(System.getProperty("TRYTONS_ENV_DIR"), System.getenv("TRYTONS_ENV_DIR"));
 
-        DotenvBuilder builder = Dotenv.configure()
-                .filename(filename)
-                .ignoreIfMissing();
+        DotenvBuilder builder = Dotenv.configure().filename(filename).ignoreIfMissing();
 
         if (directory != null) {
             builder.directory(directory);

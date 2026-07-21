@@ -1,5 +1,7 @@
 package com.vzap.trytons.resource.catalog;
 
+import com.vzap.trytons.annotations.AdminOnly;
+import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dto.shared.ErrorResponseDTO;
 import com.vzap.trytons.dto.catalog.PlayerRequestDTO;
 import com.vzap.trytons.dto.catalog.PlayerResponseDTO;
@@ -61,6 +63,8 @@ public class PlayerResource {
     }
 
     @POST
+    @Authenticated
+    @AdminOnly
     public Response createPlayer(@Valid PlayerRequestDTO playerRequestDTO, @Context UriInfo uriInfo) {
         try{
             PlayerResponseDTO created = playerService.createPlayer(playerRequestDTO);
@@ -78,6 +82,8 @@ public class PlayerResource {
 
     @PUT
     @Path("/{id}")
+    @Authenticated
+    @AdminOnly
     public Response updatePlayer(@PathParam("id") UUID id, @Valid PlayerRequestDTO request){
         try{
             PlayerResponseDTO updated = playerService.updatePlayer(id, request);

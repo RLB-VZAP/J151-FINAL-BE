@@ -1,5 +1,7 @@
 package com.vzap.trytons.resource.catalog;
 
+import com.vzap.trytons.annotations.AdminOnly;
+import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dto.shared.ErrorResponseDTO;
 import com.vzap.trytons.dto.catalog.PositionRequestDTO;
 import com.vzap.trytons.dto.catalog.PositionResponseDTO;
@@ -53,6 +55,8 @@ public class PositionResource {
     }
 
     @POST
+    @Authenticated
+    @AdminOnly
     public Response createPosition(@Valid PositionRequestDTO request, @Context UriInfo uriInfo){
         try{
             PositionResponseDTO created = positionService.createPosition(request);
@@ -69,6 +73,8 @@ public class PositionResource {
 
     @PUT
     @Path("/{id}")
+    @Authenticated
+    @AdminOnly
     public Response updatePosition(@PathParam("id") UUID id, @Valid PositionRequestDTO request){
         try{
             return Response.ok(positionService.updatePosition(id, request)).build();
