@@ -364,4 +364,26 @@ public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlay
             throw new DataAccessException("Could not find most selected players", e);
         }
     }
+
+
+    @Override
+    public List<UUID> getTeamIdsByPlayerId(UUID playerId) {
+        String query = "SELECT DISTINCT teamId FROM team_player_selection WHERE playerId = ?";
+        List<UUID> teamIds = new ArrayList<>();
+
+        try(Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setString(1, playerId.toString());
+
+            try(ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    teamIds.add(UUID.fromString(rs.getString("teamId")));
+                }
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Could not find teams containing player", e);
+            throw new DataAccessException("Could not find teams containing player", e);
+        }
+        return teamIds;
+    }
 }

@@ -3,7 +3,9 @@ package com.vzap.trytons.service.fixture;
 import com.vzap.trytons.dao.admin.AdminDAO;
 import com.vzap.trytons.dao.fixture.FantasyRoundDAO;
 import com.vzap.trytons.dao.fantasyteam.FantasyTeamRoundSelectionDAO;
+import com.vzap.trytons.dao.fantasyteam.FantasyTeamDAO;
 import com.vzap.trytons.dao.catalog.PlayerDAO;
+import com.vzap.trytons.dao.fixture.FixtureDAO;
 import com.vzap.trytons.dao.fixture.RoundLockDAO;
 import com.vzap.trytons.dto.fixture.DeadlineStatusResponseDTO;
 import com.vzap.trytons.dto.fixture.LockStatusResponseDTO;
@@ -14,8 +16,11 @@ import com.vzap.trytons.exceptions.BusinessRuleException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.model.fixture.FantasyRound;
 import com.vzap.trytons.model.fantasyteam.FantasyTeamRoundSelection;
+import com.vzap.trytons.model.fantasyteam.FantasyTeam;
 import com.vzap.trytons.model.catalog.Player;
+import com.vzap.trytons.model.fixture.Fixture;
 import com.vzap.trytons.model.fixture.RoundLock;
+import com.vzap.trytons.service.notification.NotificationService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.LocalDateTime;
@@ -23,9 +28,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @ApplicationScoped
 public class DeadlineLockServiceImpl implements DeadlineLockService {
+
+    private static final Logger LOG = Logger.getLogger(DeadlineLockServiceImpl.class.getName());
+
     @Inject
     private FantasyTeamRoundSelectionDAO fantasyTeamRoundSelectionDAO;
     @Inject
@@ -36,6 +46,12 @@ public class DeadlineLockServiceImpl implements DeadlineLockService {
     private PlayerDAO playerDAO;
     @Inject
     private AdminDAO adminDAO;
+    @Inject
+    private FixtureDAO fixtureDAO;
+    @Inject
+    private FantasyTeamDAO fantasyTeamDAO;
+    @Inject
+    private NotificationService notificationService;
 
 
     @Override
@@ -91,7 +107,7 @@ public class DeadlineLockServiceImpl implements DeadlineLockService {
 
     @Override
     public LockStatusResponseDTO lockRound(UUID actorAdminUserId, UUID roundId, String reason) {
-        fantasyRoundDAO.getRoundById(roundId).orElseThrow(() -> new ResourceNotFoundException("Fantasy round not found."));
+        FantasyRound round = fantasyRoundDAO.getRoundById(roundId).orElseThrow(() -> new ResourceNotFoundException("Fantasy round not found."));
         RoundLock roundLock = new RoundLock();
         roundLock.setRoundId(roundId);
         if(adminDAO.getAdminById(actorAdminUserId).isPresent()) {
@@ -104,7 +120,32 @@ public class DeadlineLockServiceImpl implements DeadlineLockService {
         roundLock.setActionAt(LocalDateTime.now());
         roundLockDAO.createRoundLock(roundLock);
         fantasyRoundDAO.updateRoundStatus(roundId,FantasyRoundStatus.LOCKED);
+        notifyTransferDeadlineForRound(round);
         return getLockStatus(roundId);
+    }
+
+    /**
+     * Notifies every fixture's team owners for this round that the transfer deadline has just
+     * locked. A notification failure must never prevent the round lock itself from succeeding.
+     */
+    private void notifyTransferDeadlineForRound(FantasyRound round) {
+        try {
+            for (Fixture fixture : fixtureDAO.findByRoundId(round.getRoundId())) {
+                notifyTeamOwnerOfDeadline(fixture.getTeamAId(), fixture.getFixtureId(), round.getLockDeadline());
+                notifyTeamOwnerOfDeadline(fixture.getTeamBId(), fixture.getFixtureId(), round.getLockDeadline());
+            }
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to send transfer-deadline notifications for round " + round.getRoundId(), e);
+        }
+    }
+
+    private void notifyTeamOwnerOfDeadline(UUID teamId, UUID fixtureId, LocalDateTime deadline) {
+        if (teamId == null) {
+            return;
+        }
+        fantasyTeamDAO.getTeamById(teamId)
+                .map(FantasyTeam::getOwnerUserId)
+                .ifPresent(ownerId -> notificationService.notifyTransferDeadline(ownerId, fixtureId, deadline));
     }
 
     @Override

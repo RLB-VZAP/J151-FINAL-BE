@@ -19,11 +19,17 @@ import com.vzap.trytons.model.league.League;
 import com.vzap.trytons.model.leaderboard.Leaderboard;
 import com.vzap.trytons.model.leaderboard.Ranking;
 import com.vzap.trytons.model.auth.User;
+import com.vzap.trytons.service.notification.NotificationService;
 import jakarta.inject.Inject;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class LeaderboardServiceImpl implements LeaderboardService{
+
+    private static final Logger LOG = Logger.getLogger(LeaderboardServiceImpl.class.getName());
+
     @Inject
     private LeaderboardDAO leaderboardDAO;
     @Inject
@@ -36,6 +42,8 @@ public class LeaderboardServiceImpl implements LeaderboardService{
     private UserDAO userDAO;
     @Inject
     private FantasyRoundDAO fantasyRoundDAO;
+    @Inject
+    private NotificationService notificationService;
 
     //New added methods
     //================================================================================================================================================
@@ -217,12 +225,43 @@ public class LeaderboardServiceImpl implements LeaderboardService{
         leaderboard.setLastUpdated(LocalDateTime.now());
         leaderboardDAO.updateLeaderboard(leaderboard);
 
+        notifyRankChanges(leaderboard, rankings);
+
         return LeaderboardRefreshResultDTO.builder()
                 .success(true)
                 .message("Leaderboard refreshed successfully.")
                 .teamsProcessed(rankings.size())
                 .rankingsUpdated(rankings.size())
                 .build();
+    }
+
+    /**
+     * Notifies each team owner whose rank changed on this refresh. Only wired for league-scoped
+     * leaderboards (notifyLeaderboardChange is a per-league notification); the master/overall
+     * leaderboard has no leagueId to attach the notification to, so it is skipped there.
+     * A notification failure must never affect the already-persisted ranking refresh.
+     */
+    private void notifyRankChanges(Leaderboard leaderboard, List<Ranking> rankings) {
+        if (leaderboard.getLeagueId() == null) {
+            return;
+        }
+        try {
+            for (Ranking ranking : rankings) {
+                if (ranking.getTeamId() == null) {
+                    continue;
+                }
+                Integer previousRanking = ranking.getPreviousRanking();
+                if (previousRanking != null && previousRanking.intValue() == ranking.getCurrentRanking()) {
+                    continue;
+                }
+                fantasyTeamDAO.getTeamById(ranking.getTeamId())
+                        .map(FantasyTeam::getOwnerUserId)
+                        .ifPresent(ownerId -> notificationService.notifyLeaderboardChange(
+                                ownerId, leaderboard.getLeagueId(), ranking.getCurrentRanking()));
+            }
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to send leaderboard-change notifications for leaderboard " + leaderboard.getLeaderboardId(), e);
+        }
     }
 
     private String currentSeason() {
