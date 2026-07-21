@@ -15,8 +15,12 @@ public class DBConnectionManager {
         dataSource.setUsername(DotEnvConfig.getRequired("DB_USERNAME"));
         dataSource.setPassword(DotEnvConfig.getRequired("DB_PASSWORD"));
         dataSource.setUrl(DotEnvConfig.getRequired("DB_URL"));
+
         dataSource.setMinIdle(DotEnvConfig.getRequiredInt("DB_MIN_IDLE"));
         dataSource.setMaxIdle(DotEnvConfig.getRequiredInt("DB_MAX_IDLE"));
+        dataSource.setMaxTotal(DotEnvConfig.getRequiredInt("DB_MAX_TOTAL"));
+        dataSource.setMaxWaitMillis(DotEnvConfig.getRequiredLong("DB_MAX_WAIT_MILLIS"));
+        dataSource.setPoolPreparedStatements(true);
         dataSource.setMaxOpenPreparedStatements(DotEnvConfig.getRequiredInt("DB_MAX_OPEN_PREPARED_STATEMENTS"));
     }
 

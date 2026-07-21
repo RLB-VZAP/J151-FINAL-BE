@@ -13,6 +13,7 @@ import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.SecurityContext;
 import jakarta.ws.rs.ext.Provider;
 
 import java.io.IOException;
@@ -58,5 +59,27 @@ public class AuthFilter implements ContainerRequestFilter {
                 .build();
 
         requestContext.setProperty(CURRENT_USER_PROPERTY,principal);
+        SecurityContext originalSecurityContext = requestContext.getSecurityContext();
+        requestContext.setSecurityContext(new SecurityContext() {
+            @Override
+            public AuthPrincipal getUserPrincipal() {
+                return principal;
+            }
+
+            @Override
+            public boolean isUserInRole(String role) {
+                return principal.getRole() != null && principal.getRole().name().equalsIgnoreCase(role);
+            }
+
+            @Override
+            public boolean isSecure() {
+                return originalSecurityContext != null && originalSecurityContext.isSecure();
+            }
+
+            @Override
+            public String getAuthenticationScheme() {
+                return "Bearer";
+            }
+        });
     }
 }
