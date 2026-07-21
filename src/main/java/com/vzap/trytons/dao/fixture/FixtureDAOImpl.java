@@ -212,6 +212,7 @@ public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
     }
     private Fixture mapFixture(ResultSet rs) throws SQLException {
         Timestamp simulationTimestamp = rs.getTimestamp("simulationDate");
+        Timestamp createdAtTimestamp = rs.getTimestamp("createdAt");
 
         return Fixture.builder()
                 .fixtureId(UUID.fromString(rs.getString("fixtureId")))
@@ -223,6 +224,7 @@ public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
                 .fixtureTime(rs.getTime("fixtureTime").toLocalTime())
                 .status(FixtureStatus.valueOf(rs.getString("status")))
                 .simulationDate(simulationTimestamp == null ? null : simulationTimestamp.toLocalDateTime())
+                .createdAt(createdAtTimestamp == null ? null : createdAtTimestamp.toLocalDateTime())
                 .build();
     }
 }

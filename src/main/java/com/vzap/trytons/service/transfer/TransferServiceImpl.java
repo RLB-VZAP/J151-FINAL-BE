@@ -41,6 +41,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import com.vzap.trytons.service.fixture.DeadlineLockService;
 import com.vzap.trytons.service.fantasyteam.SquadValidationService;
+import com.vzap.trytons.service.notification.NotificationService;
 
 @ApplicationScoped
 public class TransferServiceImpl implements TransferService {
@@ -70,6 +71,10 @@ public class TransferServiceImpl implements TransferService {
 
     @Inject
     private SquadValidationService squadValidationService;
+
+
+    @Inject
+    private NotificationService notificationService;
 
     @Override
     @Transactional
@@ -197,6 +202,8 @@ public class TransferServiceImpl implements TransferService {
         transfer.setCreatedByUserId(createdBy.getUserId());
         Transfer savedTransfer = transferDAO.saveTransfer(transfer)
                 .orElseThrow(() -> new DataAccessException("Unable to save transfer", null));
+
+        notifyTransferDeadlineReminder(actorId, teamId, round);
 
         return toResponse(savedTransfer, teamId);
     }
@@ -426,5 +433,31 @@ public class TransferServiceImpl implements TransferService {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+
+    /**
+     * Reminds the transferring team's owner of the round's transfer deadline right after a
+     * transfer is confirmed. Notification failures must never roll back an already-confirmed
+     * transfer, so any exception here is swallowed.
+     */
+    private void notifyTransferDeadlineReminder(UUID actorId, UUID teamId, FantasyRound round) {
+        try {
+            UUID fixtureId = findFixtureIdForTeamInRound(round.getRoundId(), teamId);
+            if (fixtureId != null) {
+                notificationService.notifyTransferDeadline(actorId, fixtureId, round.getLockDeadline());
+            }
+        } catch (Exception e) {
+            // Notification failure must not affect a confirmed transfer.
+        }
+    }
+
+    private UUID findFixtureIdForTeamInRound(UUID roundId, UUID teamId) {
+        for (Fixture fixture : fixtureDAO.findByRoundId(roundId)) {
+            if (teamId.equals(fixture.getTeamAId()) || teamId.equals(fixture.getTeamBId())) {
+                return fixture.getFixtureId();
+            }
+        }
+        return null;
     }
 }

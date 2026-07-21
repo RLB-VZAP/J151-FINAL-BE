@@ -23,4 +23,5 @@ public class Fixture {
     private LocalTime fixtureTime;
     private FixtureStatus status;
     private LocalDateTime simulationDate;
+    private LocalDateTime createdAt;
 }
