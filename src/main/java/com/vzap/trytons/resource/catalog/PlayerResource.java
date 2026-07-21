@@ -5,13 +5,21 @@ import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dto.shared.ErrorResponseDTO;
 import com.vzap.trytons.dto.catalog.PlayerRequestDTO;
 import com.vzap.trytons.dto.catalog.PlayerResponseDTO;
+import com.vzap.trytons.dto.catalog.PlayerAvailabilityRequestDTO;
+import com.vzap.trytons.dto.catalog.PlayerAvailabilityResponseDTO;
+import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
+import com.vzap.trytons.exceptions.ValidationException;
+import com.vzap.trytons.filter.AuthFilter;
+import com.vzap.trytons.security.AuthPrincipal;
+import com.vzap.trytons.service.catalog.PlayerAvailabilityService;
 import com.vzap.trytons.service.catalog.PlayerService;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -29,6 +37,15 @@ public class PlayerResource {
     private static final Logger LOGGER = Logger.getLogger(PlayerResource.class.getName());
     @Inject
     private PlayerService playerService;
+    @Inject
+    private PlayerAvailabilityService playerAvailabilityService;
+    @Context
+    private ContainerRequestContext requestContext;
+
+    private UUID getCurrentUserId() {
+        AuthPrincipal principal = (AuthPrincipal) requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY);
+        return principal != null ? principal.getUserId() : null;
+    }
 
     @GET
     public Response listPlayers(@QueryParam("search") String search, @QueryParam("clubId") UUID clubId, @QueryParam("positionId") UUID positionId ) {
@@ -101,6 +118,28 @@ public class PlayerResource {
     }
 
 
+
+    @PUT
+    @Path("/{id}/availability")
+    @Authenticated
+    @AdminOnly
+    public Response setAvailability(@PathParam("id") UUID id, @Valid PlayerAvailabilityRequestDTO request) {
+        try {
+            PlayerAvailabilityResponseDTO updated = playerAvailabilityService.setAvailability(getCurrentUserId(), id, request);
+
+            return Response.ok(updated).build();
+        } catch (AuthorisationException e) {
+            return Response.status(Response.Status.FORBIDDEN).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
+        } catch (ValidationException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
+        } catch (ResourceNotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
+        } catch (DataAccessException e) {
+            return serverError("Failed to update player availability.", e);
+        } catch (Exception e) {
+            return unexpected(e);
+        }
+    }
 
     private Response serverError(String message, DataAccessException e) {
         LOGGER.log(Level.SEVERE, message, e);
