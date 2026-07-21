@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@ApplicationPath("/api")
+
 @Path("/notifications")
 @Authenticated
 @Produces(MediaType.APPLICATION_JSON)
