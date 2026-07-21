@@ -1,6 +1,7 @@
 package com.vzap.trytons.service.simulation;
 
 import com.vzap.trytons.dao.admin.AdminDAO;
+import com.vzap.trytons.dao.fantasyteam.FantasyTeamDAO;
 import com.vzap.trytons.dao.fixture.FixtureDAO;
 import com.vzap.trytons.dao.results.MatchTeamScoreDAO;
 import com.vzap.trytons.dto.leaderboard.LeaderboardRefreshResultDTO;
@@ -14,6 +15,7 @@ import com.vzap.trytons.exceptions.BusinessRuleException;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.exceptions.ValidationException;
+import com.vzap.trytons.model.fantasyteam.FantasyTeam;
 import com.vzap.trytons.model.fixture.Fixture;
 import com.vzap.trytons.model.results.MatchTeamScore;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -23,6 +25,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import com.vzap.trytons.service.notification.NotificationService;
 import com.vzap.trytons.service.results.MatchResultService;
 import com.vzap.trytons.service.results.PlayerStatisticsService;
 import com.vzap.trytons.service.scoring.FantasyPointCalculationService;
@@ -59,6 +62,12 @@ public class MatchProcessingServiceImpl implements MatchProcessingService {
 
     @Inject
     private LeaderboardService leaderboardService;
+
+    @Inject
+    private FantasyTeamDAO fantasyTeamDAO;
+
+    @Inject
+    private NotificationService notificationService;
 
     @Override
     public MatchProcessingResultDTO processCompletedFixture(UUID actorUserId, UUID fixtureId) {
@@ -115,6 +124,8 @@ public class MatchProcessingServiceImpl implements MatchProcessingService {
             throw new BusinessRuleException("The fixture status could not be updated.");
         }
 
+        notifyPointsUpdates(fixture, persistedScores);
+
         LOG.log(Level.INFO, "Fixture processed successfully.");
         return MatchProcessingResultDTO.builder()
                 .fixtureId(fixtureId)
@@ -138,5 +149,25 @@ public class MatchProcessingServiceImpl implements MatchProcessingService {
 
         LeaderboardRefreshResultDTO refresh = leaderboardService.refreshLeagueLeaderboard(actorUserId, fixture.getLeagueId());
         return refresh != null && refresh.isSuccess();
+    }
+
+
+    /**
+     * Notifies each team's owner of the fantasy points their team earned in the just-processed
+     * fixture. A notification failure must never affect the already-completed processing result.
+     */
+    private void notifyPointsUpdates(Fixture fixture, List<MatchTeamScore> persistedScores) {
+        try {
+            for (MatchTeamScore score : persistedScores) {
+                if (score == null || score.getTeamId() == null) {
+                    continue;
+                }
+                fantasyTeamDAO.getTeamById(score.getTeamId())
+                        .map(FantasyTeam::getOwnerUserId)
+                        .ifPresent(ownerId -> notificationService.notifyPointsUpdate(ownerId, fixture.getFixtureId(), score.getTotalScore()));
+            }
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to send points-update notifications for fixture " + fixture.getFixtureId(), e);
+        }
     }
 }
