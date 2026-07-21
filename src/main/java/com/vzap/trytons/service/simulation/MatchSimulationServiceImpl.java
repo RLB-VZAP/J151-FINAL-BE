@@ -3,6 +3,7 @@ package com.vzap.trytons.service.simulation;
 import com.vzap.trytons.dao.admin.AdminDAO;
 import com.vzap.trytons.dao.catalog.PlayerDAO;
 import com.vzap.trytons.dao.catalog.PositionDAO;
+import com.vzap.trytons.dao.fantasyteam.FantasyTeamDAO;
 import com.vzap.trytons.dao.fantasyteam.FantasyTeamRoundSelectionDAO;
 import com.vzap.trytons.dao.fixture.FantasyRoundDAO;
 import com.vzap.trytons.dao.fixture.FixtureDAO;
@@ -22,12 +23,14 @@ import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.model.catalog.Player;
 import com.vzap.trytons.model.catalog.PlayerAvailability;
 import com.vzap.trytons.model.catalog.Position;
+import com.vzap.trytons.model.fantasyteam.FantasyTeam;
 import com.vzap.trytons.model.fantasyteam.FantasyTeamRoundSelection;
 import com.vzap.trytons.model.fixture.FantasyRound;
 import com.vzap.trytons.model.fixture.Fixture;
 import com.vzap.trytons.model.results.MatchResult;
 import com.vzap.trytons.model.results.PlayerStatistics;
 import com.vzap.trytons.model.scoring.ScoringRule;
+import com.vzap.trytons.service.notification.NotificationService;
 import com.vzap.trytons.service.results.MatchResultService;
 import com.vzap.trytons.service.results.PlayerStatisticsService;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -35,10 +38,13 @@ import jakarta.inject.Inject;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @ApplicationScoped
 public class MatchSimulationServiceImpl implements MatchSimulationService {
 
+    private static final Logger LOG = Logger.getLogger(MatchSimulationServiceImpl.class.getName());
 
     @Inject
     private FixtureDAO fixtureDAO;
@@ -69,6 +75,12 @@ public class MatchSimulationServiceImpl implements MatchSimulationService {
 
     @Inject
     PositionDAO positionDAO;
+
+    @Inject
+    private FantasyTeamDAO fantasyTeamDAO;
+
+    @Inject
+    private NotificationService notificationService;
 
     private static final int TEAM_SIZE = 20;
 
@@ -244,7 +256,31 @@ public class MatchSimulationServiceImpl implements MatchSimulationService {
         fixture.setStatus(FixtureStatus.COMPLETED);
         fixtureDAO.updateFixture(fixture);
 
+        notifySimulatedResult(fixture);
+
         return resultToMatchResultDTO(savedResult, fixture);
+    }
+
+    /**
+     * Informs both competing teams' owners that their match has been simulated and a result is
+     * available. A notification failure must never affect the already-persisted simulation result.
+     */
+    private void notifySimulatedResult(Fixture fixture) {
+        try {
+            notifyTeamOwnerOfResult(fixture.getTeamAId(), fixture.getFixtureId());
+            notifyTeamOwnerOfResult(fixture.getTeamBId(), fixture.getFixtureId());
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to send simulated-result notifications for fixture " + fixture.getFixtureId(), e);
+        }
+    }
+
+    private void notifyTeamOwnerOfResult(UUID teamId, UUID fixtureId) {
+        if (teamId == null) {
+            return;
+        }
+        fantasyTeamDAO.getTeamById(teamId)
+                .map(FantasyTeam::getOwnerUserId)
+                .ifPresent(ownerId -> notificationService.notifySimulatedResult(ownerId, fixtureId));
     }
 
     private MatchResultResponseDTO resultToMatchResultDTO(MatchResult result, Fixture fixture) {

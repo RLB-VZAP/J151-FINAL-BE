@@ -1,5 +1,6 @@
 package com.vzap.trytons.service.league;
 
+import com.vzap.trytons.dao.auth.UserDAO;
 import com.vzap.trytons.dao.fantasyteam.FantasyTeamDAO;
 import com.vzap.trytons.dao.league.LeagueDAO;
 import com.vzap.trytons.dao.league.LeagueMembershipDAO;
@@ -14,18 +15,26 @@ import com.vzap.trytons.exceptions.BusinessRuleException;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.exceptions.ValidationException;
+import com.vzap.trytons.enums.UserRole;
+import com.vzap.trytons.model.auth.User;
 import com.vzap.trytons.model.fantasyteam.FantasyTeam;
 import com.vzap.trytons.model.league.League;
 import com.vzap.trytons.model.league.LeagueMembership;
+import com.vzap.trytons.service.notification.NotificationService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @ApplicationScoped
 public class LeagueServiceImpl implements LeagueService {
+
+    private static final Logger LOG = Logger.getLogger(LeagueServiceImpl.class.getName());
 
     @Inject
     private LeagueDAO leagueDAO;
@@ -35,6 +44,12 @@ public class LeagueServiceImpl implements LeagueService {
 
     @Inject
     private FantasyTeamDAO fantasyTeamDAO;
+
+    @Inject
+    private UserDAO userDAO;
+
+    @Inject
+    private NotificationService notificationService;
 
     @Override
     public LeagueResponseDTO createLeague(LeagueRequestDTO request, UUID currentUserId) {
@@ -117,11 +132,13 @@ public class LeagueServiceImpl implements LeagueService {
             throw new ValidationException("Current user ID is required.");
         }
 
+        boolean actorIsAdmin = isAdmin(currentUserId);
         List<League> leagues = leagueDAO.findAllLeagues();
         List<LeagueResponseDTO> responses = new ArrayList<>();
 
         for (League league : leagues) {
-            if (league.getLeagueType() == LeagueType.PUBLIC
+            if (actorIsAdmin
+                    || league.getLeagueType() == LeagueType.PUBLIC
                     || isLeagueMember(league.getLeagueId(), currentUserId)) {
 
                 responses.add(toResponse(league));
@@ -163,6 +180,8 @@ public class LeagueServiceImpl implements LeagueService {
             throw new BusinessRuleException("The league membership could not be created.");
         }
 
+        notifyLeagueJoin(league, currentUserId, team);
+
         JoinLeagueResponseDTO response = new JoinLeagueResponseDTO();
         response.setLeagueId(league.getLeagueId());
         response.setLeagueName(league.getLeagueName());
@@ -179,7 +198,7 @@ public class LeagueServiceImpl implements LeagueService {
 
         requireLeague(parsedLeagueId);
 
-        if (!isLeagueMember(parsedLeagueId, actorId)) {
+        if (!isAdmin(actorId) && !isLeagueMember(parsedLeagueId, actorId)) {
             throw new AuthorisationException("You must be a league member to view its members.");
         }
 
@@ -222,6 +241,8 @@ public class LeagueServiceImpl implements LeagueService {
         if (!membershipDAO.deactivateMembership(parsedMembershipId)) {
             throw new BusinessRuleException("The league membership could not be removed.");
         }
+
+        notifyLeagueRemoval(league, membership);
     }
 
     @Override
@@ -356,10 +377,62 @@ public class LeagueServiceImpl implements LeagueService {
         LeagueMemberResponseDTO response = new LeagueMemberResponseDTO();
         response.setMembershipId(membership.getMembershipId());
         response.setUserId(membership.getRegisteredUserId());
+        response.setUserDisplayName(userDAO.getUserById(membership.getRegisteredUserId()).map(User::getUsername).orElse("Unknown User"));
         response.setTeamId(membership.getTeamId());
+        response.setTeamDisplayName(fantasyTeamDAO.getTeamById(membership.getTeamId()).map(FantasyTeam::getTeamName).orElse("Unknown Team"));
         response.setJoinDate(membership.getJoinDate());
         response.setIsActive(membership.getIsActive());
         return response;
+    }
+
+    private boolean isAdmin(UUID userId) {
+        if (userId == null) {
+            return false;
+        }
+        Optional<User> user = userDAO.getUserById(userId);
+        return user.isPresent() && user.get().getRole() == UserRole.ADMINISTRATOR;
+    }
+
+
+    /**
+     * Notifies the newly joined member (welcome) and the league manager (roster change) that a
+     * membership was created. A notification failure must never affect the already-created
+     * membership.
+     */
+    private void notifyLeagueJoin(League league, UUID newMemberUserId, FantasyTeam team) {
+        try {
+            String memberBody = "You joined the league \"" + league.getLeagueName() + "\".";
+            notificationService.notifyLeagueMembershipEvent(newMemberUserId, league.getLeagueId(), memberBody);
+
+            if (league.getManagerUserId() != null && !league.getManagerUserId().equals(newMemberUserId)) {
+                String teamName = team != null && team.getTeamName() != null ? team.getTeamName() : "A new team";
+                String managerBody = teamName + " joined your league \"" + league.getLeagueName() + "\".";
+                notificationService.notifyLeagueMembershipEvent(league.getManagerUserId(), league.getLeagueId(), managerBody);
+            }
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to send league-join notifications for league " + league.getLeagueId(), e);
+        }
+    }
+
+    /**
+     * Notifies the removed member and the league manager that a membership was deactivated.
+     * A notification failure must never affect the already-completed removal.
+     */
+    private void notifyLeagueRemoval(League league, LeagueMembership membership) {
+        try {
+            UUID removedUserId = membership.getRegisteredUserId();
+            if (removedUserId != null) {
+                String removedBody = "You have been removed from the league \"" + league.getLeagueName() + "\".";
+                notificationService.notifyLeagueMembershipEvent(removedUserId, league.getLeagueId(), removedBody);
+            }
+
+            if (league.getManagerUserId() != null && !league.getManagerUserId().equals(removedUserId)) {
+                String managerBody = "A member was removed from your league \"" + league.getLeagueName() + "\".";
+                notificationService.notifyLeagueMembershipEvent(league.getManagerUserId(), league.getLeagueId(), managerBody);
+            }
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to send league-removal notifications for league " + league.getLeagueId(), e);
+        }
     }
 
     private LeagueResponseDTO toResponse(League league) {

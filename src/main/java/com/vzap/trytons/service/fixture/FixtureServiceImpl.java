@@ -276,6 +276,7 @@ public class FixtureServiceImpl implements FixtureService {
         response.setFixtureTime(fixture.getFixtureTime());
         response.setFixtureStatus(fixture.getStatus());
         response.setSimulationDate(fixture.getSimulationDate());
+        response.setCreatedAt(fixture.getCreatedAt());
         return response;
     }
 }
