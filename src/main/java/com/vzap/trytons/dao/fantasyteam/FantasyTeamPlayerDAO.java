@@ -20,4 +20,5 @@ public interface FantasyTeamPlayerDAO {
     boolean clearCaptain(UUID teamId);
     boolean clearViceCaptain(UUID teamId);
     List<PlayerSelectionCount> findMostSelectedPlayers(int limit);
+    List<UUID> getTeamIdsByPlayerId(UUID playerId);
 }
