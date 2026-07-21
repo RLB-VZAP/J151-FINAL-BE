@@ -1,9 +1,7 @@
 package com.vzap.trytons.resource.auth;
 
 import com.vzap.trytons.annotations.Authenticated;
-import com.vzap.trytons.dto.auth.AuthStatusResponseDTO;
-import com.vzap.trytons.dto.auth.LoginRequestDTO;
-import com.vzap.trytons.dto.auth.LoginResponseDTO;
+import com.vzap.trytons.dto.auth.*;
 import com.vzap.trytons.exceptions.ValidationException;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
@@ -17,8 +15,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import com.vzap.trytons.dto.auth.RegisteredUserRequestDTO;
-import com.vzap.trytons.dto.auth.RegisteredUserResponseDTO;
 import com.vzap.trytons.model.auth.RegisteredUser;
 import com.vzap.trytons.service.auth.RegisteredUserServices;
 import jakarta.validation.Valid;
@@ -52,7 +48,8 @@ public class AuthResource {
     @Path("/logout")
     @Authenticated
     public Response logout() {
-        return Response.ok(authService.logout()).build();
+        LogoutResponseDTO response = LogoutResponseDTO.builder().message(authService.logout()).build();
+        return Response.ok(response).build();
     }
 
     @GET
