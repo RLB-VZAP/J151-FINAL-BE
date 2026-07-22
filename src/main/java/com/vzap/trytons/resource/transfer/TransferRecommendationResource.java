@@ -1,13 +1,9 @@
 package com.vzap.trytons.resource.transfer;
 
 import com.vzap.trytons.annotations.Authenticated;
-import com.vzap.trytons.dto.shared.ErrorResponseDTO;
 import com.vzap.trytons.dto.transfer.TransferRecommendationRequestDTO;
 import com.vzap.trytons.dto.transfer.TransferRecommendationResponseDTO;
 import com.vzap.trytons.exceptions.AuthenticationException;
-import com.vzap.trytons.exceptions.AuthorisationException;
-import com.vzap.trytons.exceptions.DataAccessException;
-import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
 import com.vzap.trytons.service.transfer.TransferRecommendationService;
@@ -22,8 +18,6 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Authenticated
 @Path("/transfer-recommendations")
@@ -31,29 +25,14 @@ import java.util.logging.Logger;
 @Produces(MediaType.APPLICATION_JSON)
 public class TransferRecommendationResource {
 
-    private static final Logger LOGGER = Logger.getLogger(TransferRecommendationResource.class.getName());
-
     @Inject
     private TransferRecommendationService transferRecommendationService;
 
     @POST
     public Response recommendTransfers(@Valid TransferRecommendationRequestDTO request, @Context ContainerRequestContext requestContext) {
-        try{
-            UUID userId = currentUserId(requestContext);
-            TransferRecommendationResponseDTO response = transferRecommendationService.recommendTransfers(userId, request);
-            return Response.status(Response.Status.OK).entity(response).build();
-
-        }catch(AuthenticationException e){
-            return Response.status(Response.Status.UNAUTHORIZED).build();
-        }catch (AuthorisationException e){
-            return Response.status(Response.Status.FORBIDDEN).build();
-        }catch (ResourceNotFoundException e){
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }catch (DataAccessException e){
-            return serverError("Failed to generate transfer recommendations", e);
-        }catch (Exception e){
-            return unexpected(e);
-        }
+        UUID userId = currentUserId(requestContext);
+        TransferRecommendationResponseDTO response = transferRecommendationService.recommendTransfers(userId, request);
+        return Response.status(Response.Status.OK).entity(response).build();
     }
 
     private UUID currentUserId(ContainerRequestContext requestContext) {
@@ -63,19 +42,5 @@ public class TransferRecommendationResource {
             throw new AuthenticationException("Authentication required");
         }
         return  principal.getUserId();
-    }
-
-    private Response serverError(String message, DataAccessException e) {
-        LOGGER.log(Level.SEVERE, message, e);
-        return  Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(e.getMessage())
-                .build();
-    }
-
-    private Response unexpected(Exception e){
-        LOGGER.log(Level.SEVERE, "Unexpected error found in TransferRecommendationResource", e);
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(ErrorResponseDTO.of("An unexpected error has occured", "INTERNAL_SERVER_ERROR"))
-                .build();
     }
 }

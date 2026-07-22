@@ -1,10 +1,8 @@
 package com.vzap.trytons.resource.results;
 
 import com.vzap.trytons.annotations.Authenticated;
-import com.vzap.trytons.dto.shared.ErrorResponseDTO;
 import com.vzap.trytons.dto.results.MatchResultRequestDTO;
 import com.vzap.trytons.dto.results.MatchResultResponseDTO;
-import com.vzap.trytons.exceptions.ApplicationException;
 import com.vzap.trytons.exceptions.AuthenticationException;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
@@ -23,8 +21,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Authenticated
 @Path("/match-results")
@@ -32,37 +28,23 @@ import java.util.logging.Logger;
 @Produces(MediaType.APPLICATION_JSON)
 public class MatchResultResource {
 
-    private static final Logger LOGGER = Logger.getLogger(MatchResultResource.class.getName());
-
     @Inject
     private MatchResultService matchResultService;
 
     @POST
     public Response captureResult(@Valid MatchResultRequestDTO request, @Context ContainerRequestContext requestContext) {
-        try {
-            UUID actorUserId = currentUserId(requestContext);
-            MatchResultResponseDTO result = matchResultService.captureResult(actorUserId, request);
+        UUID actorUserId = currentUserId(requestContext);
+        MatchResultResponseDTO result = matchResultService.captureResult(actorUserId, request);
 
-            return Response.ok(result).build();
-        } catch (ApplicationException e) {
-            return handledApplicationError(e);
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.ok(result).build();
     }
 
     @GET
     @Path("/fixture/{fixtureId}")
     public Response getResult(@PathParam("fixtureId") UUID fixtureId) {
-        try {
-            MatchResultResponseDTO result = matchResultService.getResult(fixtureId);
+        MatchResultResponseDTO result = matchResultService.getResult(fixtureId);
 
-            return Response.ok(result).build();
-        } catch (ApplicationException e) {
-            return handledApplicationError(e);
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.ok(result).build();
     }
 
     private UUID currentUserId(ContainerRequestContext requestContext) {
@@ -73,23 +55,5 @@ public class MatchResultResource {
         }
 
         return principal.getUserId();
-    }
-
-    private Response handledApplicationError(ApplicationException e) {
-        ErrorResponseDTO errorPayload = ErrorResponseDTO.of(e.getMessage(), e.getErrorCode());
-
-        return Response.status(e.getStatusCode())
-                .entity(errorPayload)
-                .build();
-    }
-
-    private Response unexpected(Exception e) {
-        LOGGER.log(Level.SEVERE, "Unexpected error in MatchResultResource.", e);
-
-        ErrorResponseDTO errorPayload = ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR");
-
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(errorPayload)
-                .build();
     }
 }
