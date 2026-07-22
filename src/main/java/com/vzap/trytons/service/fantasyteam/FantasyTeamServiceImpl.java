@@ -169,6 +169,26 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
     }
 
     @Override
+    public FantasyTeamResponseDTO getOwnTeam(UUID registeredUserId) {
+        if (registeredUserId == null) {
+            throw new BadRequestException("Current user ID is required.");
+        }
+
+        // Summary only — teamId, name and budget. Callers that need the squad
+        // already have viewOwnTeam, and this is used to answer "do I have a team
+        // yet, and which one", so loading every selection would be wasteful.
+        return fantasyTeamDAO.getTeamByOwner(registeredUserId)
+                .map(team -> FantasyTeamResponseDTO.builder()
+                        .teamId(team.getTeamId())
+                        .teamName(team.getTeamName())
+                        .managerId(team.getOwnerUserId())
+                        .remainingBudget(team.getRemainingBudget())
+                        .valid(team.getIsValid())
+                        .build())
+                .orElse(null);
+    }
+
+    @Override
     public ViewOpponentTeamDTO viewOpponentTeam(UUID teamId) {
         FantasyTeam fantasyTeam = fantasyTeamDAO.findTeamById(teamId);
         if(fantasyTeam == null){

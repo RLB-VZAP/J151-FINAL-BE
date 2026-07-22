@@ -60,6 +60,24 @@ public class FantasyTeamResource {
     }
 
     /*
+     * The caller's own team. A literal path segment, so it cannot collide with
+     * the /{teamId} template.
+     *
+     * Returns 404 when the user has not created a team yet. That is a normal
+     * state for a new account, not an error, and it is what lets a client ask
+     * "do I have a team" before offering actions that require one.
+     */
+    @GET
+    @Path("/mine")
+    public Response getOwnTeam(@Context ContainerRequestContext requestContext) {
+        FantasyTeamResponseDTO team = fantasyTeamService.getOwnTeam(currentUserId(requestContext));
+        if (team == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(team).build();
+    }
+
+    /*
      * This route is kept separate from the opponent route to prevent
      * ambiguous JAX-RS GET mappings during GlassFish deployment.
      */
