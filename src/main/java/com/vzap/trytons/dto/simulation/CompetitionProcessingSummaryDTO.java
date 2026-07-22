@@ -24,4 +24,5 @@ public class CompetitionProcessingSummaryDTO {
     private int skipped;
     private int errors;
     private List<String> errorMessages;
+    private List<String> skippedMessages;
 }
