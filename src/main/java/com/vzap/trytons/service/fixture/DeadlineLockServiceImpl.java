@@ -4,6 +4,7 @@ import com.vzap.trytons.dao.admin.AdminDAO;
 import com.vzap.trytons.dao.fixture.FantasyRoundDAO;
 import com.vzap.trytons.dao.fantasyteam.FantasyTeamRoundSelectionDAO;
 import com.vzap.trytons.dao.fantasyteam.FantasyTeamDAO;
+import com.vzap.trytons.dao.fantasyteam.FantasyTeamPlayerDAO;
 import com.vzap.trytons.dao.catalog.PlayerDAO;
 import com.vzap.trytons.dao.fixture.FixtureDAO;
 import com.vzap.trytons.dao.fixture.RoundLockDAO;
@@ -16,6 +17,7 @@ import com.vzap.trytons.exceptions.BusinessRuleException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.model.fixture.FantasyRound;
 import com.vzap.trytons.model.fantasyteam.FantasyTeamRoundSelection;
+import com.vzap.trytons.model.fantasyteam.TeamPlayerSelection;
 import com.vzap.trytons.model.fantasyteam.FantasyTeam;
 import com.vzap.trytons.model.catalog.Player;
 import com.vzap.trytons.model.fixture.Fixture;
@@ -25,8 +27,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -50,6 +54,8 @@ public class DeadlineLockServiceImpl implements DeadlineLockService {
     private FixtureDAO fixtureDAO;
     @Inject
     private FantasyTeamDAO fantasyTeamDAO;
+    @Inject
+    private FantasyTeamPlayerDAO fantasyTeamPlayerDAO;
     @Inject
     private NotificationService notificationService;
 
@@ -120,8 +126,53 @@ public class DeadlineLockServiceImpl implements DeadlineLockService {
         roundLock.setActionAt(LocalDateTime.now());
         roundLockDAO.createRoundLock(roundLock);
         fantasyRoundDAO.updateRoundStatus(roundId,FantasyRoundStatus.LOCKED);
+        // Snapshot only after the round is LOCKED: fantasy_team_round_selection has a BEFORE INSERT
+        // trigger (trg_round_selection_insert) that rejects any row whose round is not already LOCKED.
+        snapshotSquadsForRound(round);
         notifyTransferDeadlineForRound(round);
         return getLockStatus(roundId);
+    }
+
+    /**
+     * Captures the locked squad snapshot for every team playing a fixture in this round, copying each
+     * team's current (live) squad from team_player_selection into fantasy_team_round_selection. Teams
+     * are sourced from this round's fixtures (fantasy team A vs fantasy team B), since a fixture is the
+     * only relation tying a fantasy team to a specific round. Idempotent: a team that already has a
+     * snapshot for this round (e.g. a retried lock) is skipped rather than duplicated.
+     */
+    private void snapshotSquadsForRound(FantasyRound round) {
+        Set<UUID> teamIds = new LinkedHashSet<>();
+        for (Fixture fixture : fixtureDAO.findByRoundId(round.getRoundId())) {
+            if (fixture.getTeamAId() != null) {
+                teamIds.add(fixture.getTeamAId());
+            }
+            if (fixture.getTeamBId() != null) {
+                teamIds.add(fixture.getTeamBId());
+            }
+        }
+
+        List<FantasyTeamRoundSelection> newSelections = new ArrayList<>();
+        for (UUID teamId : teamIds) {
+            if (fantasyTeamRoundSelectionDAO.snapshotExistsForTeamInRound(round.getRoundId(), teamId)) {
+                continue;
+            }
+            for (TeamPlayerSelection squadEntry : fantasyTeamPlayerDAO.getSquadByTeamId(teamId)) {
+                FantasyTeamRoundSelection selection = new FantasyTeamRoundSelection();
+                selection.setRoundId(round.getRoundId());
+                selection.setTeamId(teamId);
+                selection.setPlayerId(squadEntry.getPlayerId());
+                selection.setSelectedDate(squadEntry.getSelectedDate());
+                selection.setSquadRole(squadEntry.getSquadRole());
+                selection.setIsCaptain(squadEntry.getIsCaptain());
+                selection.setIsViceCaptain(squadEntry.getIsViceCaptain());
+                selection.setLockedAt(LocalDateTime.now());
+                newSelections.add(selection);
+            }
+        }
+
+        if (!newSelections.isEmpty()) {
+            fantasyTeamRoundSelectionDAO.createRoundSelections(newSelections);
+        }
     }
 
     /**

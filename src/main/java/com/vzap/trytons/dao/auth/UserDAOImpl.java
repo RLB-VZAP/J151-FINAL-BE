@@ -109,6 +109,7 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
             }
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to update user.", e);
+            throw new DataAccessException("Unable to update user.", e);
         }
         return Optional.empty();
     }

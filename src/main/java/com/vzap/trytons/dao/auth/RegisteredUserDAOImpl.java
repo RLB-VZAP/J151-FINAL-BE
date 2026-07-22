@@ -45,6 +45,7 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
             }
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to find user by ID.", e);
+            throw new DataAccessException("Unable to find user by ID.", e);
         }
         return Optional.empty();
     }
@@ -61,6 +62,7 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
             }
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to update user profile.", e);
+            throw new DataAccessException("Unable to update user profile.", e);
         }
         return Optional.empty();
     }
@@ -76,6 +78,7 @@ public class RegisteredUserDAOImpl extends BaseDAO implements RegisteredUserDAO 
             }
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to deactivate account.", e);
+            throw new DataAccessException("Unable to deactivate account.", e);
         }
         return false;
     }

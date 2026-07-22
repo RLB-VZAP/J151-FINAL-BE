@@ -2,11 +2,9 @@ package com.vzap.trytons.resource.fixture;
 
 import com.vzap.trytons.annotations.AdminOnly;
 import com.vzap.trytons.annotations.Authenticated;
-import com.vzap.trytons.dto.shared.ErrorResponseDTO;
 import com.vzap.trytons.dto.fixture.FixtureRequestDTO;
 import com.vzap.trytons.dto.fixture.FixtureResponseDTO;
 import com.vzap.trytons.enums.FixtureStatus;
-import com.vzap.trytons.exceptions.*;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
 import com.vzap.trytons.service.fixture.FixtureService;
@@ -22,15 +20,12 @@ import jakarta.ws.rs.core.UriInfo;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Path("/fixtures")
 @Authenticated
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class FixtureResource {
-    private static final Logger LOG = Logger.getLogger(FixtureResource.class.getName());
     @Inject
     private FixtureService fixtureService;
     @Context
@@ -43,81 +38,29 @@ public class FixtureResource {
 
     @GET
     public Response listFixtures(@QueryParam("status")FixtureStatus status){
-        try{
-            List<FixtureResponseDTO>fixtures = fixtureService.listFixtures(status);
-            return Response.ok(fixtures).build();
-        }catch(DataAccessException e){
-            return serverError("Failed to load fixtures",e);
-        }catch(Exception e){
-            return unexpected(e);
-        }
+        List<FixtureResponseDTO>fixtures = fixtureService.listFixtures(status);
+        return Response.ok(fixtures).build();
     }
     @GET
     @Path("/{fixtureId}")
     public Response getFixture(@PathParam("fixtureId") UUID fixtureId){
-        try{
-            FixtureResponseDTO fixture = fixtureService.getFixture(fixtureId);
-            return Response.ok(fixture).build();
-        }catch(ValidationException e){
-            return Response.status(Response.Status.BAD_REQUEST).entity(ErrorResponseDTO.of(e.getMessage(),e.getErrorCode())).build();
-        }catch(ResourceNotFoundException e){
-            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(),e.getErrorCode())).build();
-        }catch(DataAccessException e){
-            return serverError("Failed to load fixture",e);
-        }catch(Exception e){
-            return unexpected(e);
-        }
+        FixtureResponseDTO fixture = fixtureService.getFixture(fixtureId);
+        return Response.ok(fixture).build();
     }
     @POST
     @AdminOnly
     public Response createFixture(@Valid FixtureRequestDTO request, @Context UriInfo uriInfo){
-        try {
-            FixtureResponseDTO created = fixtureService.createFixture(getCurrentUserId(),request);
-            URI location = uriInfo.getAbsolutePathBuilder().path(created.getFixtureId().toString()).build();
-            return Response.created(location).entity(created).build();
-        }catch(AuthorisationException e){
-            return Response.status(Response.Status.FORBIDDEN).entity(ErrorResponseDTO.of(e.getMessage(),e.getErrorCode())).build();
-        }catch(ValidationException e){
-            return Response.status(Response.Status.BAD_REQUEST).entity(ErrorResponseDTO.of(e.getMessage(),e.getErrorCode())).build();
-        }catch(ResourceNotFoundException e){
-            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(),e.getErrorCode())).build();
-        }catch(ConflictException e){
-            return Response.status(Response.Status.CONFLICT).entity(ErrorResponseDTO.of(e.getMessage(),e.getErrorCode())).build();
-        }catch(DataAccessException e){
-            return serverError("Failed to create fixture",e);
-        }catch(Exception e){
-            return unexpected(e);
-        }
+        FixtureResponseDTO created = fixtureService.createFixture(getCurrentUserId(),request);
+        URI location = uriInfo.getAbsolutePathBuilder().path(created.getFixtureId().toString()).build();
+        return Response.created(location).entity(created).build();
     }
 
     @PUT
     @Path("/{fixtureId}/status")
     @AdminOnly
     public Response updateFixtureStatus(@PathParam("fixtureId") UUID fixtureId, @QueryParam("status") FixtureStatus status){
-        try{
-            FixtureResponseDTO updated = fixtureService.updateFixtureStatus(getCurrentUserId(),fixtureId,status);
-            return Response.ok(updated).build();
-        }catch(AuthorisationException e){
-            return Response.status(Response.Status.FORBIDDEN).entity(ErrorResponseDTO.of(e.getMessage(),e.getErrorCode())).build();
-        }catch(ValidationException e){
-            return Response.status(Response.Status.BAD_REQUEST).entity(ErrorResponseDTO.of(e.getMessage(),e.getErrorCode())).build();
-        }catch(ResourceNotFoundException e){
-            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(),e.getErrorCode())).build();
-        }catch(BusinessRuleException e){
-            return Response.status(422).entity(ErrorResponseDTO.of(e.getMessage(),e.getErrorCode())).build();
-        }catch(DataAccessException e){
-            return serverError("Failed to create fixture",e);
-        }catch(Exception e){
-            return unexpected(e);
-        }
-    }
-    private Response serverError(String message, DataAccessException e){
-        LOG.log(Level.SEVERE,message,e);
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponseDTO.of(message, e.getErrorCode())).build();
-    }
-    private Response unexpected(Exception e){
-        LOG.log(Level.SEVERE,"Unexpected error in FixtureResource",e);
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponseDTO.internalServerError()).build();
+        FixtureResponseDTO updated = fixtureService.updateFixtureStatus(getCurrentUserId(),fixtureId,status);
+        return Response.ok(updated).build();
     }
 
 }

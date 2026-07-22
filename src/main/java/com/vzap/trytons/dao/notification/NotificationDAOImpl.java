@@ -3,7 +3,6 @@ package com.vzap.trytons.dao.notification;
 import com.vzap.trytons.enums.NotificationType;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.notification.Notification;
-import com.vzap.trytons.model.auth.User;
 import jakarta.ejb.Singleton;
 
 import java.sql.Connection;
@@ -34,8 +33,7 @@ public class NotificationDAOImpl extends BaseDAO implements NotificationDAO {
             notification.setRelatedEntityType(rs.getString("related_entity_type"));
             String relatedEntityId = rs.getString("related_entity_id");
             notification.setRelatedEntityId(relatedEntityId != null ? UUID.fromString(relatedEntityId) : null);
-            User user = User.builder().userId(UUID.fromString(rs.getString("userId"))).build();
-            String userId = rs.getString("user_id");
+            String userId = rs.getString("userId");
             notification.setUserId(userId != null ? UUID.fromString(userId) : null);
             return notification;
         }catch(SQLException e){
