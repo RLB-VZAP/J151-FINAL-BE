@@ -2,16 +2,20 @@ package com.vzap.trytons.dto.notification;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.vzap.trytons.enums.NotificationType;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-@Builder
 @Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class NotificationResponseDTO {
     private UUID notificationId;
     private NotificationType type;
