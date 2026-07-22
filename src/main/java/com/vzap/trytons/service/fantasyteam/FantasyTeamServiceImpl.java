@@ -34,7 +34,19 @@ import java.util.List;
 import java.util.UUID;
 
 public class FantasyTeamServiceImpl implements FantasyTeamService {
-    private static final BigDecimal INITIAL_BUDGET = BigDecimal.valueOf(100000000.00);
+    /**
+     * Squad budget, on the same scale as player.value — millions of rands, so
+     * 200.00 means R200m. It has to match that scale because the budget is
+     * spent by subtracting player values from it; the previous 100000000.00
+     * was whole rands, which made every squad look free and overflowed
+     * fantasyTeam.remainingBudget DECIMAL(10,2) on insert.
+     *
+     * Sized against the seeded roster and the 20-player squad rule: the
+     * cheapest possible squad costs about 172 and the most expensive about
+     * 223, so 200 leaves room for a strong squad while still ruling out
+     * buying the whole top end.
+     */
+    private static final BigDecimal INITIAL_BUDGET = new BigDecimal("200.00");
 
     @Inject
     private FantasyTeamDAO fantasyTeamDAO;
@@ -121,7 +133,10 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         FantasyTeam fantasyTeam = mapRequestToFantasyTeam(request);
         fantasyTeam.setTeamId(UUID.randomUUID());
         fantasyTeam.setOwnerUserId(registeredUserId);
-        fantasyTeam.setRemainingBudget(INITIAL_BUDGET);
+        // Insert the budget already debited by the squad cost. Storing the full
+        // INITIAL_BUDGET here relied on the updateBudget call below to correct
+        // the row, so any failure in between left the team looking unspent.
+        fantasyTeam.setRemainingBudget(remainingBudget);
         fantasyTeam.setCreationDate(LocalDateTime.now());
         fantasyTeam.setIsValid(true);
 
