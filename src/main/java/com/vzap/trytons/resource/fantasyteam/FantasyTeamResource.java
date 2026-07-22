@@ -1,17 +1,11 @@
 package com.vzap.trytons.resource.fantasyteam;
 
 import com.vzap.trytons.annotations.Authenticated;
-import com.vzap.trytons.dto.shared.ErrorResponseDTO;
 import com.vzap.trytons.dto.fantasyteam.FantasyTeamRequestDTO;
 import com.vzap.trytons.dto.fantasyteam.FantasyTeamResponseDTO;
 import com.vzap.trytons.dto.fantasyteam.ViewOpponentTeamDTO;
 import com.vzap.trytons.dto.fantasyteam.ViewOwnTeamDTO;
 import com.vzap.trytons.exceptions.AuthenticationException;
-import com.vzap.trytons.exceptions.AuthorisationException;
-import com.vzap.trytons.exceptions.ConflictException;
-import com.vzap.trytons.exceptions.DataAccessException;
-import com.vzap.trytons.exceptions.ResourceNotFoundException;
-import com.vzap.trytons.exceptions.ValidationException;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
 import com.vzap.trytons.service.fantasyteam.FantasyTeamService;
@@ -32,8 +26,6 @@ import jakarta.ws.rs.core.UriInfo;
 
 import java.net.URI;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Authenticated
 @Path("/fantasy-team")
@@ -41,9 +33,6 @@ import java.util.logging.Logger;
 @Produces(MediaType.APPLICATION_JSON)
 
 public class FantasyTeamResource {
-
-    private static final Logger LOGGER =
-            Logger.getLogger(FantasyTeamResource.class.getName());
 
     @Inject
     private FantasyTeamService fantasyTeamService;
@@ -54,55 +43,20 @@ public class FantasyTeamResource {
             @Context ContainerRequestContext requestContext,
             @Context UriInfo uriInfo) {
 
-        try {
-            UUID userId = currentUserId(requestContext);
+        UUID userId = currentUserId(requestContext);
 
-            FantasyTeamResponseDTO created =
-                    fantasyTeamService.createTeam(userId, request);
+        FantasyTeamResponseDTO created =
+                fantasyTeamService.createTeam(userId, request);
 
-            URI location = uriInfo
-                    .getAbsolutePathBuilder()
-                    .path(created.getTeamId().toString())
-                    .build();
+        URI location = uriInfo
+                .getAbsolutePathBuilder()
+                .path(created.getTeamId().toString())
+                .build();
 
-            return Response
-                    .created(location)
-                    .entity(created)
-                    .build();
-
-        } catch (AuthenticationException e) {
-            return Response
-                    .status(Response.Status.UNAUTHORIZED)
-                    .entity(error(e.getMessage(), "AUTHENTICATION_ERROR"))
-                    .build();
-
-        } catch (AuthorisationException e) {
-            return Response
-                    .status(Response.Status.FORBIDDEN)
-                    .entity(error(e.getMessage(), "AUTHORISATION_ERROR"))
-                    .build();
-
-        } catch (ConflictException e) {
-            return Response
-                    .status(Response.Status.CONFLICT)
-                    .entity(error(e.getMessage(), "CONFLICT"))
-                    .build();
-
-        } catch (ValidationException e) {
-            return Response
-                    .status(Response.Status.BAD_REQUEST)
-                    .entity(error(e.getMessage(), "VALIDATION_ERROR"))
-                    .build();
-
-        } catch (DataAccessException e) {
-            return serverError(
-                    "Failed to create fantasy team.",
-                    e
-            );
-
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response
+                .created(location)
+                .entity(created)
+                .build();
     }
 
     /*
@@ -115,41 +69,12 @@ public class FantasyTeamResource {
             @PathParam("teamId") UUID teamId,
             @Context ContainerRequestContext requestContext) {
 
-        try {
-            UUID userId = currentUserId(requestContext);
+        UUID userId = currentUserId(requestContext);
 
-            ViewOwnTeamDTO team =
-                    fantasyTeamService.viewOwnTeam(userId, teamId);
+        ViewOwnTeamDTO team =
+                fantasyTeamService.viewOwnTeam(userId, teamId);
 
-            return Response.ok(team).build();
-
-        } catch (AuthenticationException e) {
-            return Response
-                    .status(Response.Status.UNAUTHORIZED)
-                    .entity(error(e.getMessage(), "AUTHENTICATION_ERROR"))
-                    .build();
-
-        } catch (AuthorisationException e) {
-            return Response
-                    .status(Response.Status.FORBIDDEN)
-                    .entity(error(e.getMessage(), "AUTHORISATION_ERROR"))
-                    .build();
-
-        } catch (ResourceNotFoundException e) {
-            return Response
-                    .status(Response.Status.NOT_FOUND)
-                    .entity(error(e.getMessage(), "RESOURCE_NOT_FOUND"))
-                    .build();
-
-        } catch (DataAccessException e) {
-            return serverError(
-                    "Failed to view fantasy team.",
-                    e
-            );
-
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.ok(team).build();
     }
 
     /*
@@ -160,27 +85,10 @@ public class FantasyTeamResource {
     public Response viewOpponentTeam(
             @PathParam("teamId") UUID teamId) {
 
-        try {
-            ViewOpponentTeamDTO team =
-                    fantasyTeamService.viewOpponentTeam(teamId);
+        ViewOpponentTeamDTO team =
+                fantasyTeamService.viewOpponentTeam(teamId);
 
-            return Response.ok(team).build();
-
-        } catch (ResourceNotFoundException e) {
-            return Response
-                    .status(Response.Status.NOT_FOUND)
-                    .entity(error(e.getMessage(), "RESOURCE_NOT_FOUND"))
-                    .build();
-
-        } catch (DataAccessException e) {
-            return serverError(
-                    "Failed to view opponent fantasy team.",
-                    e
-            );
-
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.ok(team).build();
     }
 
     @PUT
@@ -190,57 +98,16 @@ public class FantasyTeamResource {
             @Valid FantasyTeamRequestDTO request,
             @Context ContainerRequestContext requestContext) {
 
-        try {
-            UUID userId = currentUserId(requestContext);
+        UUID userId = currentUserId(requestContext);
 
-            FantasyTeamResponseDTO updated =
-                    fantasyTeamService.updateTeam(
-                            userId,
-                            teamId,
-                            request
-                    );
+        FantasyTeamResponseDTO updated =
+                fantasyTeamService.updateTeam(
+                        userId,
+                        teamId,
+                        request
+                );
 
-            return Response.ok(updated).build();
-
-        } catch (AuthenticationException e) {
-            return Response
-                    .status(Response.Status.UNAUTHORIZED)
-                    .entity(error(e.getMessage(), "AUTHENTICATION_ERROR"))
-                    .build();
-
-        } catch (AuthorisationException e) {
-            return Response
-                    .status(Response.Status.FORBIDDEN)
-                    .entity(error(e.getMessage(), "AUTHORISATION_ERROR"))
-                    .build();
-
-        } catch (ResourceNotFoundException e) {
-            return Response
-                    .status(Response.Status.NOT_FOUND)
-                    .entity(error(e.getMessage(), "RESOURCE_NOT_FOUND"))
-                    .build();
-
-        } catch (ConflictException e) {
-            return Response
-                    .status(Response.Status.CONFLICT)
-                    .entity(error(e.getMessage(), "CONFLICT"))
-                    .build();
-
-        } catch (ValidationException e) {
-            return Response
-                    .status(Response.Status.BAD_REQUEST)
-                    .entity(error(e.getMessage(), "VALIDATION_ERROR"))
-                    .build();
-
-        } catch (DataAccessException e) {
-            return serverError(
-                    "Failed to update fantasy team.",
-                    e
-            );
-
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.ok(updated).build();
     }
 
     private UUID currentUserId(
@@ -259,48 +126,5 @@ public class FantasyTeamResource {
         }
 
         return principal.getUserId();
-    }
-
-    private ErrorResponseDTO error(
-            String message,
-            String errorCode) {
-
-        return ErrorResponseDTO.of(message, errorCode);
-    }
-
-    private Response serverError(
-            String message,
-            DataAccessException exception) {
-
-        LOGGER.log(Level.SEVERE, message, exception);
-
-        return Response
-                .status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(
-                        ErrorResponseDTO.of(
-                                message,
-                                exception.getErrorCode()
-                        )
-                )
-                .build();
-    }
-
-    private Response unexpected(Exception exception) {
-
-        LOGGER.log(
-                Level.SEVERE,
-                "Unexpected error in FantasyTeamResource.",
-                exception
-        );
-
-        return Response
-                .status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(
-                        ErrorResponseDTO.of(
-                                "An unexpected error occurred.",
-                                "INTERNAL_SERVER_ERROR"
-                        )
-                )
-                .build();
     }
 }

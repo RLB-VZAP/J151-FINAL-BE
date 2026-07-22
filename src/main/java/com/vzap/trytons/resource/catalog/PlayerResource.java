@@ -2,16 +2,10 @@ package com.vzap.trytons.resource.catalog;
 
 import com.vzap.trytons.annotations.AdminOnly;
 import com.vzap.trytons.annotations.Authenticated;
-import com.vzap.trytons.dto.shared.ErrorResponseDTO;
 import com.vzap.trytons.dto.catalog.PlayerRequestDTO;
 import com.vzap.trytons.dto.catalog.PlayerResponseDTO;
 import com.vzap.trytons.dto.catalog.PlayerAvailabilityRequestDTO;
 import com.vzap.trytons.dto.catalog.PlayerAvailabilityResponseDTO;
-import com.vzap.trytons.exceptions.AuthorisationException;
-import com.vzap.trytons.exceptions.ConflictException;
-import com.vzap.trytons.exceptions.DataAccessException;
-import com.vzap.trytons.exceptions.ResourceNotFoundException;
-import com.vzap.trytons.exceptions.ValidationException;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
 import com.vzap.trytons.service.catalog.PlayerAvailabilityService;
@@ -27,14 +21,11 @@ import jakarta.ws.rs.core.UriInfo;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Path("/player")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class PlayerResource {
-    private static final Logger LOGGER = Logger.getLogger(PlayerResource.class.getName());
     @Inject
     private PlayerService playerService;
     @Inject
@@ -49,52 +40,30 @@ public class PlayerResource {
 
     @GET
     public Response listPlayers(@QueryParam("search") String search, @QueryParam("clubId") UUID clubId, @QueryParam("positionId") UUID positionId ) {
-        try {
-            List<PlayerResponseDTO> players;
-            if (search != null || clubId != null || positionId != null) {
-                players = playerService.searchPlayers(search, clubId, positionId);
-            }else{
-                players = playerService.getAllPlayers();
-            }
-            return Response.ok(players).build();
-        }catch(DataAccessException e ){
-            return serverError("Failed to load players.", e);
-        }catch (Exception e) {
-            return unexpected(e);
+        List<PlayerResponseDTO> players;
+        if (search != null || clubId != null || positionId != null) {
+            players = playerService.searchPlayers(search, clubId, positionId);
+        }else{
+            players = playerService.getAllPlayers();
         }
+        return Response.ok(players).build();
     }
 
     @GET
     @Path("/{id}")
     public Response getPlayer(@PathParam("id") UUID id) {
-        try {
-            PlayerResponseDTO player = playerService.getPlayer(id);
-            return Response.ok(player).build();
-        } catch (ResourceNotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
-        } catch (DataAccessException e) {
-            return serverError("Failed to load player.", e);
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        PlayerResponseDTO player = playerService.getPlayer(id);
+        return Response.ok(player).build();
     }
 
     @POST
     @Authenticated
     @AdminOnly
     public Response createPlayer(@Valid PlayerRequestDTO playerRequestDTO, @Context UriInfo uriInfo) {
-        try{
-            PlayerResponseDTO created = playerService.createPlayer(playerRequestDTO);
-            URI location = uriInfo.getAbsolutePathBuilder().path(created.getPlayerId().toString()).build();
+        PlayerResponseDTO created = playerService.createPlayer(playerRequestDTO);
+        URI location = uriInfo.getAbsolutePathBuilder().path(created.getPlayerId().toString()).build();
 
-            return Response.created(location).entity(created).build();
-        }catch(ConflictException e){
-            return Response.status(Response.Status.CONFLICT).build();
-        }catch(DataAccessException e){
-            return serverError("Failed to create player.", e);
-        }catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.created(location).entity(created).build();
     }
 
     @PUT
@@ -102,19 +71,9 @@ public class PlayerResource {
     @Authenticated
     @AdminOnly
     public Response updatePlayer(@PathParam("id") UUID id, @Valid PlayerRequestDTO request){
-        try{
-            PlayerResponseDTO updated = playerService.updatePlayer(id, request);
+        PlayerResponseDTO updated = playerService.updatePlayer(id, request);
 
-            return Response.ok(updated).build();
-        }catch (ResourceNotFoundException e){
-            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
-    }catch (ConflictException e){
-            return Response.status(Response.Status.CONFLICT).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
-        }catch (DataAccessException e){
-            return serverError("Failed to update player.", e);
-        }catch (Exception e){
-            return unexpected(e);
-        }
+        return Response.ok(updated).build();
     }
 
 
@@ -124,31 +83,9 @@ public class PlayerResource {
     @Authenticated
     @AdminOnly
     public Response setAvailability(@PathParam("id") UUID id, @Valid PlayerAvailabilityRequestDTO request) {
-        try {
-            PlayerAvailabilityResponseDTO updated = playerAvailabilityService.setAvailability(getCurrentUserId(), id, request);
+        PlayerAvailabilityResponseDTO updated = playerAvailabilityService.setAvailability(getCurrentUserId(), id, request);
 
-            return Response.ok(updated).build();
-        } catch (AuthorisationException e) {
-            return Response.status(Response.Status.FORBIDDEN).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
-        } catch (ValidationException e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
-        } catch (ResourceNotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of(e.getMessage(), e.getErrorCode())).build();
-        } catch (DataAccessException e) {
-            return serverError("Failed to update player availability.", e);
-        } catch (Exception e) {
-            return unexpected(e);
-        }
-    }
-
-    private Response serverError(String message, DataAccessException e) {
-        LOGGER.log(Level.SEVERE, message, e);
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponseDTO.of(message, e.getErrorCode())).build();
-    }
-
-    private Response unexpected(Exception e) {
-        LOGGER.log(Level.SEVERE, "Unexpected error in PlayerResource.", e);
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR")).build();
+        return Response.ok(updated).build();
     }
 
 }

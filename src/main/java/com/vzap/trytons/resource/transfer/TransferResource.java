@@ -1,10 +1,8 @@
 package com.vzap.trytons.resource.transfer;
 
 import com.vzap.trytons.annotations.Authenticated;
-import com.vzap.trytons.dto.shared.ErrorResponseDTO;
 import com.vzap.trytons.dto.transfer.TransferRequestDTO;
 import com.vzap.trytons.dto.transfer.TransferResponseDTO;
-import com.vzap.trytons.exceptions.ApplicationException;
 import com.vzap.trytons.exceptions.AuthenticationException;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
@@ -23,16 +21,12 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Authenticated
 @Path("/transfers")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class TransferResource {
-
-    private static final Logger LOGGER = Logger.getLogger(TransferResource.class.getName());
 
     @Inject
     private TransferService transferService;
@@ -41,19 +35,11 @@ public class TransferResource {
     public Response executeTransfer(
             @Valid TransferRequestDTO request,
             @Context ContainerRequestContext requestContext) {
-        try {
-            String actorUserId = currentUserId(requestContext);
+        String actorUserId = currentUserId(requestContext);
 
-            TransferResponseDTO response = transferService.executeTransfer(actorUserId, request);
+        TransferResponseDTO response = transferService.executeTransfer(actorUserId, request);
 
-            return Response.ok(response).build();
-
-        } catch (ApplicationException e) {
-            return handledApplicationError(e);
-
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.ok(response).build();
     }
 
     @GET
@@ -61,20 +47,12 @@ public class TransferResource {
     public Response listTransferHistory(
             @PathParam("teamId") String teamId,
             @Context ContainerRequestContext requestContext) {
-        try {
-            String actorUserId = currentUserId(requestContext);
+        String actorUserId = currentUserId(requestContext);
 
-            List<TransferResponseDTO> history =
-                    transferService.listTransferHistory(actorUserId, teamId);
+        List<TransferResponseDTO> history =
+                transferService.listTransferHistory(actorUserId, teamId);
 
-            return Response.ok(history).build();
-
-        } catch (ApplicationException e) {
-            return handledApplicationError(e);
-
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.ok(history).build();
     }
 
     private String currentUserId(ContainerRequestContext requestContext) {
@@ -85,24 +63,5 @@ public class TransferResource {
         }
 
         return principal.getUserId().toString();
-    }
-
-    private Response handledApplicationError(ApplicationException e) {
-        ErrorResponseDTO errorPayload = ErrorResponseDTO.of(e.getMessage(), e.getErrorCode());
-
-        return Response.status(e.getStatusCode())
-                .entity(errorPayload)
-                .build();
-    }
-
-    private Response unexpected(Exception e) {
-        LOGGER.log(Level.SEVERE, "Unexpected error in TransferResource.", e);
-
-        ErrorResponseDTO errorPayload =
-                ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR");
-
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(errorPayload)
-                .build();
     }
 }

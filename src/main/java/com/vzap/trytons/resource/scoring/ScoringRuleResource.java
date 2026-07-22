@@ -1,10 +1,8 @@
 package com.vzap.trytons.resource.scoring;
 
 import com.vzap.trytons.annotations.Authenticated;
-import com.vzap.trytons.dto.shared.ErrorResponseDTO;
 import com.vzap.trytons.dto.scoring.ScoringRuleRequestDTO;
 import com.vzap.trytons.dto.scoring.ScoringRuleResponseDTO;
-import com.vzap.trytons.exceptions.ApplicationException;
 import com.vzap.trytons.exceptions.AuthenticationException;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
@@ -23,16 +21,12 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Authenticated
 @Path("/scoring-rules")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class ScoringRuleResource {
-
-    private static final Logger LOGGER = Logger.getLogger(ScoringRuleResource.class.getName());
 
     @Inject
     ScoringRuleService scoringRuleService;
@@ -41,38 +35,22 @@ public class ScoringRuleResource {
     public Response listRules(
             @QueryParam("season") String season,
             @Context ContainerRequestContext requestContext) {
-        try {
-            UUID actorUserId = currentUserId(requestContext);
+        UUID actorUserId = currentUserId(requestContext);
 
-            List<ScoringRuleResponseDTO> results = scoringRuleService.listRules(actorUserId, season);
+        List<ScoringRuleResponseDTO> results = scoringRuleService.listRules(actorUserId, season);
 
-            return Response.ok(results).build();
-
-        } catch (ApplicationException e) {
-            return handledApplicationError(e);
-
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.ok(results).build();
     }
 
     @POST
     public Response saveRule(
             @Valid ScoringRuleRequestDTO request,
             @Context ContainerRequestContext requestContext) {
-        try {
-            UUID actorUserId = currentUserId(requestContext);
+        UUID actorUserId = currentUserId(requestContext);
 
-            ScoringRuleResponseDTO result = scoringRuleService.saveRule(actorUserId, request);
+        ScoringRuleResponseDTO result = scoringRuleService.saveRule(actorUserId, request);
 
-            return Response.ok(result).build();
-
-        } catch (ApplicationException e) {
-            return handledApplicationError(e);
-
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.ok(result).build();
     }
 
     private UUID currentUserId(ContainerRequestContext requestContext) {
@@ -83,24 +61,5 @@ public class ScoringRuleResource {
         }
 
         return principal.getUserId();
-    }
-
-    private Response handledApplicationError(ApplicationException e) {
-        ErrorResponseDTO errorPayload = ErrorResponseDTO.of(e.getMessage(), e.getErrorCode());
-
-        return Response.status(e.getStatusCode())
-                .entity(errorPayload)
-                .build();
-    }
-
-    private Response unexpected(Exception e) {
-        LOGGER.log(Level.SEVERE, "Unexpected error in ScoringRuleResource.", e);
-
-        ErrorResponseDTO errorPayload =
-                ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR");
-
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(errorPayload)
-                .build();
     }
 }
