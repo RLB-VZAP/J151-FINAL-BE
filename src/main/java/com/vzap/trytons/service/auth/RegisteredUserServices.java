@@ -10,10 +10,7 @@ import java.util.UUID;
 
 public interface RegisteredUserServices {
     RegisteredUser registerUser(RegisteredUserRequestDTO newUser);
-
     ProfileResponseDTO getProfile(UUID userId);
-
     ProfileResponseDTO updateProfile(UUID actorUserId, ProfileUpdateRequestDTO request);
-
     void changePassword(UUID actorUserId, ChangePasswordRequestDTO request);
 }

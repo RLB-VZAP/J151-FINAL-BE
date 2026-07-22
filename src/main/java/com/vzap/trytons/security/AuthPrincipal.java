@@ -12,8 +12,10 @@ import java.util.UUID;
 @Builder
 public class AuthPrincipal implements Principal {
     private UUID userId;
+
     private String username;
     private String email;
+
     private UserRole role;
 
     @Override

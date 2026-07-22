@@ -15,11 +15,13 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class FantasyPoints {
-
     private UUID pointsId;
     private UUID statId;
+
     private int totalPoints;
     private int calculationVersion;
+
     private boolean isFinal;
+
     private LocalDateTime calculatedAt;
 }

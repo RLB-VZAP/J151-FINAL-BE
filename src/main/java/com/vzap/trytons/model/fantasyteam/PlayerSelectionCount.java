@@ -13,5 +13,6 @@ import java.util.UUID;
 @NoArgsConstructor
 public class PlayerSelectionCount {
     private UUID playerId;
+
     private long selectionCount;
 }

@@ -33,7 +33,9 @@ public class FantasyTeamRoundSelectionDAOImpl extends BaseDAO implements Fantasy
     
     @Override
     public Optional<FantasyTeamRoundSelection> createRoundSelection(FantasyTeamRoundSelection selection) {
-        String query = "INSERT INTO fantasy_team_round_selection(selectionId, roundId, teamId, playerId, selectedDate, squadRole, isCaptain, is_vice_captain, lockedAt) VALUES (?,?,?,?,?,?,?,?,?)";
+        String query = "INSERT " +
+                "INTO fantasy_team_round_selection(selectionId, roundId, teamId, playerId, selectedDate, squadRole, isCaptain, is_vice_captain, lockedAt) " +
+                "VALUES (?,?,?,?,?,?,?,?,?)";
         try(Connection con = getConnection();
             PreparedStatement ps = con.prepareStatement(query)) {
             UUID newSelectionId = UUID.randomUUID();
@@ -67,11 +69,7 @@ public class FantasyTeamRoundSelectionDAOImpl extends BaseDAO implements Fantasy
             return Optional.of(selection);
         }catch(SQLException e){
             if ("45000".equals(e.getSQLState())) {
-                throw new ConflictException(
-                        e.getMessage() != null
-                                ? e.getMessage()
-                                : "The round selection could not be created because it conflicts with an existing record."
-                );
+                throw new ConflictException(e.getMessage() != null ? e.getMessage() : "The round selection could not be created because it conflicts with an existing record.");
             }
 
             LOGGER.log(Level.SEVERE,"Unable to create new fantasy team round selection",e);
@@ -135,11 +133,7 @@ public class FantasyTeamRoundSelectionDAOImpl extends BaseDAO implements Fantasy
             }
 
             if ("45000".equals(e.getSQLState())) {
-                throw new ConflictException(
-                        e.getMessage() != null
-                                ? e.getMessage()
-                                : "The round selections could not be created because they conflict with an existing record."
-                );
+                throw new ConflictException(e.getMessage() != null ? e.getMessage() : "The round selections could not be created because they conflict with an existing record.");
             }
 
             LOGGER.log(Level.SEVERE, "Unable to create new fantasy team round selections", e);

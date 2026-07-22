@@ -11,9 +11,10 @@ import java.util.UUID;
 @Getter
 @Setter
 public class LeagueMembership {
-
     private UUID membershipId;
+
     private Boolean isActive;
+
     private LocalDateTime joinDate;
 
     private UUID leagueId;

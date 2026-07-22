@@ -19,7 +19,6 @@ import com.vzap.trytons.model.scoring.FantasyPoints;
 import com.vzap.trytons.model.fixture.FantasyRound;
 import com.vzap.trytons.model.fixture.Fixture;
 import com.vzap.trytons.model.results.MatchResult;
-import com.vzap.trytons.model.catalog.Player;
 import com.vzap.trytons.model.results.PlayerStatistics;
 import com.vzap.trytons.model.scoring.ScoringRule;
 import com.vzap.trytons.model.auth.User;
@@ -34,7 +33,6 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class FantasyPointsServiceImpl implements FantasyPointsService {
-
     @Inject
     FantasyPointsDAO fantasyPointsDAO;
 
@@ -63,25 +61,24 @@ public class FantasyPointsServiceImpl implements FantasyPointsService {
     public FantasyPointsResponseDTO calculateFantasyPoints(UUID actorUserId, FantasyPointsRequestDTO request) {
         requireAdmin(actorUserId);
 
-        PlayerStatistics statistic = playerStatisticsDAO.findById(request.getStatId())
-                .orElseThrow(() -> new ResourceNotFoundException("Player statistic not found."));
+        PlayerStatistics statistic = playerStatisticsDAO.findById(request.getStatId()).orElseThrow(() -> new ResourceNotFoundException("Player statistic not found."));
 
-        MatchResult result = matchResultDAO.findById(statistic.getResultId())
-                .orElseThrow(() -> new ResourceNotFoundException("Match result not found."));
+        MatchResult result = matchResultDAO.findById(statistic.getResultId()).orElseThrow(() -> new ResourceNotFoundException("Match result not found."));
 
-        Fixture fixture = fixtureDAO.findById(result.getFixtureId())
-                .orElseThrow(() -> new ResourceNotFoundException("Fixture not found."));
+        Fixture fixture = fixtureDAO.findById(result.getFixtureId()).orElseThrow(() -> new ResourceNotFoundException("Fixture not found."));
 
-        FantasyRound round = fantasyRoundDAO.getRoundById(fixture.getRoundId())
-                .orElseThrow(() -> new ResourceNotFoundException("Round was not found."));
+        FantasyRound round = fantasyRoundDAO.getRoundById(fixture.getRoundId()).orElseThrow(() -> new ResourceNotFoundException("Round was not found."));
 
         List<ScoringRule> scoringRules = scoringRuleDAO.findActiveRules(round.getSeason());
+
         if (scoringRules.isEmpty()) {
             throw new BusinessRuleException("no scoring rules were found");
         }
 
         ScoringCalculator.Result scoring = ScoringCalculator.calculate(statistic, scoringRules);
+
         int total = scoring.totalPoints();
+        
         List<FantasyPointBreakdown> pointBreakdowns = scoring.breakdowns();
 
         UUID statId = statistic.getStatId();

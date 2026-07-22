@@ -27,20 +27,26 @@ public class MatchTeamScoreResource {
     @Path("/{scoreId}")
     public Response getMatchTeamScoreById(@PathParam("scoreId") UUID scoreId) {
         MatchTeamScoreResponseDTO score = matchTeamScoreService.getMatchTeamScoreById(scoreId);
-        return Response.ok(score).build();
+
+        return Response.ok(score)
+                .build();
     }
 
     @GET
     @Path("/result/{resultId}")
     public Response listMatchTeamScoresForResult(@PathParam("resultId") UUID resultId) {
         List<MatchTeamScoreResponseDTO> scores = matchTeamScoreService.listMatchTeamScoresForResult(resultId);
-        return Response.ok(scores).build();
+
+        return Response.ok(scores)
+                .build();
     }
 
     @GET
     @Path("/result/{resultId}/side/{teamSide}")
     public Response getMatchTeamScoreForResultSide(@PathParam("resultId") UUID resultId, @PathParam("teamSide") MatchTeamSide teamSide) {
         MatchTeamScoreResponseDTO score = matchTeamScoreService.getMatchTeamScoreForResultSide(resultId, teamSide);
-        return Response.ok(score).build();
+
+        return Response.ok(score)
+                .build();
     }
 }

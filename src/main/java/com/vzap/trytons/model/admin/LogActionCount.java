@@ -11,5 +11,6 @@ import lombok.Setter;
 @NoArgsConstructor
 public class LogActionCount {
     private String actionType;
+
     private long actionCount;
 }

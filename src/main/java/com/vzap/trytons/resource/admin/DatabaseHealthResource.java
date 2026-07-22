@@ -40,7 +40,6 @@ public class DatabaseHealthResource {
             }
 
             return Response.ok(result).build();
-
         } catch (SQLException e) {
             throw new DataAccessException("Database health check failed.", e);
         }

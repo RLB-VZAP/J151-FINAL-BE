@@ -14,12 +14,17 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class ScoringRuleResponseDTO {
-
     private UUID ruleId;
+
     private String eventType;
+
     private int pointsAwarded;
+
     private String season;
+
     private boolean active;
+
     Boolean isDeduction;
+
     String description;
 }

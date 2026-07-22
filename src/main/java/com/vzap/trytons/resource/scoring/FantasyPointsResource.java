@@ -27,7 +27,6 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class FantasyPointsResource {
-
     @Inject
     FantasyPointsService fantasyPointsService;
 
@@ -48,14 +47,17 @@ public class FantasyPointsResource {
     public Response getFantasyPointsById(@PathParam("pointsId") UUID pointsId) {
         FantasyPointsResponseDTO result = fantasyPointsService.getFantasyPointsById(pointsId);
 
-        return Response.ok(result).build();
+        return Response.ok(result)
+                .build();
     }
 
     @GET
     @Path("/stat/{statId}")
     public Response listFantasyPointsForStat(@PathParam("statId") UUID statId) {
         List<FantasyPointsResponseDTO> results = fantasyPointsService.listFantasyPointsForStat(statId);
-        return Response.ok(results).build();
+
+        return Response.ok(results)
+                .build();
     }
 
     @GET
@@ -63,7 +65,8 @@ public class FantasyPointsResource {
     public Response getFinalFantasyPointsForStat(@PathParam("statId") UUID statId) {
         FantasyPointsResponseDTO result = fantasyPointsService.getFinalFantasyPointsForStat(statId);
 
-        return Response.ok(result).build();
+        return Response.ok(result)
+                .build();
     }
 
     private UUID currentUserId(ContainerRequestContext requestContext) {

@@ -17,13 +17,18 @@ public class TransferResponseDTO {
     private UUID roundId;
     private UUID removedPlayerId;
     private UUID addedPlayerId;
+
     private String removedPlayerName;
     private String addedPlayerName;
+
     private BigDecimal removedPlayerValue;
     private BigDecimal addedPlayerValue;
     private BigDecimal valueDifference;
+
     private int penaltyPoints;
+
     private String status;
+
     private LocalDateTime transferDate;
     private LocalDateTime confirmationDate;
 }

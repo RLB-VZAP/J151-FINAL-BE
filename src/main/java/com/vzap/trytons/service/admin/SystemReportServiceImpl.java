@@ -68,10 +68,12 @@ public class SystemReportServiceImpl implements SystemReportService {
     public SystemReportResponseDTO generateReport(UUID actorUserId, SystemReportRequestDTO request) {
         validateAdministrator(actorUserId);
         validateRequest(request);
+
         Map<String,Object> parameters = request.getParametersJson() != null ? request.getParametersJson(): new LinkedHashMap<>();
         Map<String, Object> resultData = collectReportData(request.getReportType(),parameters);
 
         SystemReport systemReport = new SystemReport();
+
         systemReport.setReportId(UUID.randomUUID());
         systemReport.setGeneratedByAdminUserId(actorUserId);
         systemReport.setReportType(request.getReportType());
@@ -88,9 +90,11 @@ public class SystemReportServiceImpl implements SystemReportService {
         validateAdministrator(actorUserId);
 
         List<SystemReportResponseDTO> responses = new ArrayList<>();
+
         for(SystemReport systemReport : systemReportDAO.findAll()){
             responses.add(mapToResponse(systemReport));
         }
+
         return responses;
     }
 
@@ -151,9 +155,7 @@ public class SystemReportServiceImpl implements SystemReportService {
             case TOP_RUGBY_PLAYERS -> buildTopRugbyPlayersReport(parameters);
             case MOST_SELECTED_PLAYERS -> buildMostSelectedPlayersReport(parameters);
             case SYSTEM_ACTIVITY -> buildSystemActivityReport(parameters);
-            case LEAGUE_CHAT_ACTIVITY ->
-                    throw new ValidationException("League chat activity reports are not yet supported.");
-            default -> throw new ValidationException("Unsupported report type: " + reportType);
+            case LEAGUE_CHAT_ACTIVITY -> throw new ValidationException("League chat activity reports are not yet supported.");
         };
     }
 
@@ -178,7 +180,7 @@ public class SystemReportServiceImpl implements SystemReportService {
     private Map<String, Object> buildActiveLeaguesReport() {
         List<League> activeLeagues = leagueDAO.findAllLeagues().stream()
                 .filter(league -> Boolean.TRUE.equals(league.getIsActive()))
-                .collect(Collectors.toList());
+                .toList();
 
         List<Map<String, Object>> items = new ArrayList<>();
         for (League league : activeLeagues) {
@@ -213,13 +215,14 @@ public class SystemReportServiceImpl implements SystemReportService {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("unavailablePlayerCount", players.size());
         data.put("players", items);
+
         return data;
     }
 
     private Map<String, Object> buildCompletedFixturesReport() {
         List<Fixture> fixtures = fixtureDAO.findByStatus(FixtureStatus.COMPLETED);
-
         List<Map<String, Object>> items = new ArrayList<>();
+
         for (Fixture fixture : fixtures) {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("fixtureId", fixture.getFixtureId().toString());
@@ -237,8 +240,8 @@ public class SystemReportServiceImpl implements SystemReportService {
 
     private Map<String, Object> buildFixtureResultsReport() {
         List<Fixture> completedFixtures = fixtureDAO.findByStatus(FixtureStatus.COMPLETED);
-
         List<Map<String, Object>> items = new ArrayList<>();
+
         for (Fixture fixture : completedFixtures) {
             Optional<MatchResult> resultOpt = matchResultDAO.findCurrentByFixtureId(fixture.getFixtureId());
             if (resultOpt.isEmpty()) {
@@ -258,6 +261,7 @@ public class SystemReportServiceImpl implements SystemReportService {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("fixtureResultCount", items.size());
         data.put("results", items);
+
         return data;
     }
 
@@ -265,8 +269,8 @@ public class SystemReportServiceImpl implements SystemReportService {
         UUID roundId = extractRequiredUuid(parameters, "roundId");
 
         List<Transfer> transfers = transferDAO.getTransfersByRound(roundId);
-
         List<Map<String, Object>> items = new ArrayList<>();
+
         for (Transfer transfer : transfers) {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("transferId", transfer.getTransferId().toString());
@@ -281,6 +285,7 @@ public class SystemReportServiceImpl implements SystemReportService {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("transferCount", transfers.size());
         data.put("transfers", items);
+
         return data;
     }
 
@@ -288,13 +293,12 @@ public class SystemReportServiceImpl implements SystemReportService {
         String season = extractRequiredString(parameters, "season");
         int limit = extractLimit(parameters, 10);
 
-        Leaderboard leaderboard = leaderboardDAO.getMasterLeaderboard(season)
-                .orElseThrow(() -> new ResourceNotFoundException("leaderboard"));
+        Leaderboard leaderboard = leaderboardDAO.getMasterLeaderboard(season).orElseThrow(() -> new ResourceNotFoundException("leaderboard"));
 
         List<Ranking> rankings = leaderboardDAO.getRankingsByLeaderboardId(leaderboard.getLeaderboardId()).stream()
                 .sorted(Comparator.comparingInt(Ranking::getCurrentRanking))
                 .limit(limit)
-                .collect(Collectors.toList());
+                .toList();
 
         List<Map<String, Object>> items = new ArrayList<>();
         for (Ranking ranking : rankings) {
@@ -310,6 +314,7 @@ public class SystemReportServiceImpl implements SystemReportService {
         data.put("season", season);
         data.put("teamCount", items.size());
         data.put("teams", items);
+
         return data;
     }
 
@@ -334,8 +339,8 @@ public class SystemReportServiceImpl implements SystemReportService {
     private Map<String, Object> buildMostSelectedPlayersReport(Map<String, Object> parameters) {
         int limit = extractLimit(parameters, 10);
         List<PlayerSelectionCount> counts = fantasyTeamPlayerDAO.findMostSelectedPlayers(limit);
-
         List<Map<String, Object>> items = new ArrayList<>();
+
         for (PlayerSelectionCount count : counts) {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("playerId", count.getPlayerId().toString());
@@ -346,6 +351,7 @@ public class SystemReportServiceImpl implements SystemReportService {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("playerCount", items.size());
         data.put("players", items);
+
         return data;
     }
 
@@ -354,8 +360,8 @@ public class SystemReportServiceImpl implements SystemReportService {
 
         List<Log> recentLogs = logDAO.findRecentLogs(limit);
         List<LogActionCount> actionCounts = logDAO.countByActionType();
-
         List<Map<String, Object>> logItems = new ArrayList<>();
+
         for (Log log : recentLogs) {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("logId", log.getLogId().toString());
@@ -379,6 +385,7 @@ public class SystemReportServiceImpl implements SystemReportService {
         data.put("actionTypeCounts", countItems);
         return data;
     }
+
     private String extractRequiredString(Map<String, Object> parameters, String key) {
         Object value = parameters.get(key);
         if (value == null || value.toString().trim().isEmpty()) {
@@ -411,6 +418,7 @@ public class SystemReportServiceImpl implements SystemReportService {
             throw new ValidationException("limit must be a valid integer.");
         }
     }
+
     private SystemReportResponseDTO mapToResponse(SystemReport systemReport) {
         return SystemReportResponseDTO.builder()
                 .reportId(systemReport.getReportId())

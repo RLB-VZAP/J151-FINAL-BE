@@ -17,14 +17,20 @@ import java.util.UUID;
 @Builder
 public class FantasyTeamResponseDTO {
     private UUID teamId;
+
     private String teamName;
+
     private UUID managerId;
+
     private String managerUsername;
+
     private BigDecimal totalTeamValue;
     private BigDecimal remainingBudget;
+
     private Integer weeklyPoints;
     private Integer totalPoints;
-    private Boolean valid;
-    private List<FantasyTeamPlayerSelectionResponseDTO> selectedPlayers;
 
+    private Boolean valid;
+
+    private List<FantasyTeamPlayerSelectionResponseDTO> selectedPlayers;
 }

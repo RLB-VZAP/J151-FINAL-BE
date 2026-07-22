@@ -21,7 +21,6 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class SimulationSettingServiceImpl implements SimulationSettingService {
-
     @Inject
     private SimulationSettingsDAO simulationSettingsDAO;
 
