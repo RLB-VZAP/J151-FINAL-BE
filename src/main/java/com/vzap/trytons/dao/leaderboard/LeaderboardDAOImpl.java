@@ -1,6 +1,7 @@
 package com.vzap.trytons.dao.leaderboard;
 
 import com.vzap.trytons.enums.LeaderboardScope;
+import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.leaderboard.Leaderboard;
 import com.vzap.trytons.model.leaderboard.Ranking;
@@ -76,6 +77,7 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
             }
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to get rankings by leaderboard id.", e);
+            throw new DataAccessException("Unable to get rankings by leaderboard id.", e);
         }
         return rankings;
     }
@@ -196,6 +198,14 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
             ps.executeUpdate();
 
         }catch (SQLException e){
+            if ("45000".equals(e.getSQLState())) {
+                throw new ConflictException(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "The ranking could not be updated because the team is not a member of the league."
+                );
+            }
+
             LOG.log(Level.SEVERE, "Unable to update ranking.", e);
             throw new DataAccessException("Unable to update ranking.", e);
         }

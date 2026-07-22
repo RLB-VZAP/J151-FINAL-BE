@@ -1,6 +1,7 @@
 package com.vzap.trytons.dao.results;
 
 import com.vzap.trytons.enums.MatchTeamSide;
+import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.results.MatchTeamScore;
 
@@ -59,6 +60,14 @@ public class MatchTeamScoreDAOImpl extends BaseDAO implements MatchTeamScoreDAO 
                     .orElseThrow(() -> new DataAccessException("Saved match team score could not be re-read", null));
 
         } catch (SQLException e) {
+            if ("45000".equals(e.getSQLState())) {
+                throw new ConflictException(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "The match team score could not be saved because it conflicts with an existing record."
+                );
+            }
+
             LOG.log(Level.SEVERE, "Unable to save match team score", e);
             throw new DataAccessException("Unable to save match team score", e);
         }
@@ -85,6 +94,14 @@ public class MatchTeamScoreDAOImpl extends BaseDAO implements MatchTeamScoreDAO 
                     .orElseThrow(() -> new DataAccessException("Updated match team score could not be re-read", null));
 
         } catch (SQLException e) {
+            if ("45000".equals(e.getSQLState())) {
+                throw new ConflictException(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "The match team score could not be updated because it conflicts with an existing record."
+                );
+            }
+
             LOG.log(Level.SEVERE, "Unable to update match team score", e);
             throw new DataAccessException("Unable to update match team score", e);
         }
