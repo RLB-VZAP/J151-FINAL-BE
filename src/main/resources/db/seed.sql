@@ -344,6 +344,21 @@ FROM (SELECT @team1 AS teamId
                      UNION ALL
                      SELECT @p15) AS players;
 
+
+
+/* Functional recommendation data: current player is in Team 1's editable squad; recommended player is not. */
+SET @recommendation1 = UUID();
+
+INSERT INTO `playerRecommendation`
+    (recommendationId, teamId, current_player_id, recommended_player_id, reason, score, isDismissed)
+VALUES (@recommendation1,
+        @team1,
+        @p1,
+        @p21,
+        'Lower-cost fly-half alternative for transfer-planning tests',
+        8.25,
+        FALSE);
+
 SET
 @publicLeague = UUID();
     SET
@@ -411,6 +426,26 @@ INSERT INTO `fantasyRound`
     (roundId, season, roundNumber, openDate, lockDeadline, endDate, status)
 VALUES (@round1, '2026', 1, '2026-07-01 00:00:00', '2026-07-07 23:59:59', '2026-07-14 23:59:59', 'LOCKED'),
        (@round2, '2026', 2, '2026-07-15 00:00:00', '2026-07-21 23:59:59', '2026-07-28 23:59:59', 'OPEN');
+
+
+
+/* Pending transfer request for the open round. It does not alter the editable squad until confirmed by application logic. */
+SET @transfer1 = UUID();
+
+INSERT INTO `transfer`
+    (transferId, teamId, roundId, removed_player_id, added_player_id,
+     removed_player_value, added_player_value, penaltyPoints, status, confirmedAt, created_by_user_id)
+VALUES (@transfer1,
+        @team1,
+        @round2,
+        @p1,
+        @p21,
+        12.50,
+        11.50,
+        0,
+        'PENDING',
+        NULL,
+        @johnId);
 
 INSERT INTO `fantasy_team_round_selection`
 (selectionId, roundId, teamId, playerId, squadRole, isCaptain, is_vice_captain)
