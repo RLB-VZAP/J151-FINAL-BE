@@ -19,6 +19,7 @@ public class MatchResult {
 
     private UUID resultId;
     private UUID fixtureId;
+    private UUID settingsId;
     private int simulationRunNumber;
     private int teamAScore;
     private int teamBScore;

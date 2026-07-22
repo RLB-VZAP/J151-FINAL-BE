@@ -3,6 +3,8 @@ package com.vzap.trytons.service.results;
 import com.vzap.trytons.dao.fixture.FixtureDAO;
 import com.vzap.trytons.dao.results.MatchResultDAO;
 import com.vzap.trytons.dao.auth.UserDAO;
+import com.vzap.trytons.dao.simulation.SimulationSettingsDAO;
+import com.vzap.trytons.model.simulation.SimulationSettings;
 import com.vzap.trytons.dto.results.MatchResultRequestDTO;
 import com.vzap.trytons.dto.results.MatchResultResponseDTO;
 import com.vzap.trytons.enums.FixtureStatus;
@@ -30,12 +32,14 @@ public class MatchResultServiceImpl implements MatchResultService {
     private final MatchResultDAO matchResultDAO;
     private final FixtureDAO fixtureDAO;
     private final UserDAO userDAO;
+    private final SimulationSettingsDAO simulationSettingsDAO;
 
     @Inject
-    public MatchResultServiceImpl(MatchResultDAO matchResultDAO, FixtureDAO fixtureDAO, UserDAO userDAO) {
+    public MatchResultServiceImpl(MatchResultDAO matchResultDAO, FixtureDAO fixtureDAO, UserDAO userDAO, SimulationSettingsDAO simulationSettingsDAO) {
         this.matchResultDAO = matchResultDAO;
         this.fixtureDAO = fixtureDAO;
         this.userDAO = userDAO;
+        this.simulationSettingsDAO = simulationSettingsDAO;
     }
 
     @Override
@@ -48,9 +52,11 @@ public class MatchResultServiceImpl implements MatchResultService {
             throw new ConflictException("A match result cannot be captured while the fixture is " + fixture.getStatus() + ".");
         }
 
+        SimulationSettings activeSettings = simulationSettingsDAO.findActive().orElseThrow(() -> new ResourceNotFoundException("simulationSettings"));
+
         int simulationRunNumber = matchResultDAO.getNextSimulationRunNumber(fixture.getFixtureId());
         matchResultDAO.markAllFixtureResultsNotCurrent(fixture.getFixtureId());
-        MatchResult saved = matchResultDAO.save(buildResult(fixture, request, simulationRunNumber));
+        MatchResult saved = matchResultDAO.save(buildResult(fixture, request, simulationRunNumber, activeSettings.getSettingsId()));
 
         if (saved == null) {
             throw new DataAccessException("Failed to persist the captured match result.", null);
@@ -94,13 +100,14 @@ public class MatchResultServiceImpl implements MatchResultService {
         }
     }
 
-    private MatchResult buildResult(Fixture fixture, MatchResultRequestDTO request, int simulationRunNumber) {
+    private MatchResult buildResult(Fixture fixture, MatchResultRequestDTO request, int simulationRunNumber, UUID settingsId) {
         int teamAScore = request.getTeamAScore();
         int teamBScore = request.getTeamBScore();
 
         return MatchResult.builder()
                 .resultId(UUID.randomUUID())
                 .fixtureId(fixture.getFixtureId())
+                .settingsId(settingsId)
                 .simulationRunNumber(simulationRunNumber)
                 .teamAScore(teamAScore)
                 .teamBScore(teamBScore)
