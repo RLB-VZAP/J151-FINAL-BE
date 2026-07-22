@@ -150,6 +150,30 @@ public class LeagueServiceImpl implements LeagueService {
 
     @Override
     public JoinLeagueResponseDTO joinLeague(JoinLeagueRequestDTO request, UUID currentUserId) {
+        if (request == null) {
+            throw new ValidationException("Join-league request cannot be null.");
+        }
+        if (currentUserId == null) {
+            throw new ValidationException("Current user ID is required.");
+        }
+
+        // A private league can be identified by its code alone. Members are given the
+        // code, never the league id, so requiring both made code-only joins impossible.
+        if (request.getLeagueId() == null
+                && request.getLeagueCode() != null && !request.getLeagueCode().isBlank()) {
+            leagueDAO.findLeagueByLeagueCode(request.getLeagueCode().trim())
+                    .ifPresent(found -> request.setLeagueId(found.getLeagueId()));
+        }
+
+        // uk_fantasyTeam_owner makes this one team per user, so the caller's team is
+        // unambiguous and clients should not have to supply it. Without this the join
+        // always failed with "Team ID is required", since no client had a way to look
+        // the id up — there is no endpoint exposing getTeamByOwner.
+        if (request.getTeamId() == null) {
+            fantasyTeamDAO.getTeamByOwner(currentUserId)
+                    .ifPresent(team -> request.setTeamId(team.getTeamId()));
+        }
+
         validateJoinLeagueRequest(request, currentUserId);
 
         League league = requireLeague(request.getLeagueId());
@@ -296,11 +320,11 @@ public class LeagueServiceImpl implements LeagueService {
         }
 
         if (request.getLeagueId() == null) {
-            throw new ValidationException("League ID is required.");
+            throw new ValidationException("That league could not be found. Check the join code and try again.");
         }
 
         if (request.getTeamId() == null) {
-            throw new ValidationException("Team ID is required.");
+            throw new ValidationException("You need a fantasy team before you can join a league.");
         }
     }
 
