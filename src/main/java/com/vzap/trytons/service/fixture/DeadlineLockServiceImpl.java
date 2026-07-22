@@ -37,7 +37,6 @@ import java.util.logging.Logger;
 
 @ApplicationScoped
 public class DeadlineLockServiceImpl implements DeadlineLockService {
-
     private static final Logger LOG = Logger.getLogger(DeadlineLockServiceImpl.class.getName());
 
     @Inject
@@ -85,6 +84,7 @@ public class DeadlineLockServiceImpl implements DeadlineLockService {
             lockedPlayerIds.addAll(getLockedPlayerIds(roundId, teamId));
         }
         response.setLockedPlayerIds(lockedPlayerIds);
+
         return response;
     }
 
@@ -92,11 +92,13 @@ public class DeadlineLockServiceImpl implements DeadlineLockService {
     public DeadlineStatusResponseDTO getDeadlineStatus(UUID roundId) {
         FantasyRound round = fantasyRoundDAO.getRoundById(roundId).orElseThrow(() -> new ResourceNotFoundException("Fantasy round not found"));
         DeadlineStatusResponseDTO response = new DeadlineStatusResponseDTO();
+
         response.setRoundId(round.getRoundId());
         response.setRoundStatus(round.getStatus());
         response.setOpenDate(round.getOpenDate());
         response.setLockDeadline(round.getLockDeadline());
         response.setEndDate(round.getEndDate());
+
         boolean locked = round.getStatus() == FantasyRoundStatus.IN_PROGRESS || round.getStatus() == FantasyRoundStatus.COMPLETED;
         response.setLocked(locked);
         boolean openForTransfer = round.getStatus() == FantasyRoundStatus.OPEN && LocalDateTime.now().isBefore(round.getLockDeadline());
@@ -108,6 +110,7 @@ public class DeadlineLockServiceImpl implements DeadlineLockService {
         }else{
             response.setMessage("Transfers are unavailable for this round.");
         }
+
         return response;
     }
 
@@ -115,31 +118,26 @@ public class DeadlineLockServiceImpl implements DeadlineLockService {
     public LockStatusResponseDTO lockRound(UUID actorAdminUserId, UUID roundId, String reason) {
         FantasyRound round = fantasyRoundDAO.getRoundById(roundId).orElseThrow(() -> new ResourceNotFoundException("Fantasy round not found."));
         RoundLock roundLock = new RoundLock();
+
         roundLock.setRoundId(roundId);
+
         if(adminDAO.getAdminById(actorAdminUserId).isPresent()) {
             roundLock.setActionByAdminUserId(actorAdminUserId);
         }else{
             throw new AuthorisationException("Only administrators can lock rounds.");
         }
+
         roundLock.setReason(reason);
         roundLock.setLockAction(RoundLockAction.LOCKED);
         roundLock.setActionAt(LocalDateTime.now());
         roundLockDAO.createRoundLock(roundLock);
         fantasyRoundDAO.updateRoundStatus(roundId,FantasyRoundStatus.LOCKED);
-        // Snapshot only after the round is LOCKED: fantasy_team_round_selection has a BEFORE INSERT
-        // trigger (trg_round_selection_insert) that rejects any row whose round is not already LOCKED.
+
         snapshotSquadsForRound(round);
         notifyTransferDeadlineForRound(round);
         return getLockStatus(roundId);
     }
 
-    /**
-     * Captures the locked squad snapshot for every team playing a fixture in this round, copying each
-     * team's current (live) squad from team_player_selection into fantasy_team_round_selection. Teams
-     * are sourced from this round's fixtures (fantasy team A vs fantasy team B), since a fixture is the
-     * only relation tying a fantasy team to a specific round. Idempotent: a team that already has a
-     * snapshot for this round (e.g. a retried lock) is skipped rather than duplicated.
-     */
     private void snapshotSquadsForRound(FantasyRound round) {
         Set<UUID> teamIds = new LinkedHashSet<>();
         for (Fixture fixture : fixtureDAO.findByRoundId(round.getRoundId())) {
@@ -175,10 +173,6 @@ public class DeadlineLockServiceImpl implements DeadlineLockService {
         }
     }
 
-    /**
-     * Notifies every fixture's team owners for this round that the transfer deadline has just
-     * locked. A notification failure must never prevent the round lock itself from succeeding.
-     */
     private void notifyTransferDeadlineForRound(FantasyRound round) {
         try {
             for (Fixture fixture : fixtureDAO.findByRoundId(round.getRoundId())) {
@@ -208,25 +202,31 @@ public class DeadlineLockServiceImpl implements DeadlineLockService {
     @Override
     public List<UUID> getLockedPlayerIds(UUID roundId, UUID teamId) {
         fantasyRoundDAO.getRoundById(roundId).orElseThrow(() -> new ResourceNotFoundException("Fantasy round not found"));
+
         List<FantasyTeamRoundSelection> selections = fantasyTeamRoundSelectionDAO.getSelectionsByRoundIdAndTeamId(roundId, teamId);
         List<UUID> lockedPlayerIds = new ArrayList<>();
+
         for(FantasyTeamRoundSelection selection : selections){
             lockedPlayerIds.add(selection.getPlayerId());
         }
+
         return lockedPlayerIds;
     }
 
     @Override
     public List<Player> getAvailableTransferPlayers(UUID roundId, UUID teamId) {
         assertTransferAllowed(roundId, teamId);
+
         List<Player> players = playerDAO.getAllPlayers();
         List<UUID> lockedPlayers = getLockedPlayerIds(roundId,teamId);
         List<Player> availablePlayers = new ArrayList<>();
+
         for(Player player : players){
             if(!lockedPlayers.contains(player.getPlayerId())) {
                 availablePlayers.add(player);
             }
         }
+
         return availablePlayers;
     }
 

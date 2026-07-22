@@ -23,21 +23,21 @@ import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class PlayerStatisticsServiceImpl implements PlayerStatisticsService {
-
-    private final PlayerStatisticsDAO playerStatisticsDAO;
-    private final MatchResultDAO matchResultDAO;
-    private final FixtureDAO fixtureDAO;
-    private final FantasyTeamRoundSelectionDAO roundSelectionDAO;
-    private final UserDAO userDAO;
+    @Inject
+    private PlayerStatisticsDAO playerStatisticsDAO;
 
     @Inject
-    public PlayerStatisticsServiceImpl(PlayerStatisticsDAO playerStatisticsDAO, MatchResultDAO matchResultDAO, FixtureDAO fixtureDAO, FantasyTeamRoundSelectionDAO roundSelectionDAO, UserDAO userDAO) {
-        this.playerStatisticsDAO = playerStatisticsDAO;
-        this.matchResultDAO = matchResultDAO;
-        this.fixtureDAO = fixtureDAO;
-        this.roundSelectionDAO = roundSelectionDAO;
-        this.userDAO = userDAO;
-    }
+    private MatchResultDAO matchResultDAO;
+
+    @Inject
+    private FixtureDAO fixtureDAO;
+
+    @Inject
+    private FantasyTeamRoundSelectionDAO roundSelectionDAO;
+
+    @Inject
+    private UserDAO userDAO;
+
 
     @Override
     public List<PlayerStatisticsResponseDTO> listResultStatistics(UUID resultId) {
@@ -148,7 +148,22 @@ public class PlayerStatisticsServiceImpl implements PlayerStatisticsService {
     }
 
     private PlayerStatistics buildStatistics(PlayerStatisticsRequestDTO request) {
-        return PlayerStatistics.builder().statId(UUID.randomUUID()).resultId(request.getResultId()).teamId(request.getTeamId()).playerId(request.getPlayerId()).tries(request.getTries()).assists(request.getAssists()).tackles(request.getTackles()).missedTackles(request.getMissedTackles()).conversions(request.getConversions()).penalties(request.getPenalties()).metersGained(request.getMetersGained()).yellowCards(request.getYellowCards()).redCards(request.getRedCards()).statisticDate(LocalDateTime.now()).build();
+        return PlayerStatistics.builder()
+                .statId(UUID.randomUUID())
+                .resultId(request.getResultId())
+                .teamId(request.getTeamId())
+                .playerId(request.getPlayerId())
+                .tries(request.getTries())
+                .assists(request.getAssists())
+                .tackles(request.getTackles())
+                .missedTackles(request.getMissedTackles())
+                .conversions(request.getConversions())
+                .penalties(request.getPenalties())
+                .metersGained(request.getMetersGained())
+                .yellowCards(request.getYellowCards())
+                .redCards(request.getRedCards())
+                .statisticDate(LocalDateTime.now())
+                .build();
     }
 
     private PlayerStatisticsResponseDTO mapToResponse(PlayerStatistics stat) {

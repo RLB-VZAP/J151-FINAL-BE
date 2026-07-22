@@ -16,13 +16,11 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class AdminUserServiceImpl implements AdminUserService{
-
     @Inject
     UserDAO userDAO;
 
     @Override
     public List<AdminUserSearchResponseDTO> searchUsers(UUID actorUserId, String searchTerm) {
-
         requireAdmin(actorUserId);
 
         List<User> users = userDAO.searchUsers(searchTerm);
@@ -72,22 +70,21 @@ public class AdminUserServiceImpl implements AdminUserService{
     }
 
     private AdminUserSearchResponseDTO mapToSearchResponse(User user) {
-        return new AdminUserSearchResponseDTO(
-                user.getUserId(),
-                user.getEmail(),
-                user.getUsername(),
-                user.getRole(),
-                user.getIsActive()
-        );
+        return  AdminUserSearchResponseDTO.builder().userId(user.getUserId())
+                .email(user.getEmail())
+                .username(user.getUsername())
+                .role(user.getRole())
+                .isActive(user.getIsActive())
+                .build();
     }
 
     private AdminUserStatusResponseDTO mapToStatusResponse(User user) {
-        return new AdminUserStatusResponseDTO(
-                user.getUserId(),
-                user.getEmail(),
-                user.getUsername(),
-                user.getRole(),
-                user.getIsActive()
-        );
+        return AdminUserStatusResponseDTO.builder()
+                .userId(user.getUserId())
+                .email(user.getEmail())
+                .username(user.getUsername())
+                .role(user.getRole())
+                .isActive(user.getIsActive())
+                .build();
     }
 }

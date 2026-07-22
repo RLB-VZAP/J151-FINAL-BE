@@ -19,6 +19,7 @@ public class PlayerStatisticsResponseDTO {
     private UUID resultId;
     private UUID teamId;
     private UUID playerId;
+
     private int tries;
     private int assists;
     private int tackles;
@@ -28,5 +29,6 @@ public class PlayerStatisticsResponseDTO {
     private int metersGained;
     private int yellowCards;
     private int redCards;
+
     private LocalDateTime statisticDate;
 }

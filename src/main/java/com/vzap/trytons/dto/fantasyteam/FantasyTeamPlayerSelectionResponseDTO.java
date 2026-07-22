@@ -17,13 +17,21 @@ import java.util.UUID;
 @Builder
 public class FantasyTeamPlayerSelectionResponseDTO {
     private UUID playerId;
+
     private String playerName;
+
     private UUID positionId;
+
     private String positionName;
+
     private UUID clubId;
+
     private String clubName;
+
     private BigDecimal value;
+
     private Boolean isActive;
+
     private Integer attackingAbility;
     private Integer defensiveAbility;
     private Integer kickingAbility;
@@ -32,7 +40,9 @@ public class FantasyTeamPlayerSelectionResponseDTO {
     private Integer fitness;
     private Integer currentForm;
     private Integer totalFantasyPoints;
+
     private SquadRole squadRole;
+
     private Boolean isCaptain;
     private Boolean isViceCaptain;
 }

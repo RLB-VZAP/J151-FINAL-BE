@@ -15,13 +15,9 @@ import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class MatchTeamScoreServiceImpl implements MatchTeamScoreService {
-
-    private final MatchTeamScoreDAO matchTeamScoreDAO;
-
     @Inject
-    public MatchTeamScoreServiceImpl(MatchTeamScoreDAO matchTeamScoreDAO) {
-        this.matchTeamScoreDAO = matchTeamScoreDAO;
-    }
+    private MatchTeamScoreDAO matchTeamScoreDAO;
+
 
     @Override
     public MatchTeamScoreResponseDTO getMatchTeamScoreById(UUID scoreId) {
@@ -55,8 +51,7 @@ public class MatchTeamScoreServiceImpl implements MatchTeamScoreService {
             throw new ValidationException("Result ID and team side are required.");
         }
 
-        MatchTeamScore score = matchTeamScoreDAO.findByResultIdAndTeamSide(resultId, teamSide)
-                .orElseThrow(() -> new ResourceNotFoundException("Match team score was not found for that result and side."));
+        MatchTeamScore score = matchTeamScoreDAO.findByResultIdAndTeamSide(resultId, teamSide).orElseThrow(() -> new ResourceNotFoundException("Match team score was not found for that result and side."));
 
         return mapToResponse(score);
     }

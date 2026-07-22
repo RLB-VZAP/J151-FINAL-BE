@@ -15,5 +15,6 @@ import java.util.List;
 @Builder
 public class FantasyTeamRequestDTO {
     private String teamName;
+
     private List<FantasyTeamPlayerSelectionRequestDTO> selectedPlayers;
 }

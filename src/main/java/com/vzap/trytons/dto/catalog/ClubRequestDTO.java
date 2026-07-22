@@ -16,6 +16,7 @@ public class ClubRequestDTO {
     private String clubName;
     private String location;
     private String homeVenue;
+
     @JsonProperty("isActive")
     private boolean isActive;
 }

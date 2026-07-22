@@ -20,16 +20,14 @@ import com.vzap.trytons.dao.shared.BaseDAO;
 @Singleton
 public class ScoringRuleDAOImpl extends BaseDAO implements ScoringRuleDAO {
 
-    private static final Logger LOG =
-            Logger.getLogger(ScoringRuleDAOImpl.class.getName());
+    private static final Logger LOG = Logger.getLogger(ScoringRuleDAOImpl.class.getName());
 
     @Override
     public List<ScoringRule> findActiveRules(String season) {
 
         List<ScoringRule> rules = new ArrayList<>();
 
-        String query =
-                "SELECT ruleId, season, eventType, pointsAwarded, " +
+        String query = "SELECT ruleId, season, eventType, pointsAwarded, " +
                         "isDeduction, description, isActive " +
                         "FROM scoringRule " +
                         "WHERE season = ? AND isActive = TRUE " +
@@ -39,9 +37,7 @@ public class ScoringRuleDAOImpl extends BaseDAO implements ScoringRuleDAO {
              PreparedStatement ps = con.prepareStatement(query)) {
 
             ps.setString(1, season);
-
             try (ResultSet rs = ps.executeQuery()) {
-
                 while (rs.next()) {
                     rules.add(mapRow(rs));
                 }
@@ -87,8 +83,7 @@ public class ScoringRuleDAOImpl extends BaseDAO implements ScoringRuleDAO {
     @Override
     public Optional<ScoringRule> findBySeasonAndEventType(String season, String eventType) {
 
-        String query =
-                "SELECT ruleId, season, eventType, pointsAwarded, " +
+        String query = "SELECT ruleId, season, eventType, pointsAwarded, " +
                         "isDeduction, description, isActive " +
                         "FROM scoringRule " +
                         "WHERE season = ? AND eventType = ?";
@@ -98,9 +93,7 @@ public class ScoringRuleDAOImpl extends BaseDAO implements ScoringRuleDAO {
 
             ps.setString(1, season);
             ps.setString(2, eventType);
-
             try (ResultSet rs = ps.executeQuery()) {
-
                 if (rs.next()) {
                     return Optional.of(mapRow(rs));
                 }
@@ -118,18 +111,12 @@ public class ScoringRuleDAOImpl extends BaseDAO implements ScoringRuleDAO {
     public ScoringRule save(ScoringRule rule) {
 
         UUID newRuleId = UUID.randomUUID();
+        String query = "INSERT INTO scoringRule (ruleId, season, eventType, pointsAwarded, isDeduction, description, isActive) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-        String query =
-                "INSERT INTO scoringRule " +
-                        "(ruleId, season, eventType, pointsAwarded, " +
-                        "isDeduction, description, isActive) " +
-                        "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        boolean deduction = Boolean.TRUE.equals(rule.getIsDeduction());
 
-        boolean deduction =
-                Boolean.TRUE.equals(rule.getIsDeduction());
-
-        boolean active =
-                Boolean.TRUE.equals(rule.getIsActive());
+        boolean active = Boolean.TRUE.equals(rule.getIsActive());
 
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {
@@ -156,11 +143,7 @@ public class ScoringRuleDAOImpl extends BaseDAO implements ScoringRuleDAO {
 
         } catch (SQLException e) {
             if ("45000".equals(e.getSQLState())) {
-                throw new ConflictException(
-                        e.getMessage() != null
-                                ? e.getMessage()
-                                : "The scoring rule could not be saved because it conflicts with an existing season ruleset."
-                );
+                throw new ConflictException(e.getMessage() != null ? e.getMessage() : "The scoring rule could not be saved because it conflicts with an existing season ruleset.");
             }
 
             String message = e.getMessage();
@@ -176,15 +159,9 @@ public class ScoringRuleDAOImpl extends BaseDAO implements ScoringRuleDAO {
     @Override
     public ScoringRule update(ScoringRule rule) {
 
-        String query =
-                "UPDATE scoringRule SET " +
-                        "season = ?, " +
-                        "eventType = ?, " +
-                        "pointsAwarded = ?, " +
-                        "isDeduction = ?, " +
-                        "description = ?, " +
-                        "isActive = ? " +
-                        "WHERE ruleId = ?";
+        String query = "UPDATE scoringRule " +
+                "SET season = ?, eventType = ?, pointsAwarded = ?, isDeduction = ?, description = ?, isActive = ? "+
+                "WHERE ruleId = ?";
 
         boolean deduction =
                 Boolean.TRUE.equals(rule.getIsDeduction());

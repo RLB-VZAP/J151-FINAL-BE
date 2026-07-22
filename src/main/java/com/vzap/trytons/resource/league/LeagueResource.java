@@ -27,7 +27,6 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class LeagueResource {
-
     @Inject
     private LeagueService leagueService;
 
@@ -35,6 +34,7 @@ public class LeagueResource {
     private ContainerRequestContext request;
     private UUID getCurrentUserId(){
         AuthPrincipal principal = (AuthPrincipal) request.getProperty(AuthFilter.CURRENT_USER_PROPERTY);
+
         return principal.getUserId();
     }
 
@@ -42,6 +42,7 @@ public class LeagueResource {
     public Response createLeague(@Valid LeagueRequestDTO request,@Context UriInfo uriInfo) {
         LeagueResponseDTO created = leagueService.createLeague(request,getCurrentUserId());
         URI location = uriInfo.getAbsolutePathBuilder().path(created.getLeagueId().toString()).build();
+
         return Response.created(location).entity(created).build();
     }
 
@@ -49,18 +50,22 @@ public class LeagueResource {
     @Path("/{id}")
     public Response getLeague(@PathParam("id") UUID id) {
         LeagueResponseDTO league = leagueService.getLeague(id, getCurrentUserId());
-        return Response.ok(league).build();
+
+        return Response.ok(league)
+                .build();
     }
 
     @GET
     public Response getAllLeagues() {
-        return Response.ok(leagueService.getAllLeagues(getCurrentUserId())).build();
+        return Response.ok(leagueService.getAllLeagues(getCurrentUserId()))
+                .build();
     }
 
     @POST
     @Path("/join")
     public Response joinLeague(@Valid JoinLeagueRequestDTO request) {
         JoinLeagueResponseDTO response = leagueService.joinLeague(request, getCurrentUserId());
+
         return Response.status(Response.Status.OK)
                 .entity(response)
                 .build();
@@ -70,21 +75,26 @@ public class LeagueResource {
     @Path("/{id}/members")
     public Response listMembers(@PathParam("id") String id) {
         List<LeagueMemberResponseDTO> members = leagueService.listMembers(getCurrentUserId().toString(), id);
-        return Response.ok(members).build();
+
+        return Response.ok(members)
+                .build();
     }
 
     @DELETE
     @Path("/{id}/members/{membershipId}")
     public Response removeMember(@PathParam("id") String id, @PathParam("membershipId") String membershipId) {
         leagueService.removeMember(getCurrentUserId().toString(), id, membershipId);
-        return Response.noContent().build();
+
+        return Response.noContent()
+                .build();
     }
 
     @GET
     @Path("/{id}/code")
     public Response getLeagueCode(@PathParam("id") String id) {
         String code = leagueService.getLeagueCode(getCurrentUserId().toString(), id);
-        return Response.ok(java.util.Map.of("leagueCode", code)).build();
+        return Response.ok(java.util.Map.of("leagueCode", code))
+                .build();
     }
 
 }

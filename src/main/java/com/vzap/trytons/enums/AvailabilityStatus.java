@@ -5,5 +5,4 @@ public enum AvailabilityStatus {
     INJURED,
     SUSPENDED,
     UNAVAILABLE
-
 }

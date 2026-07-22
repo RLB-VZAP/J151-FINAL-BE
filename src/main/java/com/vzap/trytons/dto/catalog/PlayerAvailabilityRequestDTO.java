@@ -15,9 +15,10 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @Builder
 public class PlayerAvailabilityRequestDTO {
-
     private AvailabilityStatus status;
+
     private LocalDate effectiveDate;
     private LocalDate endDate;
+
     private String notes;
 }

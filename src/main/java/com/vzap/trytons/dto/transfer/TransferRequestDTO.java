@@ -13,7 +13,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class TransferRequestDTO {
-
     @NotBlank(message = "Team ID is required")
     private String teamId;
     @NotBlank(message = "Round ID is required")
@@ -22,5 +21,6 @@ public class TransferRequestDTO {
     private String removedPlayerId;
     @NotBlank(message = "Added player is required")
     private String addedPlayerId;
+
     private boolean penaltyConfirmed;
 }

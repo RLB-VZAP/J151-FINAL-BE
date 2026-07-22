@@ -11,10 +11,10 @@ import java.util.UUID;
 @Builder
 
 public class WeeklyPerformanceResponseDTO {
-
     private UUID roundId;
     private UUID fixtureId;
-    private int pointsScored;
-    private String result;
 
+    private int pointsScored;
+
+    private String result;
 }

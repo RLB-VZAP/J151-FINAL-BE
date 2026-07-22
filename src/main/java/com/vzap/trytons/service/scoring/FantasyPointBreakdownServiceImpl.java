@@ -16,7 +16,6 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class FantasyPointBreakdownServiceImpl implements FantasyPointBreakdownService {
-
     @Inject
     FantasyPointBreakdownDAO fantasyPointBreakdownDAO;
 

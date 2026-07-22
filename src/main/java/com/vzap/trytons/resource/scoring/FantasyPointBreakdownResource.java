@@ -18,7 +18,6 @@ import java.util.UUID;
 @Path("/fantasy-point-breakdowns")
 @Produces(MediaType.APPLICATION_JSON)
 public class FantasyPointBreakdownResource {
-
     @Inject
     FantasyPointBreakdownService fantasyPointBreakdownService;
 
@@ -27,7 +26,8 @@ public class FantasyPointBreakdownResource {
     public Response getBreakdownById(@PathParam("breakdownId") UUID breakdownId) {
         FantasyPointBreakdownResponseDTO result = fantasyPointBreakdownService.getBreakdownById(breakdownId);
 
-        return Response.ok(result).build();
+        return Response.ok(result)
+                .build();
     }
 
     @GET
@@ -35,6 +35,7 @@ public class FantasyPointBreakdownResource {
     public Response listBreakdownsForPoints(@PathParam("pointsId") UUID pointsId) {
         List<FantasyPointBreakdownResponseDTO> results = fantasyPointBreakdownService.listBreakdownsForPoints(pointsId);
 
-        return Response.ok(results).build();
+        return Response.ok(results)
+                .build();
     }
 }

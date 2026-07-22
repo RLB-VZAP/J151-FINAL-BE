@@ -32,7 +32,6 @@ import com.vzap.trytons.model.results.MatchResult;
 import com.vzap.trytons.model.results.PlayerStatistics;
 import com.vzap.trytons.model.scoring.ScoringRule;
 import com.vzap.trytons.service.notification.NotificationService;
-import com.vzap.trytons.service.results.MatchResultService;
 import com.vzap.trytons.service.results.PlayerStatisticsService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -44,7 +43,6 @@ import java.util.logging.Logger;
 
 @ApplicationScoped
 public class MatchSimulationServiceImpl implements MatchSimulationService {
-
     private static final Logger LOG = Logger.getLogger(MatchSimulationServiceImpl.class.getName());
 
     @Inject
@@ -177,6 +175,7 @@ public class MatchSimulationServiceImpl implements MatchSimulationService {
 
         double teamBalanceA = calculateTeamBalance(teamA, availabilityByPlayerIdTeamA);
         double teamBalanceB = calculateTeamBalance(teamB, availabilityByPlayerIdTeamB);
+
         Map<UUID, Double> teamAPerformanceByPlayerId = new HashMap<>();
         Map<UUID, Double> teamBPerformanceByPlayerId = new HashMap<>();
 
@@ -222,7 +221,7 @@ public class MatchSimulationServiceImpl implements MatchSimulationService {
         int teamBScore = calculateTeamScore(teamBStatistics, scoringRules);
 
         MatchTeamSide winnerSide = null;
-        boolean draw = teamAScore == teamBScore;
+        boolean draw = (teamAScore == teamBScore);
 
         if (teamAScore > teamBScore) {
             winnerSide = MatchTeamSide.TEAM_A;
@@ -264,10 +263,6 @@ public class MatchSimulationServiceImpl implements MatchSimulationService {
         return resultToMatchResultDTO(savedResult, fixture);
     }
 
-    /**
-     * Informs both competing teams' owners that their match has been simulated and a result is
-     * available. A notification failure must never affect the already-persisted simulation result.
-     */
     private void notifySimulatedResult(Fixture fixture) {
         try {
             notifyTeamOwnerOfResult(fixture.getTeamAId(), fixture.getFixtureId());
@@ -526,11 +521,6 @@ public class MatchSimulationServiceImpl implements MatchSimulationService {
         throw new BusinessRuleException("The designated kicker's statistics could not be found.");
     }
 
-    // The match score must equal the rule-driven fantasy total that match_team_score will later hold,
-    // because trg_match_team_score_insert rejects a breakdown that disagrees with the stored result score.
-    // ScoringCalculator is the same utility FantasyPointCalculationServiceImpl uses to produce
-    // fantasyPoints from these statistics, so reusing it here is what keeps the two representations equal.
-    // The breakdown rows it returns are discarded; those are persisted later during point calculation.
     private int calculateTeamScore(List<PlayerStatistics> statistics, List<ScoringRule> scoringRules) {
         int score = 0;
 
@@ -817,8 +807,6 @@ public class MatchSimulationServiceImpl implements MatchSimulationService {
     }
 
     private double calculateTeamBalance(List<Player> players, Map<UUID, AvailabilityStatus> availabilityByPlayerId) {
-        //TODO Check Stats to ensure injured player gets recorded
-
         double totalTeamAbility = 0.0;
         if (players.isEmpty()) {
             return 0.0;

@@ -12,7 +12,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class ErrorResponseDTO {
-
     private boolean success;
     private String message;
     private String errorCode;

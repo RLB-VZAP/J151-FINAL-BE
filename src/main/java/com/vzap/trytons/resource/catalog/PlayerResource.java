@@ -28,8 +28,10 @@ import java.util.UUID;
 public class PlayerResource {
     @Inject
     private PlayerService playerService;
+
     @Inject
     private PlayerAvailabilityService playerAvailabilityService;
+
     @Context
     private ContainerRequestContext requestContext;
 

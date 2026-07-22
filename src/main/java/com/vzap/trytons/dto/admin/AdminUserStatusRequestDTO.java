@@ -11,8 +11,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
 public class AdminUserStatusRequestDTO {
-
     private Boolean isActive;
 }

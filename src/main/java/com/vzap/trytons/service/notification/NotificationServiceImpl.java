@@ -57,8 +57,7 @@ public class NotificationServiceImpl implements NotificationService{
             throw new ValidationException("No Notification Id was found");
         }
 
-        Notification notification = notificationDAO.findById(notificationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
+        Notification notification = notificationDAO.findById(notificationId).orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
 
         if(notification.getUserId() == null || !actorUserId.equals(notification.getUserId())){
             throw new AuthorisationException("User may only mark their own messages as read");
@@ -138,9 +137,8 @@ public class NotificationServiceImpl implements NotificationService{
 
     @Override
     public NotificationResponseDTO notifyTransferDeadline(UUID recipientUserId, UUID fixtureId, LocalDateTime deadline) {
-        String body = (deadline == null)
-                ? "The deadline for transfers is almost here for your team"
-                : "Transfers close at " + deadline + " for this upcoming fixture";
+        String body = (deadline == null) ? "The deadline for transfers is almost here for your team" : "Transfers close at " + deadline + " for this upcoming fixture";
+
         return createNotification(buildRequest(recipientUserId, NotificationType.TRANSFER_DEADLINE, body, "FIXTURE", fixtureId));
     }
 
@@ -151,6 +149,7 @@ public class NotificationServiceImpl implements NotificationService{
         request.setBody(body);
         request.setRelatedEntityType(relatedEntityType);
         request.setRelatedEntityId(relatedEntityId);
+
         return request;
     }
 
@@ -165,6 +164,7 @@ public class NotificationServiceImpl implements NotificationService{
     }
 
     private NotificationResponseDTO mapToResponse(Notification notification) {
+
         return NotificationResponseDTO.builder()
                 .notificationId(notification.getNotificationId())
                 .type(notification.getType())

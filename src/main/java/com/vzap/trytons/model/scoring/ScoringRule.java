@@ -10,12 +10,16 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class ScoringRule {
-
     private UUID ruleId;
+
     private String season;
     private String eventType;
+
     private int pointsAwarded;
+
     private Boolean isDeduction;
+
     private String description;
+
     private Boolean isActive;
 }
