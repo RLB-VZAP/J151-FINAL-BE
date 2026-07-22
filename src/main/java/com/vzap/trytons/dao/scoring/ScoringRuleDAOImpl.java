@@ -155,6 +155,14 @@ public class ScoringRuleDAOImpl extends BaseDAO implements ScoringRuleDAO {
             return rule;
 
         } catch (SQLException e) {
+            if ("45000".equals(e.getSQLState())) {
+                throw new ConflictException(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "The scoring rule could not be saved because it conflicts with an existing season ruleset."
+                );
+            }
+
             String message = e.getMessage();
             if (message != null && message.contains("uk_scoringRule_season_event")) {
                 throw new ConflictException("A scoring rule already exists for this season and event type.");
@@ -207,6 +215,14 @@ public class ScoringRuleDAOImpl extends BaseDAO implements ScoringRuleDAO {
             return rule;
 
         } catch (SQLException e) {
+            if ("45000".equals(e.getSQLState())) {
+                throw new ConflictException(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "The scoring rule could not be updated because it conflicts with an existing season ruleset."
+                );
+            }
+
             LOG.log(Level.SEVERE, "Unable to update scoring rule", e);
             throw new DataAccessException("Unable to update scoring rule", e);
         }
