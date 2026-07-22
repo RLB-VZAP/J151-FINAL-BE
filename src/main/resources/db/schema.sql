@@ -579,7 +579,7 @@ CREATE TABLE `fixture`
     `team_b_id`      VARCHAR(36) NOT NULL,
     `fixtureDate`    DATE        NOT NULL,
     `fixtureTime`    TIME        NOT NULL,
-    `status`         ENUM('UPCOMING', 'SIMULATING', 'COMPLETED', 'PROCESSED', 'CANCELLED') NOT NULL DEFAULT 'UPCOMING',
+    `status`         ENUM('UPCOMING', 'LOCKED', 'SIMULATING', 'COMPLETED', 'PROCESSED', 'CANCELLED') NOT NULL DEFAULT 'UPCOMING',
     `simulationDate` DATETIME             DEFAULT NULL,
     `first_team_id`  VARCHAR(36) GENERATED ALWAYS AS (LEAST(`team_a_id`, `team_b_id`)) STORED,
     `second_team_id` VARCHAR(36) GENERATED ALWAYS AS (GREATEST(`team_a_id`, `team_b_id`)) STORED,
@@ -1793,6 +1793,74 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Create a new settings version instead of changing settings used by results';
+    END IF;
+END$$
+
+/*
+  Scoring rules are the inputs that produce fantasy points, and fantasy points must stay equal to the match
+  scores stored on matchResult (see trg_match_team_score_insert). A simulated match score is calculated from
+  the rule set active for its season, and the point breakdown is recalculated from that same set later, at
+  processing time. If the rule set changed in between, the two would disagree and the breakdown insert would
+  be rejected, leaving the fixture unprocessable.
+
+  These triggers close that window by making a season's rule set immutable once any result exists for it,
+  matching how trg_simulationSettings_version_update already protects the other scoring input.
+  `description` is deliberately still editable, as it does not affect any calculation.
+*/
+CREATE TRIGGER `trg_scoringRule_season_locked_insert`
+    BEFORE INSERT
+    ON `scoringRule`
+    FOR EACH ROW
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM `matchResult` mr
+                 JOIN `fixture` f ON f.`fixtureId` = mr.`fixtureId`
+                 JOIN `fantasyRound` fr ON fr.`roundId` = f.`roundId`
+        WHERE fr.`season` = NEW.`season`
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Start a new season ruleset instead of adding scoring rules to a season that already has results';
+    END IF;
+END$$
+
+CREATE TRIGGER `trg_scoringRule_season_locked_update`
+    BEFORE UPDATE
+    ON `scoringRule`
+    FOR EACH ROW
+BEGIN
+    IF NOT (
+        NEW.`season` <=> OLD.`season`
+        AND NEW.`eventType` <=> OLD.`eventType`
+        AND NEW.`pointsAwarded` <=> OLD.`pointsAwarded`
+        AND NEW.`isDeduction` <=> OLD.`isDeduction`
+        AND NEW.`isActive` <=> OLD.`isActive`
+    ) AND EXISTS (
+        SELECT 1
+        FROM `matchResult` mr
+                 JOIN `fixture` f ON f.`fixtureId` = mr.`fixtureId`
+                 JOIN `fantasyRound` fr ON fr.`roundId` = f.`roundId`
+        WHERE fr.`season` IN (OLD.`season`, NEW.`season`)
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Start a new season ruleset instead of changing scoring rules already used by results';
+    END IF;
+END$$
+
+CREATE TRIGGER `trg_scoringRule_season_locked_delete`
+    BEFORE DELETE
+    ON `scoringRule`
+    FOR EACH ROW
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM `matchResult` mr
+                 JOIN `fixture` f ON f.`fixtureId` = mr.`fixtureId`
+                 JOIN `fantasyRound` fr ON fr.`roundId` = f.`roundId`
+        WHERE fr.`season` = OLD.`season`
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Scoring rules cannot be removed from a season that already has results';
     END IF;
 END$$
 

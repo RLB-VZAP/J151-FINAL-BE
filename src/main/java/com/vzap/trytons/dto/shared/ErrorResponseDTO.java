@@ -3,15 +3,19 @@ package com.vzap.trytons.dto.shared;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class ErrorResponseDTO {
 
-    private final boolean success;
-    private final String message;
-    private final String errorCode;
+    private boolean success;
+    private String message;
+    private String errorCode;
 
     public static ErrorResponseDTO of(String message, String errorCode) {
         return new ErrorResponseDTO(false, message, errorCode);

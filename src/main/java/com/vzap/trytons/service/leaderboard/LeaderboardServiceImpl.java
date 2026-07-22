@@ -13,6 +13,7 @@ import com.vzap.trytons.dto.leaderboard.LeaderboardEntryResponseDTO;
 import com.vzap.trytons.enums.UserRole;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
+import com.vzap.trytons.exceptions.ValidationException;
 import com.vzap.trytons.model.fixture.FantasyRound;
 import com.vzap.trytons.model.fantasyteam.FantasyTeam;
 import com.vzap.trytons.model.league.League;
@@ -165,6 +166,9 @@ public class LeaderboardServiceImpl implements LeaderboardService{
 
     @Override
     public Optional<LeaderboardEntryResponseDTO> getRankingForTeam(UUID teamId, UUID leaderboardId, UUID requestingUserId) throws AuthorisationException {
+        if (leaderboardId == null) {
+            throw new ValidationException("Leaderboard ID is required.");
+        }
         Optional<Leaderboard> l = leaderboardDAO.getLeaderboardById(leaderboardId);
         if (l.isEmpty()) {
             return Optional.empty();
@@ -213,16 +217,32 @@ public class LeaderboardServiceImpl implements LeaderboardService{
                 .thenComparing(Comparator.comparingInt(Ranking::getScoreDifference).reversed())
                 .thenComparing(Comparator.comparingInt(Ranking::getTotalFantasyPoints).reversed()));
 
+        LocalDateTime now = LocalDateTime.now();
+
+        // ranking.uk_ranking_position is a unique key on (leaderboardId, currentRanking) that MySQL
+        // enforces per statement, not per transaction. Re-assigning final positions directly can
+        // collide with another row that still holds the target position (e.g. swapping ranks 1 and
+        // 2 - moving row A to position 1 fails while row B still occupies position 1). To keep this
+        // idempotent and collision-free, every row is first moved to a temporary position guaranteed
+        // to be outside the real 1..N range, then the real positions are assigned in a second pass.
+        int temporaryBase = rankings.size();
+        for (int i = 0; i < rankings.size(); i++) {
+            Ranking ranking = rankings.get(i);
+            ranking.setPreviousRanking(ranking.getCurrentRanking());
+            ranking.setCurrentRanking(temporaryBase + i + 1);
+            ranking.setUpdatedAt(now);
+            leaderboardDAO.updateRanking(ranking);
+        }
+
         int position = 1;
         for (Ranking ranking : rankings) {
-            ranking.setPreviousRanking(ranking.getCurrentRanking());
             ranking.setCurrentRanking(position);
-            ranking.setUpdatedAt(LocalDateTime.now());
+            ranking.setUpdatedAt(now);
             leaderboardDAO.updateRanking(ranking);
             position++;
         }
 
-        leaderboard.setLastUpdated(LocalDateTime.now());
+        leaderboard.setLastUpdated(now);
         leaderboardDAO.updateLeaderboard(leaderboard);
 
         notifyRankChanges(leaderboard, rankings);

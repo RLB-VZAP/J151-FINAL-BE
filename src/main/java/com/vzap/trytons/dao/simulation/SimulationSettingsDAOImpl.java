@@ -1,5 +1,6 @@
 package com.vzap.trytons.dao.simulation;
 
+import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.simulation.SimulationSettings;
 import jakarta.inject.Singleton;
@@ -82,6 +83,14 @@ public class SimulationSettingsDAOImpl extends BaseDAO implements SimulationSett
                 rowsAffected = ps.executeUpdate();
 
             } catch (SQLException e) {
+                if ("45000".equals(e.getSQLState())) {
+                    throw new ConflictException(
+                            e.getMessage() != null
+                                    ? e.getMessage()
+                                    : "The simulation settings could not be updated because it conflicts with an existing record."
+                    );
+                }
+
                 LOG.log(Level.SEVERE, "Save simulation settings failed", e);
                 throw new DataAccessException("Save simulation settings failed", e);
             }

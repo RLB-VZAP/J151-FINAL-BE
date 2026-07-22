@@ -1,6 +1,7 @@
 package com.vzap.trytons.dao.admin;
 
 import com.vzap.trytons.enums.UserRole;
+import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.admin.Admin;
 import jakarta.inject.Singleton;
 
@@ -46,6 +47,7 @@ public class AdminDAOImpl extends BaseDAO implements AdminDAO {
             }
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to find administrator by ID.", e);
+            throw new DataAccessException("Unable to find administrator by ID.", e);
         }
         return Optional.empty();
     }
@@ -61,6 +63,7 @@ public class AdminDAOImpl extends BaseDAO implements AdminDAO {
             }
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Unable to deactivate account.", e);
+            throw new DataAccessException("Unable to deactivate account.", e);
         }
         return false;
     }

@@ -1,5 +1,6 @@
 package com.vzap.trytons.dao.results;
 
+import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.results.PlayerStatistics;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -159,6 +160,14 @@ public class PlayerStatisticsDAOImpl extends BaseDAO implements PlayerStatistics
                     statistics.getPlayerId()
             );
         } catch (SQLException e) {
+            if ("45000".equals(e.getSQLState())) {
+                throw new ConflictException(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "The player statistics could not be saved because they conflict with an existing record."
+                );
+            }
+
             LOG.log(Level.SEVERE, "Unable to save player statistics.", e);
             throw new DataAccessException("Unable to save player statistics.", e);
         }
