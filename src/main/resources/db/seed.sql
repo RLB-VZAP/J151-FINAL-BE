@@ -344,6 +344,21 @@ FROM (SELECT @team1 AS teamId
                      UNION ALL
                      SELECT @p15) AS players;
 
+
+
+/* Functional recommendation data: current player is in Team 1's editable squad; recommended player is not. */
+SET @recommendation1 = UUID();
+
+INSERT INTO `playerRecommendation`
+    (recommendationId, teamId, current_player_id, recommended_player_id, reason, score, isDismissed)
+VALUES (@recommendation1,
+        @team1,
+        @p1,
+        @p21,
+        'Lower-cost fly-half alternative for transfer-planning tests',
+        8.25,
+        FALSE);
+
 SET
 @publicLeague = UUID();
     SET
@@ -411,6 +426,26 @@ INSERT INTO `fantasyRound`
     (roundId, season, roundNumber, openDate, lockDeadline, endDate, status)
 VALUES (@round1, '2026', 1, '2026-07-01 00:00:00', '2026-07-07 23:59:59', '2026-07-14 23:59:59', 'LOCKED'),
        (@round2, '2026', 2, '2026-07-15 00:00:00', '2026-07-21 23:59:59', '2026-07-28 23:59:59', 'OPEN');
+
+
+
+/* Pending transfer request for the open round. It does not alter the editable squad until confirmed by application logic. */
+SET @transfer1 = UUID();
+
+INSERT INTO `transfer`
+    (transferId, teamId, roundId, removed_player_id, added_player_id,
+     removed_player_value, added_player_value, penaltyPoints, status, confirmedAt, created_by_user_id)
+VALUES (@transfer1,
+        @team1,
+        @round2,
+        @p1,
+        @p21,
+        12.50,
+        11.50,
+        0,
+        'PENDING',
+        NULL,
+        @johnId);
 
 INSERT INTO `fantasy_team_round_selection`
 (selectionId, roundId, teamId, playerId, squadRole, isCaptain, is_vice_captain)
@@ -589,21 +624,24 @@ INSERT INTO `ranking`
  pointsAgainst,
  leaguePoints,
  total_fantasy_points)
-VALUES (UUID(), @masterLeaderboard, @team2, 1, NULL, 2, 1, 0, 1, 55, 55, 4, 55),
-       (UUID(), @masterLeaderboard, @team1, 2, NULL, 2, 1, 0, 1, 55, 55, 4, 55),
-       (UUID(), @masterLeaderboard, @team3, 3, NULL, 1, 0, 1, 0, 18, 18, 2, 18),
-       (UUID(), @masterLeaderboard, @team4, 4, NULL, 1, 0, 1, 0, 18, 18, 2, 18),
+/* pointsFor/pointsAgainst/total_fantasy_points are derived from the corrected match scores
+   (result1 15-14, result2 14-14, result3 18-15). Win/draw/loss counts, leaguePoints and
+   ranking positions are unchanged, since the corrected scores preserve every outcome. */
+VALUES (UUID(), @masterLeaderboard, @team2, 1, NULL, 2, 1, 0, 1, 32, 30, 4, 32),
+       (UUID(), @masterLeaderboard, @team1, 2, NULL, 2, 1, 0, 1, 30, 32, 4, 30),
+       (UUID(), @masterLeaderboard, @team3, 3, NULL, 1, 0, 1, 0, 14, 14, 2, 14),
+       (UUID(), @masterLeaderboard, @team4, 4, NULL, 1, 0, 1, 0, 14, 14, 2, 14),
        (UUID(), @masterLeaderboard, @team5, 5, NULL, 0, 0, 0, 0, 0, 0, 0, 0),
 
-       (UUID(), @publicLeaderboard, @team1, 1, NULL, 1, 1, 0, 0, 28, 24, 4, 28),
-       (UUID(), @publicLeaderboard, @team3, 2, NULL, 1, 0, 1, 0, 18, 18, 2, 18),
-       (UUID(), @publicLeaderboard, @team4, 3, NULL, 1, 0, 1, 0, 18, 18, 2, 18),
+       (UUID(), @publicLeaderboard, @team1, 1, NULL, 1, 1, 0, 0, 15, 14, 4, 15),
+       (UUID(), @publicLeaderboard, @team3, 2, NULL, 1, 0, 1, 0, 14, 14, 2, 14),
+       (UUID(), @publicLeaderboard, @team4, 3, NULL, 1, 0, 1, 0, 14, 14, 2, 14),
        (UUID(), @publicLeaderboard, @team5, 4, NULL, 0, 0, 0, 0, 0, 0, 0, 0),
-       (UUID(), @publicLeaderboard, @team2, 5, NULL, 1, 0, 0, 1, 24, 28, 0, 24),
+       (UUID(), @publicLeaderboard, @team2, 5, NULL, 1, 0, 0, 1, 14, 15, 0, 14),
 
-       (UUID(), @privateLeaderboard, @team2, 1, NULL, 1, 1, 0, 0, 31, 27, 4, 31),
+       (UUID(), @privateLeaderboard, @team2, 1, NULL, 1, 1, 0, 0, 18, 15, 4, 18),
        (UUID(), @privateLeaderboard, @team3, 2, NULL, 0, 0, 0, 0, 0, 0, 0, 0),
-       (UUID(), @privateLeaderboard, @team1, 3, NULL, 1, 0, 0, 1, 27, 31, 0, 27);
+       (UUID(), @privateLeaderboard, @team1, 3, NULL, 1, 0, 0, 1, 15, 18, 0, 15);
 
 INSERT INTO `notification`
 (notificationId,
@@ -685,11 +723,14 @@ INSERT INTO `matchResult`
  isDraw,
  approved,
  simulation_run_number)
+/* Scores are the fantasy-point totals of each side's selected players, matching the
+   match_team_score breakdown rows inserted below. winnerSide/isDraw are unchanged:
+   15 > 14 and 18 > 15 still resolve to TEAM_A, and 14 = 14 is still a draw. */
 VALUES (@result1,
         @fixture1,
         @simulationSettingsId,
-        28,
-        24,
+        15,
+        14,
         'TEAM_A',
         FALSE,
         FALSE,
@@ -697,8 +738,8 @@ VALUES (@result1,
        (@result2,
         @fixture2,
         @simulationSettingsId,
-        18,
-        18,
+        14,
+        14,
         NULL,
         TRUE,
         FALSE,
@@ -706,8 +747,8 @@ VALUES (@result1,
        (@result3,
         @fixture3,
         @simulationSettingsId,
-        31,
-        27,
+        18,
+        15,
         'TEAM_A',
         FALSE,
         FALSE,
@@ -715,12 +756,16 @@ VALUES (@result1,
 
 INSERT INTO `match_team_score`
 (scoreId, resultId, teamId, teamSide, playerPoints, captainBonus, transferPenalty)
-VALUES (UUID(), @result1, @team1, 'TEAM_A', 25, 3, 0),
-       (UUID(), @result1, @team2, 'TEAM_B', 22, 2, 0),
-       (UUID(), @result2, @team3, 'TEAM_A', 16, 2, 0),
-       (UUID(), @result2, @team4, 'TEAM_B', 16, 2, 0),
-       (UUID(), @result3, @team2, 'TEAM_A', 28, 3, 0),
-       (UUID(), @result3, @team1, 'TEAM_B', 25, 2, 0);
+/* playerPoints must equal the sum of the seeded fantasyPoints.totalPoints for that team's
+   selected players, because trg_match_team_score_insert requires
+   playerPoints + captainBonus - transferPenalty to equal the stored matchResult score.
+   captainBonus is 0 to mirror TeamScoreServiceImpl, which currently always writes 0. */
+VALUES (UUID(), @result1, @team1, 'TEAM_A', 15, 0, 0),
+       (UUID(), @result1, @team2, 'TEAM_B', 14, 0, 0),
+       (UUID(), @result2, @team3, 'TEAM_A', 14, 0, 0),
+       (UUID(), @result2, @team4, 'TEAM_B', 14, 0, 0),
+       (UUID(), @result3, @team2, 'TEAM_A', 18, 0, 0),
+       (UUID(), @result3, @team1, 'TEAM_B', 15, 0, 0);
 
 UPDATE `matchResult`
 SET approved                  = TRUE,

@@ -1,6 +1,7 @@
 package com.vzap.trytons.dao.fixture;
 
 import com.vzap.trytons.enums.FixtureStatus;
+import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.fixture.Fixture;
 import java.sql.*;
@@ -42,6 +43,19 @@ public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
                 throw new DataAccessException("Fixture was inserted, but cannot be retrieved.",null);
             }
         }catch(SQLException e){
+            if ("45000".equals(e.getSQLState())) {
+                throw new ConflictException(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "The fixture could not be created because it conflicts with an existing record."
+                );
+            }
+
+            String message = e.getMessage();
+            if (message != null && message.contains("uk_fixture_round_teams")) {
+                throw new ConflictException("A fixture already exists for these teams in this league round.");
+            }
+
             LOG.log(Level.SEVERE, "Unable to create fixture", e);
             throw new DataAccessException("Unable to create fixture", e);
         }
@@ -179,6 +193,14 @@ public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
             return ps.executeUpdate() == 1;
 
         } catch (SQLException e) {
+            if ("45000".equals(e.getSQLState())) {
+                throw new ConflictException(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "The fixture could not be updated because it conflicts with an existing record."
+                );
+            }
+
             LOG.log(Level.SEVERE, "Unable to update fixture", e);
             throw new DataAccessException("Unable to update fixture", e);
         }

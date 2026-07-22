@@ -2,6 +2,7 @@ package com.vzap.trytons.dto.league;
 
 import com.vzap.trytons.enums.LeagueType;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -10,8 +11,9 @@ import java.util.UUID;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class LeagueRequestDTO {
     private String leagueName;
     private String description;

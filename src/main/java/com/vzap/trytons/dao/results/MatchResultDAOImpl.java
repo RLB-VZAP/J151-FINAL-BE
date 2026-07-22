@@ -1,6 +1,7 @@
 package com.vzap.trytons.dao.results;
 
 import com.vzap.trytons.enums.MatchTeamSide;
+import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.results.MatchResult;
 import jakarta.inject.Singleton;
@@ -28,6 +29,7 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
             SELECT
                 mr.resultId AS resultId,
                 mr.fixtureId AS fixtureId,
+                mr.settingsId AS settingsId,
                 mr.team_a_score AS teamAScore,
                 mr.team_b_score AS teamBScore,
                 mr.winnerSide AS winnerSide,
@@ -51,6 +53,7 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
         return MatchResult.builder()
                 .resultId(UUID.fromString(resultSet.getString("resultId")))
                 .fixtureId(UUID.fromString(resultSet.getString("fixtureId")))
+                .settingsId(UUID.fromString(resultSet.getString("settingsId")))
                 .simulationRunNumber(resultSet.getInt("simulationRunNumber"))
                 .teamAScore(resultSet.getInt("teamAScore"))
                 .teamBScore(resultSet.getInt("teamBScore"))
@@ -74,12 +77,16 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
             throw new DataAccessException("Fixture ID is required when saving a match result.", null);
         }
 
+        if (matchResult.getSettingsId() == null) {
+            throw new DataAccessException("Settings ID is required when saving a match result.", null);
+        }
+
         UUID resultId = matchResult.getResultId() == null ? UUID.randomUUID() : matchResult.getResultId();
 
         String query = """
                 INSERT INTO matchResult
-                    (resultId, fixtureId, simulationRunNumber, teamAScore, teamBScore, winnerSide, isDraw, approved, isCurrent, resultDate, approvedByAdminUserId)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (resultId, fixtureId, settingsId, team_a_score, team_b_score, winnerSide, isDraw, approved, isCurrent, resultDate, approved_by_admin_user_id, simulation_run_number)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (Connection connection = getConnection();
@@ -87,7 +94,7 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
 
             statement.setString(1, resultId.toString());
             statement.setString(2, matchResult.getFixtureId().toString());
-            statement.setInt(3, matchResult.getSimulationRunNumber());
+            statement.setString(3, matchResult.getSettingsId().toString());
             statement.setInt(4, matchResult.getTeamAScore());
             statement.setInt(5, matchResult.getTeamBScore());
             if (matchResult.getWinnerSide() == null){
@@ -108,6 +115,7 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
             } else {
                 statement.setString(11, matchResult.getApprovedByAdminUserId().toString());
             }
+            statement.setInt(12, matchResult.getSimulationRunNumber());
 
             int affectedRows = statement.executeUpdate();
 
@@ -120,6 +128,14 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
             return findById(resultId).orElseThrow(() -> new DataAccessException("The match result was saved but could not be retrieved.", null));
 
         } catch (SQLException e) {
+            if ("45000".equals(e.getSQLState())) {
+                throw new ConflictException(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "The match result could not be saved because it conflicts with an existing record."
+                );
+            }
+
             LOG.log(Level.SEVERE, "Unable to save match result.", e);
             throw new DataAccessException("Unable to save match result.", e);
         }
@@ -357,6 +373,14 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
             return statement.executeUpdate();
 
         } catch (SQLException e) {
+            if ("45000".equals(e.getSQLState())) {
+                throw new ConflictException(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "The previous match result could not be superseded because its stored data is inconsistent."
+                );
+            }
+
             LOG.log(
                     Level.SEVERE,
                     "Unable to mark previous fixture "

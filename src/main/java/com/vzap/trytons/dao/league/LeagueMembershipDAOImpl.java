@@ -1,5 +1,6 @@
 package com.vzap.trytons.dao.league;
 import com.vzap.trytons.enums.LeagueType;
+import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.fantasyteam.FantasyTeam;
 import com.vzap.trytons.model.league.League;
@@ -47,6 +48,22 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
             stmt.setTimestamp(5, Timestamp.valueOf(joinDate));
             stmt.executeUpdate();
         } catch (SQLException e){
+            if ("45000".equals(e.getSQLState())) {
+                throw new ConflictException(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "The league membership could not be created because it conflicts with an existing record."
+                );
+            }
+
+            String message = e.getMessage();
+            if (message != null && message.contains("uk_leagueMembership_user")) {
+                throw new ConflictException("This user is already a member of this league.");
+            }
+            if (message != null && message.contains("uk_leagueMembership_team")) {
+                throw new ConflictException("This team is already a member of this league.");
+            }
+
             LOGGER.log(Level.SEVERE, "Failed to create membership for league" + leagueId + " user" + userId
                     + " team" + teamId, e);
             throw new DataAccessException("Failed to create membership for league" + leagueId + " user" + userId

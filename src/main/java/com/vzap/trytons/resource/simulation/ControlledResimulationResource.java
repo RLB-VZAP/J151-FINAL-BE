@@ -2,10 +2,8 @@ package com.vzap.trytons.resource.simulation;
 
 import com.vzap.trytons.annotations.AdminOnly;
 import com.vzap.trytons.annotations.Authenticated;
-import com.vzap.trytons.dto.shared.ErrorResponseDTO;
 import com.vzap.trytons.dto.simulation.ResimulationRequestDTO;
 import com.vzap.trytons.dto.simulation.ResimulationResponseDTO;
-import com.vzap.trytons.exceptions.ApplicationException;
 import com.vzap.trytons.exceptions.AuthenticationException;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
@@ -25,8 +23,6 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @RequestScoped
 @Authenticated
@@ -35,7 +31,6 @@ import java.util.logging.Logger;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class ControlledResimulationResource {
-    private static final Logger LOGGER = Logger.getLogger(ControlledResimulationResource.class.getName());
 
     @Inject
     private ControlledResimulationService controlledResimulationService;
@@ -45,34 +40,22 @@ public class ControlledResimulationResource {
 
     @POST
     public Response resimulateFixture(ResimulationRequestDTO request) {
-        try {
-            UUID actorUserId = currentUserId();
-            ResimulationResponseDTO response = controlledResimulationService.resimulateFixture(actorUserId, request);
+        UUID actorUserId = currentUserId();
+        ResimulationResponseDTO response = controlledResimulationService.resimulateFixture(actorUserId, request);
 
-            return Response.status(Response.Status.CREATED)
-                    .entity(response)
-                    .build();
-        } catch (ApplicationException e) {
-            return handledApplicationError(e);
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.status(Response.Status.CREATED)
+                .entity(response)
+                .build();
     }
 
     @GET
     @Path("/fixture/{fixtureId}")
     public Response listResimulationsForFixture(@PathParam("fixtureId") UUID fixtureId) {
-        try {
-            List<ResimulationResponseDTO> responseList = controlledResimulationService.listResimulationsForFixture(fixtureId);
+        List<ResimulationResponseDTO> responseList = controlledResimulationService.listResimulationsForFixture(fixtureId);
 
-            return Response.status(Response.Status.OK)
-                    .entity(responseList)
-                    .build();
-        } catch (ApplicationException e) {
-            return handledApplicationError(e);
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.status(Response.Status.OK)
+                .entity(responseList)
+                .build();
     }
 
     private UUID currentUserId() {
@@ -81,24 +64,5 @@ public class ControlledResimulationResource {
             throw new AuthenticationException("The authenticated user could not be identified.");
         }
         return principal.getUserId();
-    }
-
-    private Response handledApplicationError(ApplicationException e) {
-        ErrorResponseDTO errorPayload = ErrorResponseDTO.of(e.getMessage(), e.getErrorCode());
-
-        return Response.status(e.getStatusCode())
-                .entity(errorPayload)
-                .build();
-    }
-
-    private Response unexpected(Exception e) {
-        LOGGER.log(Level.SEVERE, "Unexpected error in ControlledResimulationResource.", e);
-
-        ErrorResponseDTO errorPayload =
-                ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR");
-
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(errorPayload)
-                .build();
     }
 }

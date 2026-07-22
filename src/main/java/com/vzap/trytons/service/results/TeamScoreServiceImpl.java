@@ -28,16 +28,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import com.vzap.trytons.service.leaderboard.LeaderboardService;
 
 @ApplicationScoped
 public class TeamScoreServiceImpl implements TeamScoreService {
 
     @Inject
     MatchTeamScoreDAO matchTeamScoreDAO;
-
-    @Inject
-    LeaderboardService leaderboardService;
 
     @Inject
     FantasyTeamRoundSelectionDAO fantasyTeamRoundSelectionDAO;
@@ -190,9 +186,10 @@ public class TeamScoreServiceImpl implements TeamScoreService {
             }
 
 
-            UUID currentLeagueId = currentFixture.getLeagueId();
-
-            leaderboardService.refreshLeagueLeaderboard(null, currentLeagueId);
+            // The league leaderboard is refreshed by MatchProcessingServiceImpl after this method returns,
+            // using the acting administrator. Refreshing it here as well passed a null actor into
+            // refreshLeagueLeaderboard, whose requireLeagueManagerOrAdmin gate rejected it, so the whole
+            // fixture-processing run failed after the team scores had already been written.
 
             //return the updated result
 

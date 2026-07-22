@@ -3,8 +3,6 @@ package com.vzap.trytons.resource.admin;
 import com.vzap.trytons.annotations.AdminOnly;
 import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dto.admin.LogResponseDTO;
-import com.vzap.trytons.dto.shared.ErrorResponseDTO;
-import com.vzap.trytons.exceptions.ApplicationException;
 import com.vzap.trytons.exceptions.AuthenticationException;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
@@ -23,8 +21,6 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @RequestScoped
 @Authenticated
@@ -33,7 +29,6 @@ import java.util.logging.Logger;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class LogResource {
-    private static final Logger LOGGER = Logger.getLogger(LogResource.class.getName());
 
     @Inject
     private LogService logService;
@@ -43,19 +38,13 @@ public class LogResource {
 
     @GET
     public Response findRecentLogs(@QueryParam("limit") Integer limit) {
-        try {
-            UUID actorUserId = currentUserId();
-            int effectiveLimit = limit != null ? limit : 100;
-            List<LogResponseDTO> responseList = logService.findRecentLogs(actorUserId, effectiveLimit);
+        UUID actorUserId = currentUserId();
+        int effectiveLimit = limit != null ? limit : 100;
+        List<LogResponseDTO> responseList = logService.findRecentLogs(actorUserId, effectiveLimit);
 
-            return Response.status(Response.Status.OK)
-                    .entity(responseList)
-                    .build();
-        } catch (ApplicationException e) {
-            return handledApplicationError(e);
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.status(Response.Status.OK)
+                .entity(responseList)
+                .build();
     }
 
     private UUID currentUserId() {
@@ -64,24 +53,5 @@ public class LogResource {
             throw new AuthenticationException("The authenticated user could not be identified.");
         }
         return principal.getUserId();
-    }
-
-    private Response handledApplicationError(ApplicationException e) {
-        ErrorResponseDTO errorPayload = ErrorResponseDTO.of(e.getMessage(), e.getErrorCode());
-
-        return Response.status(e.getStatusCode())
-                .entity(errorPayload)
-                .build();
-    }
-
-    private Response unexpected(Exception e) {
-        LOGGER.log(Level.SEVERE, "Unexpected error in LogResource.", e);
-
-        ErrorResponseDTO errorPayload =
-                ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR");
-
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(errorPayload)
-                .build();
     }
 }

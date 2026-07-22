@@ -1,5 +1,7 @@
 package com.vzap.trytons.dao.fantasyteam;
 
+import com.vzap.trytons.enums.SquadRole;
+import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.fantasyteam.FantasyTeamRoundSelection;
 import java.sql.*;
@@ -22,6 +24,7 @@ public class FantasyTeamRoundSelectionDAOImpl extends BaseDAO implements Fantasy
         selection.setTeamId(UUID.fromString(rs.getString("teamId")));
         selection.setPlayerId(UUID.fromString(rs.getString("playerId")));
         selection.setSelectedDate(rs.getTimestamp("selectedDate").toLocalDateTime());
+        selection.setSquadRole(SquadRole.valueOf(rs.getString("squadRole")));
         selection.setIsCaptain(rs.getBoolean("isCaptain"));
         selection.setIsViceCaptain(rs.getBoolean("is_vice_captain"));
         selection.setLockedAt(rs.getTimestamp("lockedAt").toLocalDateTime());
@@ -30,7 +33,7 @@ public class FantasyTeamRoundSelectionDAOImpl extends BaseDAO implements Fantasy
     
     @Override
     public Optional<FantasyTeamRoundSelection> createRoundSelection(FantasyTeamRoundSelection selection) {
-        String query = "INSERT INTO fantasy_team_round_selection(selectionId, roundId, teamId, playerId, selectedDate, isCaptain, is_vice_captain, lockedAt) VALUES (?,?,?,?,?,?,?,?)";
+        String query = "INSERT INTO fantasy_team_round_selection(selectionId, roundId, teamId, playerId, selectedDate, squadRole, isCaptain, is_vice_captain, lockedAt) VALUES (?,?,?,?,?,?,?,?,?)";
         try(Connection con = getConnection();
             PreparedStatement ps = con.prepareStatement(query)) {
             UUID newSelectionId = UUID.randomUUID();
@@ -43,25 +46,34 @@ public class FantasyTeamRoundSelectionDAOImpl extends BaseDAO implements Fantasy
             }else{
                 ps.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
             }
+            ps.setString(6, selection.getSquadRole().name());
             if(selection.getIsCaptain() != null) {
-                ps.setBoolean(6,selection.getIsCaptain());
-            }else{
-                ps.setBoolean(6,false);
-            }
-            if(selection.getIsViceCaptain() != null) {
-                ps.setBoolean(7,selection.getIsViceCaptain());
+                ps.setBoolean(7,selection.getIsCaptain());
             }else{
                 ps.setBoolean(7,false);
             }
+            if(selection.getIsViceCaptain() != null) {
+                ps.setBoolean(8,selection.getIsViceCaptain());
+            }else{
+                ps.setBoolean(8,false);
+            }
             if(selection.getLockedAt() != null) {
-                ps.setTimestamp(8, Timestamp.valueOf(selection.getLockedAt()));
+                ps.setTimestamp(9, Timestamp.valueOf(selection.getLockedAt()));
             }else {
-                ps.setTimestamp(8, Timestamp.valueOf(LocalDateTime.now()));
+                ps.setTimestamp(9, Timestamp.valueOf(LocalDateTime.now()));
             }
             ps.executeUpdate();
             selection.setSelectionId(newSelectionId);
             return Optional.of(selection);
         }catch(SQLException e){
+            if ("45000".equals(e.getSQLState())) {
+                throw new ConflictException(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "The round selection could not be created because it conflicts with an existing record."
+                );
+            }
+
             LOGGER.log(Level.SEVERE,"Unable to create new fantasy team round selection",e);
             throw new DataAccessException("Unable to create new fantasy team round selection",e);
         }
@@ -69,7 +81,7 @@ public class FantasyTeamRoundSelectionDAOImpl extends BaseDAO implements Fantasy
 
     @Override
     public int createRoundSelections(List<FantasyTeamRoundSelection> selections) {
-        String query = "INSERT INTO fantasy_team_round_selection(selectionId, roundId, teamId, playerId, selectedDate, isCaptain, is_vice_captain, lockedAt) VALUES (?,?,?,?,?,?,?,?)";
+        String query = "INSERT INTO fantasy_team_round_selection(selectionId, roundId, teamId, playerId, selectedDate, squadRole, isCaptain, is_vice_captain, lockedAt) VALUES (?,?,?,?,?,?,?,?,?)";
         Connection con = null;
         PreparedStatement ps = null;
         try {
@@ -88,20 +100,21 @@ public class FantasyTeamRoundSelectionDAOImpl extends BaseDAO implements Fantasy
                 } else {
                     ps.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
                 }
+                ps.setString(6, selection.getSquadRole().name());
                 if (selection.getIsCaptain() != null) {
-                    ps.setBoolean(6, selection.getIsCaptain());
-                } else {
-                    ps.setBoolean(6, false);
-                }
-                if (selection.getIsViceCaptain() != null) {
-                    ps.setBoolean(7, selection.getIsViceCaptain());
+                    ps.setBoolean(7, selection.getIsCaptain());
                 } else {
                     ps.setBoolean(7, false);
                 }
-                if (selection.getLockedAt() != null) {
-                    ps.setTimestamp(8, Timestamp.valueOf(selection.getLockedAt()));
+                if (selection.getIsViceCaptain() != null) {
+                    ps.setBoolean(8, selection.getIsViceCaptain());
                 } else {
-                    ps.setTimestamp(8, Timestamp.valueOf(LocalDateTime.now()));
+                    ps.setBoolean(8, false);
+                }
+                if (selection.getLockedAt() != null) {
+                    ps.setTimestamp(9, Timestamp.valueOf(selection.getLockedAt()));
+                } else {
+                    ps.setTimestamp(9, Timestamp.valueOf(LocalDateTime.now()));
                 }
                 ps.addBatch();
             }
@@ -120,6 +133,15 @@ public class FantasyTeamRoundSelectionDAOImpl extends BaseDAO implements Fantasy
                     LOGGER.log(Level.SEVERE, "Unable to rollback transaction", ex);
                 }
             }
+
+            if ("45000".equals(e.getSQLState())) {
+                throw new ConflictException(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "The round selections could not be created because they conflict with an existing record."
+                );
+            }
+
             LOGGER.log(Level.SEVERE, "Unable to create new fantasy team round selections", e);
             throw new DataAccessException("Unable to create new fantasy team round selections", e);
         } finally {
