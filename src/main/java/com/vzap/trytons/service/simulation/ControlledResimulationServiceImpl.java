@@ -1,20 +1,27 @@
 package com.vzap.trytons.service.simulation;
 
 import com.vzap.trytons.dao.admin.AdminDAO;
+import com.vzap.trytons.dao.fantasyteam.FantasyTeamRoundSelectionDAO;
+import com.vzap.trytons.dao.fixture.FantasyRoundDAO;
 import com.vzap.trytons.dao.fixture.FixtureDAO;
 import com.vzap.trytons.dao.results.MatchResultDAO;
+import com.vzap.trytons.dao.scoring.ScoringRuleDAO;
 import com.vzap.trytons.dto.results.MatchResultResponseDTO;
 import com.vzap.trytons.dto.simulation.ResimulationRequestDTO;
 import com.vzap.trytons.dto.simulation.ResimulationResponseDTO;
 import com.vzap.trytons.dto.simulation.SimulationSettingResponseDTO;
+import com.vzap.trytons.enums.FantasyRoundStatus;
 import com.vzap.trytons.enums.FixtureStatus;
 import com.vzap.trytons.exceptions.*;
+import com.vzap.trytons.model.fantasyteam.FantasyTeamRoundSelection;
+import com.vzap.trytons.model.fixture.FantasyRound;
 import com.vzap.trytons.model.fixture.Fixture;
 import com.vzap.trytons.model.results.MatchResult;
 import com.vzap.trytons.service.results.MatchResultService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -35,6 +42,18 @@ public class ControlledResimulationServiceImpl implements ControlledResimulation
 
     @Inject
     private SimulationSettingService simulationSettingService;
+
+    @Inject
+    private FantasyRoundDAO fantasyRoundDAO;
+
+    @Inject
+    private FantasyTeamRoundSelectionDAO roundSelectionDAO;
+
+    @Inject
+    private ScoringRuleDAO scoringRuleDAO;
+
+    // Mirrors MatchSimulationServiceImpl.TEAM_SIZE — a locked squad must have exactly this many players.
+    private static final int TEAM_SIZE = 20;
 
     @Override
     public ResimulationResponseDTO resimulateFixture(UUID actorUserId, ResimulationRequestDTO request) {
@@ -79,6 +98,47 @@ public class ControlledResimulationServiceImpl implements ControlledResimulation
         int completedResimulations = Math.max(0, previousResult.getSimulationRunNumber() - 1);
         if (completedResimulations >= settings.getMaxResimulations()) {
             throw new BusinessRuleException("The maximum number of resimulations has been reached for this fixture.");
+        }
+
+        // Pre-validate every simulateFixture() precondition that does NOT depend on this method's own
+        // mutations below, so that a failure is thrown before anything is written. Two simulateFixture
+        // preconditions are deliberately NOT checked here because this method's mutations are what satisfy
+        // them: "fixture must be LOCKED" (satisfied by mutation 2, fixture.setStatus(LOCKED)) and "no current
+        // result exists" (satisfied by mutation 1, markAllFixtureResultsNotCurrent) — both would always fail
+        // if checked against the pre-mutation state.
+        FantasyRound round = fantasyRoundDAO.getRoundById(fixture.getRoundId()).orElseThrow(() -> new ResourceNotFoundException("Round not found"));
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (round.getLockDeadline() == null) {
+            throw new BusinessRuleException("The round does not have a lock deadline.");
+        }
+
+        if (now.isBefore(round.getLockDeadline())) {
+            throw new BusinessRuleException("The round has not reached its lock deadline.");
+        }
+
+        if ((round.getStatus() != FantasyRoundStatus.LOCKED) && (round.getStatus() != FantasyRoundStatus.IN_PROGRESS)) {
+            throw new BusinessRuleException("The fixture can only be simulated when its round is locked.");
+        }
+
+        List<FantasyTeamRoundSelection> teamASelections = roundSelectionDAO.getSelectionsByRoundIdAndTeamId(round.getRoundId(), fixture.getTeamAId());
+        List<FantasyTeamRoundSelection> teamBSelections = roundSelectionDAO.getSelectionsByRoundIdAndTeamId(round.getRoundId(), fixture.getTeamBId());
+
+        if (teamASelections.size() != TEAM_SIZE) {
+            throw new BusinessRuleException("Team A does not have a complete 20-player locked squad.");
+        }
+
+        if (teamBSelections.size() != TEAM_SIZE) {
+            throw new BusinessRuleException("Team B does not have a complete 20-player locked squad.");
+        }
+
+        if (!round.getSeason().equalsIgnoreCase(settings.getSeason())) {
+            throw new BusinessRuleException("The active simulation settings do not match the round season.");
+        }
+
+        if (scoringRuleDAO.findActiveRules(round.getSeason()).isEmpty()) {
+            throw new BusinessRuleException("No active scoring rules exist for this round.");
         }
 
         int updatedResults = matchResultDAO.markAllFixtureResultsNotCurrent(fixtureId);
