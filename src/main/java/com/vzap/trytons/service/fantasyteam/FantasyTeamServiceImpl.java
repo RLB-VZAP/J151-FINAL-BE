@@ -36,17 +36,22 @@ import java.util.UUID;
 public class FantasyTeamServiceImpl implements FantasyTeamService {
     /**
      * Squad budget, on the same scale as player.value — millions of rands, so
-     * 200.00 means R200m. It has to match that scale because the budget is
+     * 196.00 means R196m. It has to match that scale because the budget is
      * spent by subtracting player values from it; the previous 100000000.00
      * was whole rands, which made every squad look free and overflowed
      * fantasyTeam.remainingBudget DECIMAL(10,2) on insert.
      *
-     * Sized against the seeded roster and the 20-player squad rule: the
-     * cheapest possible squad costs about 172 and the most expensive about
-     * 223, so 200 leaves room for a strong squad while still ruling out
-     * buying the whole top end.
+     * Sized against the seeded roster and the 20-player squad rule. Once the
+     * position minimums are applied, the cheapest legal squad costs about 185,
+     * an average one about 203, and the most expensive about 222.
+     *
+     * 196 sits deliberately below the average squad, so a manager cannot just
+     * take twenty players without thinking, while still leaving roughly 11
+     * above the floor for a few premium picks. Anything near 190 would pin the
+     * squad to the cheapest legal combination — the floor is high because the
+     * roster is only 33 players for 20 places.
      */
-    private static final BigDecimal INITIAL_BUDGET = new BigDecimal("200.00");
+    private static final BigDecimal INITIAL_BUDGET = new BigDecimal("196.00");
 
     @Inject
     private FantasyTeamDAO fantasyTeamDAO;

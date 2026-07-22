@@ -39,7 +39,7 @@ SET @meId = (SELECT userId FROM `user` WHERE username = @meUsername);
 -- this account does not already have it. Budget matches
 -- FantasyTeamServiceImpl.INITIAL_BUDGET, which is in millions.
 INSERT INTO `fantasyTeam` (teamId, owner_user_id, teamName, remainingBudget, isValid)
-SELECT UUID(), @meId, CONCAT(@meUsername, '''s XV'), 200.00, TRUE
+SELECT UUID(), @meId, CONCAT(@meUsername, '''s XV'), 196.00, TRUE
 FROM DUAL
 WHERE @meId IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM `fantasyTeam` WHERE owner_user_id = @meId);
