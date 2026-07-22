@@ -232,6 +232,7 @@ public class MatchSimulationServiceImpl implements MatchSimulationService {
         MatchResult result = MatchResult.builder()
                 .resultId(resultId)
                 .fixtureId(fixtureId)
+                .settingsId(settings.getSettingsId())
                 .simulationRunNumber(simulationRunNumber)
                 .teamAScore(teamAScore)
                 .teamBScore(teamBScore)
@@ -253,6 +254,7 @@ public class MatchSimulationServiceImpl implements MatchSimulationService {
             playerStatisticsService.captureStatistic(actorUserId, statsToRequestDTO(statistics));
         }
 
+        fixture.setSimulationDate(simulationDate);
         fixture.setStatus(FixtureStatus.COMPLETED);
         fixtureDAO.updateFixture(fixture);
 
