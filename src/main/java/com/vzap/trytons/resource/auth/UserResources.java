@@ -16,9 +16,9 @@ import java.net.URI;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class UserResources {
-
     @Inject
     private RegisteredUserServices registeredUserServices;
+
     @POST
     public Response registerUser(@Valid RegisteredUserRequestDTO userRequest, @Context UriInfo uriInfo) {
         RegisteredUser created = registeredUserServices.registerUser(userRequest);

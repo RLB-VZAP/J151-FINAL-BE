@@ -24,12 +24,9 @@ import com.vzap.trytons.dao.shared.BaseDAO;
 public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembershipDAO {
 
     private static final Logger LOGGER = Logger.getLogger(LeagueMembershipDAOImpl.class.getName());
-    private static final String BASE_FIELDS =
-            "membershipId, leagueId, registered_user_id, teamId, isActive, joinDate";
-    private static final String RESPONSE_JOIN =
-            " FROM leagueMembership lm JOIN league l ON l.leagueId = lm.leagueId";
-    private static final String RESPONSE_FIELDS =
-            "l.leagueId, l.leagueName, l.description, l.leagueType, l.creationDate";
+    private static final String BASE_FIELDS = "membershipId, leagueId, registered_user_id, teamId, isActive, joinDate";
+    private static final String RESPONSE_JOIN = " FROM leagueMembership lm JOIN league l ON l.leagueId = lm.leagueId";
+    private static final String RESPONSE_FIELDS = "l.leagueId, l.leagueName, l.description, l.leagueType, l.creationDate";
 
     @Override
     public LeagueMembership createMembership(UUID leagueId, UUID userId, UUID teamId) {

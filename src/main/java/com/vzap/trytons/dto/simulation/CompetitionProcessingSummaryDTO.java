@@ -15,14 +15,15 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class CompetitionProcessingSummaryDTO {
-
     private LocalDateTime processedAt;
+
     private int roundsLocked;
     private int fixturesSimulated;
     private int fixturesProcessed;
     private int leaderboardsRefreshed;
     private int skipped;
     private int errors;
+
     private List<String> errorMessages;
     private List<String> skippedMessages;
 }

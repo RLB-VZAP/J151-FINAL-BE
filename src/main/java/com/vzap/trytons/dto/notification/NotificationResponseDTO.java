@@ -18,11 +18,17 @@ import java.util.UUID;
 @Builder
 public class NotificationResponseDTO {
     private UUID notificationId;
+
     private NotificationType type;
+
     private String body;
+
     private LocalDateTime createdAt;
+
     @JsonProperty("isRead")
     private boolean isRead;
+
     private String relatedEntityType;
+
     private UUID relatedEntityId;
 }

@@ -25,7 +25,6 @@ import java.util.UUID;
 @Authenticated
 @AdminOnly
 public class CompetitionProcessingResource {
-
     @Inject
     private CompetitionProcessingService competitionProcessingService;
 
@@ -49,11 +48,9 @@ public class CompetitionProcessingResource {
 
         Principal principal = securityContext.getUserPrincipal();
 
-        if (!(principal instanceof AuthPrincipal)) {
+        if (!(principal instanceof AuthPrincipal authPrincipal)) {
             throw new AuthenticationException("The authenticated user could not be resolved.");
         }
-
-        AuthPrincipal authPrincipal = (AuthPrincipal) principal;
 
         return authPrincipal.getUserId();
     }

@@ -22,7 +22,6 @@ import java.util.UUID;
 @Authenticated
 
 public class LeaderboardResource {
-
     @Inject
     private LeaderboardService leaderboardService;
 

@@ -17,7 +17,6 @@ import java.util.Optional;
 @Produces(MediaType.APPLICATION_JSON)
 @Authenticated
 public class RoundResource {
-
     @Inject
     private RoundService roundService;
 
@@ -40,9 +39,12 @@ public class RoundResource {
     @Path("/current-open")
     public Response getCurrentOpenRound() {
         Optional<RoundResponseDTO> round = roundService.getCurrentOpenRound();
+
         if (round.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND).entity(ErrorResponseDTO.of("No open round is currently active.", "NOT_FOUND")).build();
         }
-        return Response.ok(round.get()).build();
+
+        return Response.ok(round.get())
+                .build();
     }
 }

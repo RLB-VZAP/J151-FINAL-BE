@@ -13,9 +13,7 @@ public interface NotificationService {
     int getUnreadCount(UUID actorUserId);
     NotificationResponseDTO markAsRead(UUID actorUserId, UUID notificationId);
     int markAllAsRead(UUID actorUserId);
-
     NotificationResponseDTO createNotification(NotificationCreateRequestDTO request);
-
     NotificationResponseDTO notifyLeagueMembershipEvent(UUID recipientUserId, UUID leagueId, String body);
     NotificationResponseDTO notifyLeaderboardChange(UUID recipientUserId, UUID leagueId, int newRank);
     NotificationResponseDTO notifyPointsUpdate(UUID recipientUserId, UUID fixtureId, int pointsAwarded);

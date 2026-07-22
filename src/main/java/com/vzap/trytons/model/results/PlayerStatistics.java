@@ -15,11 +15,11 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class PlayerStatistics {
-
     private UUID statId;
     private UUID resultId;
     private UUID teamId;
     private UUID playerId;
+
     private int tries;
     private int assists;
     private int tackles;
@@ -33,6 +33,8 @@ public class PlayerStatistics {
     private LocalDateTime statisticDate;
 
     private UUID correctedByAdminUserId;
+
     private String correctionReason;
+
     private LocalDateTime correctedAt;
 }

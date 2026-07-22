@@ -19,13 +19,19 @@ import java.util.UUID;
 @Builder
 public class ProfileResponseDTO {
     private UUID userId;
+
     private String email;
     private String username;
+
     private UserRole role;
+
     @JsonProperty("isActive")
     private Boolean isActive;
+
     private String profilePic;
+
     private LocalDateTime registrationDate;
     private LocalDateTime lastLoginAt;
+
     private RegistrationStatus registrationStatus;
 }

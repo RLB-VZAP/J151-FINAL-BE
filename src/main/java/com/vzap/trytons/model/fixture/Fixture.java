@@ -19,9 +19,12 @@ public class Fixture {
     private UUID roundId;
     private UUID teamAId;
     private UUID teamBId;
+
     private LocalDate fixtureDate;
     private LocalTime fixtureTime;
+
     private FixtureStatus status;
+
     private LocalDateTime simulationDate;
     private LocalDateTime createdAt;
 }

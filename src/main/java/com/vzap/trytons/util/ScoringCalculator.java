@@ -8,21 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Single source of truth for converting player statistics into fantasy points.
- *
- * <p>Two paths depend on this producing identical results for identical inputs:
- * {@code MatchSimulationServiceImpl} uses it for the match score stored on {@code matchResult}, and
- * {@code FantasyPointCalculationServiceImpl} uses it for the {@code fantasyPoints} that
- * {@code TeamScoreServiceImpl} sums into {@code match_team_score}. The database trigger
- * {@code trg_match_team_score_insert} rejects the breakdown when those two numbers disagree, which leaves
- * the fixture unprocessable.
- *
- * <p>Do not fork this logic. Scoring previously lived in two places — a hardcoded
- * {@code tries*5 + conversions*2 + penalties*3} in the simulation and the rule-driven calculation here — and
- * they diverged by 159 points to 21 on a real fixture. Any new caller that needs a score must call this
- * method rather than reimplement the rules.
- */
 public final class ScoringCalculator {
     private ScoringCalculator() {}
 

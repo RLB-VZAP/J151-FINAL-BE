@@ -18,12 +18,11 @@ import java.util.UUID;
 @Authenticated
 
 public class UserHistoryResource {
-
     @Inject
     private UserHistoryService userHistoryService;
 
-    @Context ContainerRequestContext requestContext;
-
+    @Context
+    ContainerRequestContext requestContext;
 
     @GET
     public Response getUserPointsHistory() {
@@ -35,6 +34,8 @@ public class UserHistoryResource {
     @Path("/weekly")
     public Response getWeeklyPerformance() {
         UUID requestingUserId = ((AuthPrincipal) requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY)).getUserId();
-        return Response.ok(userHistoryService.getWeeklyPerformance(requestingUserId)).build();
+
+        return Response.ok(userHistoryService.getWeeklyPerformance(requestingUserId))
+                .build();
     }
 }

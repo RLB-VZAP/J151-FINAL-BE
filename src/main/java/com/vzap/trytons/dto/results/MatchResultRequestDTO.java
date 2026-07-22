@@ -15,6 +15,7 @@ import java.util.UUID;
 @Builder
 public class MatchResultRequestDTO {
     private UUID fixtureId;
+
     private int teamAScore;
     private int teamBScore;
 }

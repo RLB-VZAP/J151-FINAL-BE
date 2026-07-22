@@ -24,7 +24,6 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class TransferRecommendationResource {
-
     @Inject
     private TransferRecommendationService transferRecommendationService;
 
@@ -41,6 +40,7 @@ public class TransferRecommendationResource {
         if(!(currentUser instanceof AuthPrincipal principal) || principal.getUserId()==null){
             throw new AuthenticationException("Authentication required");
         }
+
         return  principal.getUserId();
     }
 }

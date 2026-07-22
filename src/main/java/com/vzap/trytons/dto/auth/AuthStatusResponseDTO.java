@@ -16,8 +16,11 @@ import java.util.UUID;
 @Builder
 public class AuthStatusResponseDTO {
     private boolean authenticated;
+
     private UUID userId;
+
     private String username;
     private String email;
+
     private UserRole role;
 }

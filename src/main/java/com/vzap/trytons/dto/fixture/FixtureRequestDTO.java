@@ -20,7 +20,9 @@ public class FixtureRequestDTO {
     private UUID roundId;
     private UUID teamAId;
     private UUID teamBId;
+
     private FixtureStatus fixtureStatus;
+
     private LocalDate fixtureDate;
     private LocalTime fixtureTime;
 }
