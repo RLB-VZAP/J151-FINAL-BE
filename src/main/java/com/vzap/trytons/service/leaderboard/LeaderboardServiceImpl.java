@@ -13,6 +13,7 @@ import com.vzap.trytons.dto.leaderboard.LeaderboardEntryResponseDTO;
 import com.vzap.trytons.enums.UserRole;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
+import com.vzap.trytons.exceptions.ValidationException;
 import com.vzap.trytons.model.fixture.FantasyRound;
 import com.vzap.trytons.model.fantasyteam.FantasyTeam;
 import com.vzap.trytons.model.league.League;
@@ -165,6 +166,9 @@ public class LeaderboardServiceImpl implements LeaderboardService{
 
     @Override
     public Optional<LeaderboardEntryResponseDTO> getRankingForTeam(UUID teamId, UUID leaderboardId, UUID requestingUserId) throws AuthorisationException {
+        if (leaderboardId == null) {
+            throw new ValidationException("Leaderboard ID is required.");
+        }
         Optional<Leaderboard> l = leaderboardDAO.getLeaderboardById(leaderboardId);
         if (l.isEmpty()) {
             return Optional.empty();
