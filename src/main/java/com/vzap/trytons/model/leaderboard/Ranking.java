@@ -17,8 +17,11 @@ public class Ranking {
     private UUID rankingId;
     private UUID leaderboardId;
     private UUID teamId;
+
     private int currentRanking;
+
     private Integer previousRanking;
+
     private int matchesPlayed;
     private int matchesWon;
     private int matchesDrawn;
@@ -28,5 +31,6 @@ public class Ranking {
     private int scoreDifference;
     private int leaguePoints;
     private int totalFantasyPoints;
+
     private LocalDateTime updatedAt;
 }

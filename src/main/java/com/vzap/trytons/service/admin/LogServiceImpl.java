@@ -33,6 +33,7 @@ public class LogServiceImpl implements LogService {
         for (Log log : logDAO.findRecentLogs(effectiveLimit)) {
             responses.add(mapToResponse(log));
         }
+
         return responses;
     }
 
@@ -41,10 +42,13 @@ public class LogServiceImpl implements LogService {
             throw new ValidationException("An authenticated administrator is required.");
         }
         Optional<User> userOptional = userDAO.getUserById(actorUserId);
+
         if (userOptional.isEmpty()) {
             throw new AuthorisationException("An authenticated administrator is required.");
         }
+
         User user = userOptional.get();
+
         if (user.getRole() != UserRole.ADMINISTRATOR) {
             throw new AuthorisationException("Only admins can perform this action.");
         }

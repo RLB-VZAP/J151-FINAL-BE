@@ -14,8 +14,12 @@ import java.util.UUID;
 public class RoundLock {
     private UUID lockId;
     private UUID roundId;
+
     private RoundLockAction lockAction;
+
     private UUID actionByAdminUserId;
+
     private LocalDateTime actionAt;
+
     private String reason;
 }

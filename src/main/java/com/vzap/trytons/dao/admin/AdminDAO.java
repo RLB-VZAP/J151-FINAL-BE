@@ -7,6 +7,5 @@ import java.util.UUID;
 
 public interface AdminDAO {
     Optional<Admin> getAdminById(UUID userId);
-
     boolean deactivateUserAccount(UUID userId);
 }

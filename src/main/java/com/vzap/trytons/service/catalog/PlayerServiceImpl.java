@@ -19,7 +19,6 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class PlayerServiceImpl implements PlayerService {
-
     @Inject
     private PlayerDAO playerDAO;
 
@@ -113,7 +112,6 @@ public class PlayerServiceImpl implements PlayerService {
         validateRating(request.getConsistency(), "Consistency");
         validateRating(request.getFitness(), "Fitness");
         validateRating(request.getCurrentForm(), "Current form");
-
         validateClubReference(request.getClubId());
         validatePositionReference(request.getPositionId());
     }

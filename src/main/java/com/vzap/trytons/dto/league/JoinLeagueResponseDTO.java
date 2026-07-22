@@ -12,7 +12,9 @@ import java.util.UUID;
 @Builder
 public class JoinLeagueResponseDTO {
     private UUID leagueId;
+
     private String leagueName;
     private String message;
+
     private UUID membershipId;
 }

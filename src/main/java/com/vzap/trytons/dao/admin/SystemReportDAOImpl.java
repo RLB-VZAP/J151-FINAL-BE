@@ -35,11 +35,10 @@ public class SystemReportDAOImpl extends BaseDAO implements SystemReportDAO {
 
     @Override
     public SystemReport save(SystemReport systemReport) {
-        String query = """
-                INSERT INTO systemReport
-                    (reportId, generated_by_admin_user_id, reportType, reportTitle, parametersJson, resultJson, generatedAt)
-                VALUES
-                    (?, ?, ?, ?, ?, ?, ?);""";
+        String query = "INSERT INTO systemReport"+
+                    "(reportId, generated_by_admin_user_id, reportType, reportTitle, parametersJson, resultJson, generatedAt)"+
+                "VALUES(?, ?, ?, ?, ?, ?, ?)";
+
         try(Connection con = getConnection();
             PreparedStatement ps = con.prepareStatement(query)){
             ps.setString(1,systemReport.getReportId().toString());

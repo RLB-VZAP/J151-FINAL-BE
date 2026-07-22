@@ -5,7 +5,7 @@ import com.vzap.trytons.model.auth.User;
 import com.vzap.trytons.security.AuthPrincipal;
 
 public final class RoleUtil {
-
+    // Utility class: prevent instantiation.
     private RoleUtil() {
     }
 

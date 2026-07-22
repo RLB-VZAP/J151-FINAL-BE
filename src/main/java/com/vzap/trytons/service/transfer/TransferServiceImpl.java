@@ -91,13 +91,11 @@ public class TransferServiceImpl implements TransferService {
             throw new ValidationException("The same player cannot be both added and removed in one transfer");
         }
 
-        FantasyTeam team = fantasyTeamDAO.getTeamById(teamId)
-                .orElseThrow(() -> new ResourceNotFoundException("Fantasy team not found"));
+        FantasyTeam team = fantasyTeamDAO.getTeamById(teamId).orElseThrow(() -> new ResourceNotFoundException("Fantasy team not found"));
 
         validateTeamOwnership(actorId, team);
 
-        FantasyRound round = fantasyRoundDAO.getRoundById(roundId)
-                .orElseThrow(() -> new ResourceNotFoundException("Fantasy round not found"));
+        FantasyRound round = fantasyRoundDAO.getRoundById(roundId).orElseThrow(() -> new ResourceNotFoundException("Fantasy round not found"));
 
         validateRoundIsOpen(round);
         enforceDeadlineAndLocks(roundId, teamId, removedPlayerId, addedPlayerId);
@@ -109,11 +107,9 @@ public class TransferServiceImpl implements TransferService {
         List<TeamPlayerSelection> currentSquad = fantasyTeamPlayerDAO.getSquadByTeamId(teamId);
         validateCurrentSquadRules(currentSquad, removedPlayerId, addedPlayerId);
 
-        Player removedPlayer = playerDAO.getPlayerById(removedPlayerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Removed player not found"));
+        Player removedPlayer = playerDAO.getPlayerById(removedPlayerId).orElseThrow(() -> new ResourceNotFoundException("Removed player not found"));
 
-        Player addedPlayer = playerDAO.getPlayerById(addedPlayerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Added player not found"));
+        Player addedPlayer = playerDAO.getPlayerById(addedPlayerId).orElseThrow(() -> new ResourceNotFoundException("Added player not found"));
 
         validateIncomingPlayerAvailability(roundId, teamId, addedPlayer);
 
@@ -124,6 +120,7 @@ public class TransferServiceImpl implements TransferService {
         BigDecimal oldRemainingBudget = valueOrZero(team.getRemainingBudget());
 
         List<TeamPlayerSelection> teamPlayerSelections = fantasyTeamPlayerDAO.getSquadByTeamId(teamId);
+
         for (TeamPlayerSelection teamPlayerSelection : teamPlayerSelections) {
             Optional<Player> playerOpt = playerDAO.getPlayerById(teamPlayerSelection.getPlayerId());
             if (playerOpt.isPresent()) {
@@ -133,9 +130,8 @@ public class TransferServiceImpl implements TransferService {
                 }
             }
         }
+
         BigDecimal oldTeamValue = totalValue;
-
-
         BigDecimal newRemainingBudget = oldRemainingBudget.add(removedValue).subtract(addedValue);
         BigDecimal newTeamValue = oldTeamValue.subtract(removedValue).add(addedValue);
 
@@ -145,7 +141,7 @@ public class TransferServiceImpl implements TransferService {
 
         List<UUID> proposedPlayerIds = currentSquad.stream()
                 .filter(selection -> selection != null && selection.getPlayerId() != null)
-                .map(selection -> selection.getPlayerId())
+                .map(TeamPlayerSelection::getPlayerId)
                 .collect(Collectors.toList());
 
         proposedPlayerIds.remove(removedPlayerId);
@@ -200,8 +196,7 @@ public class TransferServiceImpl implements TransferService {
         transfer.setStatus(TransferStatus.CONFIRMED);
         transfer.setConfirmedAt(LocalDateTime.now());
         transfer.setCreatedByUserId(createdBy.getUserId());
-        Transfer savedTransfer = transferDAO.saveTransfer(transfer)
-                .orElseThrow(() -> new DataAccessException("Unable to save transfer", null));
+        Transfer savedTransfer = transferDAO.saveTransfer(transfer).orElseThrow(() -> new DataAccessException("Unable to save transfer", null));
 
         notifyTransferDeadlineReminder(actorId, teamId, round);
 
@@ -284,11 +279,7 @@ public class TransferServiceImpl implements TransferService {
         }
     }
 
-    private void enforceDeadlineAndLocks(
-            UUID roundId,
-            UUID teamId,
-            UUID removedPlayerId,
-            UUID addedPlayerId) {
+    private void enforceDeadlineAndLocks(UUID roundId, UUID teamId, UUID removedPlayerId, UUID addedPlayerId) {
         validateTeamIsNotLocked(roundId, teamId);
 
         DeadlineStatusResponseDTO deadlineStatus = deadlineLockService.getDeadlineStatus(roundId);
@@ -299,20 +290,14 @@ public class TransferServiceImpl implements TransferService {
             }
 
             if (!deadlineStatus.isOpenForTransfers()) {
-                throw new BusinessRuleException(
-                        deadlineStatus.getMessage() != null
-                                ? deadlineStatus.getMessage()
-                                : "Transfers are not open for this round");
+                throw new BusinessRuleException(deadlineStatus.getMessage() != null ? deadlineStatus.getMessage() : "Transfers are not open for this round");
             }
         }
 
         LockStatusResponseDTO lockStatus = deadlineLockService.getLockStatus(roundId);
 
         if (lockStatus != null && lockStatus.isLocked()) {
-            throw new BusinessRuleException(
-                    lockStatus.getMessage() != null
-                            ? lockStatus.getMessage()
-                            : "This round is locked for transfers");
+            throw new BusinessRuleException(lockStatus.getMessage() != null ? lockStatus.getMessage() : "This round is locked for transfers");
         }
 
         List<UUID> lockedTeamIds = deadlineLockService.getLockedTeamIds(roundId);
@@ -390,23 +375,15 @@ public class TransferServiceImpl implements TransferService {
 
     private TransferResponseDTO toResponse(Transfer transfer, UUID fallbackTeamId) {
         BigDecimal valueDifference = transfer.getValueDifference();
-        if (valueDifference == null
-                && transfer.getAddedPlayerValue() != null
-                && transfer.getRemovedPlayerValue() != null) {
+        if (valueDifference == null && transfer.getAddedPlayerValue() != null && transfer.getRemovedPlayerValue() != null) {
             valueDifference = transfer.getAddedPlayerValue().subtract(transfer.getRemovedPlayerValue());
         }
         return TransferResponseDTO.builder()
                 .transferId(transfer.getTransferId())
-                .teamId(transfer.getTeamId() != null
-                        ? transfer.getTeamId()
-                        : fallbackTeamId)
+                .teamId(transfer.getTeamId() != null ? transfer.getTeamId() : fallbackTeamId)
                 .roundId(transfer.getRoundId() != null ? transfer.getRoundId() : null)
-                .removedPlayerId(transfer.getRemovedPlayerId() != null
-                        ? transfer.getRemovedPlayerId()
-                        : null)
-                .addedPlayerId(transfer.getAddedPlayerId() != null
-                        ? transfer.getAddedPlayerId()
-                        : null)
+                .removedPlayerId(transfer.getRemovedPlayerId() != null ? transfer.getRemovedPlayerId() : null)
+                .addedPlayerId(transfer.getAddedPlayerId() != null ? transfer.getAddedPlayerId() : null)
                 .removedPlayerName(transfer.getRemovedPlayerName())
                 .addedPlayerName(transfer.getAddedPlayerName())
                 .removedPlayerValue(transfer.getRemovedPlayerValue())
@@ -435,12 +412,6 @@ public class TransferServiceImpl implements TransferService {
         return value == null || value.isBlank();
     }
 
-
-    /**
-     * Reminds the transferring team's owner of the round's transfer deadline right after a
-     * transfer is confirmed. Notification failures must never roll back an already-confirmed
-     * transfer, so any exception here is swallowed.
-     */
     private void notifyTransferDeadlineReminder(UUID actorId, UUID teamId, FantasyRound round) {
         try {
             UUID fixtureId = findFixtureIdForTeamInRound(round.getRoundId(), teamId);
@@ -448,7 +419,7 @@ public class TransferServiceImpl implements TransferService {
                 notificationService.notifyTransferDeadline(actorId, fixtureId, round.getLockDeadline());
             }
         } catch (Exception e) {
-            // Notification failure must not affect a confirmed transfer.
+            // Notification failure must not affect a confirmed transfer
         }
     }
 

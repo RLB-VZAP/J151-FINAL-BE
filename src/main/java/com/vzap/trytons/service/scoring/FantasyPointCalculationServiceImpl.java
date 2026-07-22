@@ -27,7 +27,6 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class FantasyPointCalculationServiceImpl implements FantasyPointCalculationService {
-
     @Inject
     FixtureDAO fixtureDAO;
 

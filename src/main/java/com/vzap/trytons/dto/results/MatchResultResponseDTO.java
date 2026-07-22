@@ -21,15 +21,20 @@ public class MatchResultResponseDTO {
     private UUID fixtureId;
     private UUID teamAId;
     private UUID teamBId;
+
     private int simulationRunNumber;
     private int teamAScore;
     private int teamBScore;
+
     private MatchTeamSide winnerSide;
+
     @JsonProperty("isDraw")
     private boolean isDraw;
     private boolean approved;
+
     @JsonProperty("isCurrent")
     private boolean isCurrent;
+
     private LocalDateTime resultDate;
     private UUID approvedByAdminUserId;
 }

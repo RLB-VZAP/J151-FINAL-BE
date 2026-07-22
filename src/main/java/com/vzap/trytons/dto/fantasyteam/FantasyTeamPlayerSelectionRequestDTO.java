@@ -15,7 +15,9 @@ import java.util.UUID;
 @Builder
 public class FantasyTeamPlayerSelectionRequestDTO {
     private UUID playerId;
+
     private SquadRole squadRole;
+
     private Boolean isCaptain;
     private Boolean isViceCaptain;
 }

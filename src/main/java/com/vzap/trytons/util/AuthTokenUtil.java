@@ -25,9 +25,9 @@ public class AuthTokenUtil {
     }
 
     public static String createToken (UUID userId) throws ValidationException {
-            if (userId == null) {
-                throw new ValidationException("UserID cannot be null when generating a token.");
-            }
+        if (userId == null) {
+            throw new ValidationException("UserID cannot be null when generating a token.");
+        }
         Date issuedAt = new Date();
         Date expiresAt = calculateExpiryDate(issuedAt);
 

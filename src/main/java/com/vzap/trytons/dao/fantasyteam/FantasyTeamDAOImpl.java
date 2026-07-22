@@ -22,12 +22,6 @@ public class FantasyTeamDAOImpl extends BaseDAO implements FantasyTeamDAO {
 
     private static final Logger LOG = Logger.getLogger(FantasyTeamDAOImpl.class.getName());
 
-    /*
-     * The current schema stores the editable team, owner and remaining budget.
-     * Team value is calculated from the selected players, while fantasy points
-     * are read from the latest available ranking entry.
-     */
-
     private FantasyTeam mapTeam(ResultSet rs){
         try {
             FantasyTeam team = new FantasyTeam();
@@ -51,11 +45,8 @@ public class FantasyTeamDAOImpl extends BaseDAO implements FantasyTeamDAO {
     public Optional<FantasyTeam> createTeam(FantasyTeam team) {
         UUID teamId = team.getTeamId() == null ? UUID.randomUUID() : team.getTeamId();
         LocalDateTime creationDate = team.getCreationDate() == null ? LocalDateTime.now() : team.getCreationDate();
-        String sql = """
-                INSERT INTO fantasyTeam
-                    (teamId, owner_user_id, teamName, remainingBudget, creationDate, isValid)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """;
+        String sql = "INSERT INTO fantasyTeam (teamId, owner_user_id, teamName, remainingBudget, creationDate, isValid)"+
+                "VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection connection = getConnection();PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, teamId.toString());
