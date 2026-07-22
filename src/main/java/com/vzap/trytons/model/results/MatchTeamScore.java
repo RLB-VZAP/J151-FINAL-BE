@@ -19,10 +19,13 @@ public class MatchTeamScore {
     private UUID scoreId;
     private UUID resultId;
     private UUID teamId;
+
     private MatchTeamSide teamSide;
+
     private int playerPoints;
     private int captainBonus;
     private int transferPenalty;
     private int totalScore;
+
     private LocalDateTime calculatedAt;
 }

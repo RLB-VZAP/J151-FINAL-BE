@@ -16,9 +16,13 @@ public class FantasyTeamRoundSelection {
     private UUID roundId;
     private UUID teamId;
     private UUID playerId;
+
     private LocalDateTime selectedDate;
+
     private SquadRole squadRole;
+
     private Boolean isCaptain;
     private Boolean isViceCaptain;
+
     private LocalDateTime lockedAt;
 }

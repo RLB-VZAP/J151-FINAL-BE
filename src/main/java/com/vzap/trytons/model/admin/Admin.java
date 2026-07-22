@@ -13,6 +13,5 @@ import com.vzap.trytons.model.auth.User;
 @AllArgsConstructor
 @SuperBuilder
 public class Admin extends User {
-
     private int adminLevel;
 }

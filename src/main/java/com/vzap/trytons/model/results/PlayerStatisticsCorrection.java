@@ -15,8 +15,11 @@ public class PlayerStatisticsCorrection {
     private UUID correctionId;
     private UUID statId;
     private UUID correctionByAdminUserId;
+
     private String reason;
+
     private Map<String , Object > oldValuesJson;
     private Map<String , Object > newValuesJson;
+
     private LocalDateTime correctionTime;
 }

@@ -10,10 +10,11 @@ import java.util.UUID;
 @Getter
 @Setter
 public class Club {
-
     private UUID clubId;
+
     private String clubName;
     private String location;
     private String homeVenue;
+
     private boolean isActive;
 }

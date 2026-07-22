@@ -17,7 +17,7 @@ public class FantasyPointBreakdown {
     private UUID breakdownId;
     private UUID pointsId;
     private UUID ruleId;
+
     private int eventCount;
     private int pointsEarned;
-
 }

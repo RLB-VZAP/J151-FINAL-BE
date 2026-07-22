@@ -16,6 +16,6 @@ import java.util.List;
 
 public class OverallLeaderboardResponseDTO {
     private String season;
-    private List<LeaderboardEntryResponseDTO> standings;
 
+    private List<LeaderboardEntryResponseDTO> standings;
 }

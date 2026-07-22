@@ -15,7 +15,6 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class SquadValidationResultDTO{
-
     @Builder.Default
     private List<SquadValidationErrorDTO> errors = new ArrayList<>();
 
@@ -24,12 +23,10 @@ public class SquadValidationResultDTO{
     }
 
     public void addError(String code, String message, String field){
-        SquadValidationErrorDTO newError = SquadValidationErrorDTO.builder()
-                .code(code)
+        SquadValidationErrorDTO newError = SquadValidationErrorDTO.builder().code(code)
                 .message(message)
                 .field(field)
                 .build();
         errors.add(newError);
     }
-
 }

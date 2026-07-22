@@ -2,7 +2,6 @@ package com.vzap.trytons.model.auth;
 
 import com.vzap.trytons.enums.UserRole;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -18,12 +17,17 @@ import java.util.UUID;
 @SuperBuilder
 public class User {
     private UUID userId;
+
     private String email;
     private String passwordHash;
     private String username;
+
     private UserRole role;
+
     private Boolean isActive;
+
     private String profilePic;
+
     private LocalDateTime registrationDate;
     private LocalDateTime lastLoginAt;
 }

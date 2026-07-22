@@ -26,7 +26,6 @@ import java.util.UUID;
 @Authenticated
 @AdminOnly
 public class SimulationResource {
-
     @Inject
     private MatchSimulationService matchSimulationService;
 
@@ -35,9 +34,7 @@ public class SimulationResource {
 
     @POST
     @Path("/fixtures/{fixtureId}")
-    public Response simulateFixture(
-            @PathParam("fixtureId") UUID fixtureId) {
-
+    public Response simulateFixture(@PathParam("fixtureId") UUID fixtureId) {
         UUID actorUserId = getAuthenticatedActorUserId();
 
         MatchResultResponseDTO result = matchSimulationService.simulateFixture(actorUserId, fixtureId);
@@ -53,11 +50,9 @@ public class SimulationResource {
 
         Principal principal = securityContext.getUserPrincipal();
 
-        if (!(principal instanceof AuthPrincipal)) {
+        if (!(principal instanceof AuthPrincipal authPrincipal)) {
             throw new AuthenticationException("The authenticated user could not be resolved.");
         }
-
-        AuthPrincipal authPrincipal = (AuthPrincipal) principal;
 
         return authPrincipal.getUserId();
     }

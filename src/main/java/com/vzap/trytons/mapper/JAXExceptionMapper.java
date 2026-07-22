@@ -17,10 +17,13 @@ public class JAXExceptionMapper implements ExceptionMapper<ConstraintViolationEx
                 .map(ConstraintViolation::getMessage)
                 .distinct()
                 .collect(Collectors.joining(", ")); //CSV Format for build
+
     if (message.isBlank()) {
         message = "Invalid request structure";
     }
+
     ErrorResponseDTO error = ErrorResponseDTO.of(message, "VALIDATION_ERROR");
+
     return Response.status(Response.Status.BAD_REQUEST)
             .entity(error)
             .build();

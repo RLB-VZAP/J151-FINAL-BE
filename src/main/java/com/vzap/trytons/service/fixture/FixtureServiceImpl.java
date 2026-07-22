@@ -44,6 +44,7 @@ public class FixtureServiceImpl implements FixtureService {
     @Override
     public List<FixtureResponseDTO> listFixtures(FixtureStatus status) {
         List<Fixture>fixtures;
+
         if(status != null) {
             fixtures = fixtureDAO.findByStatus(status);
         }else{
@@ -54,6 +55,7 @@ public class FixtureServiceImpl implements FixtureService {
             FixtureResponseDTO response = mapToResponse(fixture);
             responseList.add(response);
         }
+
         return responseList;
     }
 
@@ -62,48 +64,66 @@ public class FixtureServiceImpl implements FixtureService {
         if(fixtureId == null){
             throw new ValidationException("Fixture ID is required");
         }
+
         Optional<Fixture> fixture = fixtureDAO.findById(fixtureId);
+
         if(fixture.isEmpty()){
             throw new ResourceNotFoundException("Fixture not found");
         }
+
         Fixture fix = fixture.get();
+
         return mapToResponse(fix);
     }
 
     @Override
     public FixtureResponseDTO createFixture(UUID actorUserId, FixtureRequestDTO request) {
-
         requireAdmin(actorUserId);
         validateCreateRequest(request);
+
         if(request.getTeamAId().equals(request.getTeamBId())){
             throw new ValidationException("A fixture cannot pair a team against itself.");
         }
+
         Optional<League>leagueOptional = leagueDAO.findLeagueById(request.getLeagueId());
+
         if(leagueOptional.isEmpty()){
             throw new ResourceNotFoundException("League not found");
         }
+
         League league = leagueOptional.get();
+
         Optional<FantasyRound>roundOptional = fantasyRoundDAO.getRoundById(request.getRoundId());
+
         if(roundOptional.isEmpty()){
             throw new ResourceNotFoundException("Round not found");
         }
+
         FantasyRound round = roundOptional.get();
+
         if(round.getStatus() == FantasyRoundStatus.COMPLETED || round.getStatus() == FantasyRoundStatus.CANCELLED){
             throw new ValidationException("Fixtures cannot be scheduled against a " + round.getStatus() + " round.");
         }
+
         Optional<FantasyTeam> optionalTeamA = fantasyTeamDAO.getTeamById(request.getTeamAId());
+
         if(optionalTeamA.isEmpty()){
             throw new ResourceNotFoundException("Team A not found");
         }
+
         FantasyTeam teamA = optionalTeamA.get();
         Optional<FantasyTeam> optionalTeamB = fantasyTeamDAO.getTeamById(request.getTeamBId());
+
         if(optionalTeamB.isEmpty()){
             throw new ResourceNotFoundException("Team B not found");
         }
+
         FantasyTeam teamB = optionalTeamB.get();
+
         assertActiveLeagueMember(league.getLeagueId(), teamA.getTeamId(),"Team A");
         assertActiveLeagueMember(league.getLeagueId(), teamB.getTeamId(),"Team B");
         assertNoDuplicatePairing(round.getRoundId(), teamA.getTeamId(), teamB.getTeamId());
+
         Fixture fixture = new Fixture();
         fixture.setFixtureId(UUID.randomUUID());
         fixture.setLeagueId(league.getLeagueId());
@@ -117,26 +137,31 @@ public class FixtureServiceImpl implements FixtureService {
         if(createdFixture == null){
             throw new DataAccessException("Failed to create Fixture.",null);
         }
+
         return mapToResponse(createdFixture, teamA.getTeamName(),  teamB.getTeamName());
 
     }
 
     @Override
     public FixtureResponseDTO updateFixtureStatus(UUID actorUserId, UUID fixtureId, FixtureStatus status) {
-
         requireAdmin(actorUserId);
+
         if(fixtureId == null){
             throw new ValidationException("Fixture ID is required");
         }
+
         if(status == null){
             throw new ValidationException("Fixture status is required");
         }
+
         Optional<Fixture> fixtureOptional = fixtureDAO.findById(fixtureId);
+
         if(fixtureOptional.isEmpty()){
             throw new ResourceNotFoundException("Fixture not found");
         }
 
         Fixture fixture = fixtureOptional.get();
+
         if (!isValidStatusTransition(fixture.getStatus(), status)) {
             throw new BusinessRuleException("Cannot change fixture status.");
         }
@@ -188,11 +213,15 @@ public class FixtureServiceImpl implements FixtureService {
         if(actorUserId == null){
             throw new ValidationException("An authenticated administrator is required.");
         }
+
         Optional<User> userOptional = userDAO.getUserById(actorUserId);
+
         if(userOptional.isEmpty()){
             throw new AuthorisationException("An authenticated administrator is required.");
         }
+
         User user = userOptional.get();
+
         if(user.getRole() != UserRole.ADMINISTRATOR){
             throw new AuthorisationException("Only admins can perform this action.");
         }
@@ -202,21 +231,27 @@ public class FixtureServiceImpl implements FixtureService {
         if(request == null){
             throw new ValidationException("Fixture details are required.");
         }
+
         if(request.getLeagueId() == null){
             throw new ValidationException("League ID is required.");
         }
+
         if(request.getRoundId() == null){
             throw new ValidationException("Round ID is required.");
         }
+
         if(request.getTeamAId() == null){
             throw new ValidationException("Team A is required.");
         }
+
         if(request.getTeamBId() == null){
             throw new ValidationException("Team B is required.");
         }
+
         if(request.getFixtureDate() == null){
             throw new ValidationException("Fixture date is required.");
         }
+
         if(request.getFixtureTime() == null){
             throw new ValidationException("Fixture time is required.");
         }
@@ -224,6 +259,7 @@ public class FixtureServiceImpl implements FixtureService {
     private void assertActiveLeagueMember(UUID leagueId,UUID teamId, String teamName){
         List<LeagueMembership> memberships = leagueMembershipDAO.findActiveByLeague(leagueId);
         boolean found = false;
+
         for(LeagueMembership membership : memberships){
             if(membership.getTeamId().equals(teamId)){
                 found = true;
@@ -237,6 +273,7 @@ public class FixtureServiceImpl implements FixtureService {
 
     private void assertNoDuplicatePairing(UUID roundId, UUID teamAId, UUID teamBId){
         List<Fixture> fixtures = fixtureDAO.findByRoundId(roundId);
+
         for(Fixture existingFixture : fixtures){
             if(existingFixture.getStatus() == FixtureStatus.CANCELLED){
                 continue;
@@ -252,14 +289,19 @@ public class FixtureServiceImpl implements FixtureService {
     private FixtureResponseDTO mapToResponse(Fixture fixture){
         String teamAName = null;
         String teamBName = null;
+
         Optional<FantasyTeam> optionalTeamA = fantasyTeamDAO.getTeamById(fixture.getTeamAId());
+
         if(optionalTeamA.isPresent()){
             teamAName = optionalTeamA.get().getTeamName();
         }
+
         Optional<FantasyTeam> optionalTeamB = fantasyTeamDAO.getTeamById(fixture.getTeamBId());
+
         if(optionalTeamB.isPresent()){
             teamBName = optionalTeamB.get().getTeamName();
         }
+
         return mapToResponse(fixture,teamAName,teamBName);
     }
 
@@ -277,6 +319,7 @@ public class FixtureServiceImpl implements FixtureService {
         response.setFixtureStatus(fixture.getStatus());
         response.setSimulationDate(fixture.getSimulationDate());
         response.setCreatedAt(fixture.getCreatedAt());
+
         return response;
     }
 }

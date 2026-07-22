@@ -9,14 +9,24 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
 public class LeaderboardEntryResponseDTO {
     private UUID teamId;
+
     private String teamName;
     private String owner;
+
     private int rank;
+
     private Integer rankMovement;
     private Integer previousRanking;
-    private int matchesPlayed, matchesWon, matchesDrawn, matchesLost, pointsFor, pointsAgainst, scoreDifference,
-            leaguePoints, totalFantasyPoints;
+
+    private int matchesPlayed;
+    private int matchesWon;
+    private int matchesDrawn;
+    private int matchesLost;
+    private int pointsFor;
+    private int pointsAgainst;
+    private int pointsDifference;
+    private int leaguePoints;
+    private int totalFantasyPoints;
 }

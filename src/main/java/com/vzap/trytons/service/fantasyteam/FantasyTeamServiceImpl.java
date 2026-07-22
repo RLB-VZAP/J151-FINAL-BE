@@ -15,7 +15,6 @@ import com.vzap.trytons.dto.fantasyteam.FantasyTeamResponseDTO;
 import com.vzap.trytons.dto.fantasyteam.SquadValidationResultDTO;
 import com.vzap.trytons.dto.fantasyteam.ViewOpponentTeamDTO;
 import com.vzap.trytons.dto.fantasyteam.ViewOwnTeamDTO;
-import com.vzap.trytons.enums.SquadRole;
 import com.vzap.trytons.exceptions.BusinessRuleException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
@@ -162,7 +161,9 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
 
         List<FantasyTeamPlayerSelectionResponseDTO> playerResponses = new ArrayList<>();
         List<TeamPlayerSelection> squad = fantasyTeamPlayerDAO.getSquadByTeamId(teamId);
+
         int totalPoints = 0;
+
         for(TeamPlayerSelection selection : squad){
             Player player = playerDAO.getPlayerById(selection.getPlayerId()).orElseThrow(() -> new ResourceNotFoundException("Player Not Found."));
             int playerPoints = fantasyPointsDAO.getTotalFinalPointsForPlayer(player.getPlayerId());
@@ -191,6 +192,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                     .isCaptain(selection.getIsCaptain())
                     .isViceCaptain(selection.getIsViceCaptain())
                     .build();
+
             playerResponses.add(response);
         }
 
@@ -273,6 +275,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         List<UUID> selectedPlayerIds = new ArrayList<>();
         List<TeamPlayerSelection> selections = new ArrayList<>();
         List<FantasyTeamPlayerSelectionResponseDTO> selectedResponsePlayers = new ArrayList<>();
+
         int totalPoints = 0;
 
         for (FantasyTeamPlayerSelectionRequestDTO requestPlayers : fantasyTeamDTO.getSelectedPlayers()) {

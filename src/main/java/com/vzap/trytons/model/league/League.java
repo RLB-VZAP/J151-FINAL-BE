@@ -12,14 +12,19 @@ import java.util.UUID;
 @Getter
 @Setter
 public class League {
-
     private UUID leagueId;
+
     private String leagueName;
     private String description;
+
     private LeagueType leagueType;
+
     private String leagueCode;
+
     private LocalDateTime creationDate;
+
     private Boolean isActive;
+
     private int maxMembers;
 
     private UUID managerUserId;

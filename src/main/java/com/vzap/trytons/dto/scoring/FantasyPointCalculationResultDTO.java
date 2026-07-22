@@ -13,9 +13,8 @@ import lombok.Setter;
 @Builder
 
 public class FantasyPointCalculationResultDTO {
-
     private String fixtureId;
+
     private int pointsRowsWritten;
     private int calculationVersion;
-
 }

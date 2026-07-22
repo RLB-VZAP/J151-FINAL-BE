@@ -12,8 +12,11 @@ import java.util.UUID;
 @Builder
 public class ViewOpponentTeamDTO {
     private UUID teamId;
+
     private String teamName;
+
     private int totalPoints;
     private int weeklyPoints;
+
     private List<FantasyTeamPlayerSelectionResponseDTO> players;
 }

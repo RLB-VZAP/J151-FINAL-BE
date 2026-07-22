@@ -22,12 +22,18 @@ public class FixtureResponseDTO {
     private UUID leagueId;
     private UUID roundId;
     private UUID teamAId;
+
     private String teamAName;
+
     private UUID teamBId;
+
     private String teamBName;
+
     private LocalDate fixtureDate;
     private LocalTime fixtureTime;
+
     private FixtureStatus fixtureStatus;
+
     private LocalDateTime simulationDate;
     private LocalDateTime createdAt;
 }

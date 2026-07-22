@@ -21,13 +21,15 @@ public class LockStatusResource {
     @Path("/{roundId}")
     public Response getLockStatus(@PathParam("roundId") UUID roundId) {
         LockStatusResponseDTO response = deadlineLockService.getLockStatus(roundId);
-        return Response.ok(response).build();
+        return Response.ok(response)
+                .build();
     }
 
     @GET
     @Path("/deadline/{roundId}")
     public Response getDeadlineStatus(@PathParam("roundId") UUID roundId) {
         DeadlineStatusResponseDTO response = deadlineLockService.getDeadlineStatus(roundId);
-        return Response.ok(response).build();
+        return Response.ok(response)
+                .build();
     }
 }
