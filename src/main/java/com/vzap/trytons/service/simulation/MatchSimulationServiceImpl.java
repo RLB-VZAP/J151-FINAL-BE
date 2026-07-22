@@ -20,6 +20,7 @@ import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.BusinessRuleException;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
+import com.vzap.trytons.util.ScoringCalculator;
 import com.vzap.trytons.model.catalog.Player;
 import com.vzap.trytons.model.catalog.PlayerAvailability;
 import com.vzap.trytons.model.catalog.Position;
@@ -217,8 +218,8 @@ public class MatchSimulationServiceImpl implements MatchSimulationService {
         applyKickingStatistics(teamAStatistics, teamAKicker, teamAPerformanceByPlayerId.get(teamAKicker.getPlayerId()), teamATries, random);
         applyKickingStatistics(teamBStatistics, teamBKicker, teamBPerformanceByPlayerId.get(teamBKicker.getPlayerId()), teamBTries, random);
 
-        int teamAScore = calculateTeamScore(teamAStatistics);
-        int teamBScore = calculateTeamScore(teamBStatistics);
+        int teamAScore = calculateTeamScore(teamAStatistics, scoringRules);
+        int teamBScore = calculateTeamScore(teamBStatistics, scoringRules);
 
         MatchTeamSide winnerSide = null;
         boolean draw = teamAScore == teamBScore;
@@ -525,13 +526,16 @@ public class MatchSimulationServiceImpl implements MatchSimulationService {
         throw new BusinessRuleException("The designated kicker's statistics could not be found.");
     }
 
-    private int calculateTeamScore(List<PlayerStatistics> statistics) {
+    // The match score must equal the rule-driven fantasy total that match_team_score will later hold,
+    // because trg_match_team_score_insert rejects a breakdown that disagrees with the stored result score.
+    // ScoringCalculator is the same utility FantasyPointCalculationServiceImpl uses to produce
+    // fantasyPoints from these statistics, so reusing it here is what keeps the two representations equal.
+    // The breakdown rows it returns are discarded; those are persisted later during point calculation.
+    private int calculateTeamScore(List<PlayerStatistics> statistics, List<ScoringRule> scoringRules) {
         int score = 0;
 
         for (PlayerStatistics playerStatistics : statistics) {
-            score += playerStatistics.getTries() * 5;
-            score += playerStatistics.getConversions() * 2;
-            score += playerStatistics.getPenalties() * 3;
+            score += ScoringCalculator.calculate(playerStatistics, scoringRules).totalPoints();
         }
 
         return score;
