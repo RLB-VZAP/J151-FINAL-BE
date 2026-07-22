@@ -10,6 +10,7 @@ public interface ScoringRuleDAO {
 
     List<ScoringRule> findActiveRules(String season);
     Optional<ScoringRule> findById(UUID ruleId);
+    Optional<ScoringRule> findBySeasonAndEventType(String season, String eventType);
     ScoringRule save(ScoringRule rule);
     ScoringRule update(ScoringRule rule);
 }

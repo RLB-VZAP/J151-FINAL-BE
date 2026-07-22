@@ -84,6 +84,36 @@ public class ScoringRuleDAOImpl extends BaseDAO implements ScoringRuleDAO {
     }
 
     @Override
+    public Optional<ScoringRule> findBySeasonAndEventType(String season, String eventType) {
+
+        String query =
+                "SELECT ruleId, season, eventType, pointsAwarded, " +
+                        "isDeduction, description, isActive " +
+                        "FROM scoringRule " +
+                        "WHERE season = ? AND eventType = ?";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, season);
+            ps.setString(2, eventType);
+
+            try (ResultSet rs = ps.executeQuery()) {
+
+                if (rs.next()) {
+                    return Optional.of(mapRow(rs));
+                }
+            }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to find scoring rule by season and event type", e);
+            throw new DataAccessException("Unable to find scoring rule by season and event type", e);
+        }
+
+        return Optional.empty();
+    }
+
+    @Override
     public ScoringRule save(ScoringRule rule) {
 
         UUID newRuleId = UUID.randomUUID();

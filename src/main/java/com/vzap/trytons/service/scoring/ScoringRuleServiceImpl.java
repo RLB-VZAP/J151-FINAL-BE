@@ -6,6 +6,7 @@ import com.vzap.trytons.dto.scoring.ScoringRuleRequestDTO;
 import com.vzap.trytons.dto.scoring.ScoringRuleResponseDTO;
 import com.vzap.trytons.enums.UserRole;
 import com.vzap.trytons.exceptions.AuthorisationException;
+import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.model.scoring.ScoringRule;
 import com.vzap.trytons.model.auth.User;
@@ -54,6 +55,13 @@ public class ScoringRuleServiceImpl implements ScoringRuleService {
             ScoringRule updated = scoringRuleDAO.update(existing);
             return mapToResponse(updated);
         }
+
+        scoringRuleDAO.findBySeasonAndEventType(request.getSeason(), request.getEventType())
+                .ifPresent(existingRule -> {
+                    throw new ConflictException(
+                            "A scoring rule for season '" + request.getSeason()
+                                    + "' and event type '" + request.getEventType() + "' already exists.");
+                });
 
         ScoringRule newRule = ScoringRule.builder()
                 .eventType(request.getEventType())
