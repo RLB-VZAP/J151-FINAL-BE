@@ -1,10 +1,8 @@
 package com.vzap.trytons.resource.scoring;
 
 import com.vzap.trytons.annotations.Authenticated;
-import com.vzap.trytons.dto.shared.ErrorResponseDTO;
 import com.vzap.trytons.dto.scoring.FantasyPointsRequestDTO;
 import com.vzap.trytons.dto.scoring.FantasyPointsResponseDTO;
-import com.vzap.trytons.exceptions.ApplicationException;
 import com.vzap.trytons.exceptions.AuthenticationException;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
@@ -23,16 +21,12 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Authenticated
 @Path("/fantasy-points")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class FantasyPointsResource {
-
-    private static final Logger LOGGER = Logger.getLogger(FantasyPointsResource.class.getName());
 
     @Inject
     FantasyPointsService fantasyPointsService;
@@ -42,66 +36,34 @@ public class FantasyPointsResource {
     public Response calculateFantasyPoints(
             FantasyPointsRequestDTO request,
             @Context ContainerRequestContext requestContext) {
-        try {
-            UUID actorUserId = currentUserId(requestContext);
+        UUID actorUserId = currentUserId(requestContext);
 
-            FantasyPointsResponseDTO result = fantasyPointsService.calculateFantasyPoints(actorUserId, request);
+        FantasyPointsResponseDTO result = fantasyPointsService.calculateFantasyPoints(actorUserId, request);
 
-            return Response.ok(result).build();
-
-        } catch (ApplicationException e) {
-            return handledApplicationError(e);
-
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.ok(result).build();
     }
 
     @GET
     @Path("/{pointsId}")
     public Response getFantasyPointsById(@PathParam("pointsId") UUID pointsId) {
-        try {
-            FantasyPointsResponseDTO result = fantasyPointsService.getFantasyPointsById(pointsId);
+        FantasyPointsResponseDTO result = fantasyPointsService.getFantasyPointsById(pointsId);
 
-            return Response.ok(result).build();
-
-        } catch (ApplicationException e) {
-            return handledApplicationError(e);
-
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.ok(result).build();
     }
 
     @GET
     @Path("/stat/{statId}")
     public Response listFantasyPointsForStat(@PathParam("statId") UUID statId) {
-        try {
-            List<FantasyPointsResponseDTO> results = fantasyPointsService.listFantasyPointsForStat(statId);
-            return Response.ok(results).build();
-
-        } catch (ApplicationException e) {
-            return handledApplicationError(e);
-
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        List<FantasyPointsResponseDTO> results = fantasyPointsService.listFantasyPointsForStat(statId);
+        return Response.ok(results).build();
     }
 
     @GET
     @Path("/stat/{statId}/final")
     public Response getFinalFantasyPointsForStat(@PathParam("statId") UUID statId) {
-        try {
-            FantasyPointsResponseDTO result = fantasyPointsService.getFinalFantasyPointsForStat(statId);
+        FantasyPointsResponseDTO result = fantasyPointsService.getFinalFantasyPointsForStat(statId);
 
-            return Response.ok(result).build();
-
-        } catch (ApplicationException e) {
-            return handledApplicationError(e);
-
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.ok(result).build();
     }
 
     private UUID currentUserId(ContainerRequestContext requestContext) {
@@ -112,24 +74,5 @@ public class FantasyPointsResource {
         }
 
         return principal.getUserId();
-    }
-
-    private Response handledApplicationError(ApplicationException e) {
-        ErrorResponseDTO errorPayload = ErrorResponseDTO.of(e.getMessage(), e.getErrorCode());
-
-        return Response.status(e.getStatusCode())
-                .entity(errorPayload)
-                .build();
-    }
-
-    private Response unexpected(Exception e) {
-        LOGGER.log(Level.SEVERE, "Unexpected error in FantasyPointsResource.", e);
-
-        ErrorResponseDTO errorPayload =
-                ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR");
-
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(errorPayload)
-                .build();
     }
 }

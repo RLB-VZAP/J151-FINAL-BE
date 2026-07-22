@@ -4,8 +4,6 @@ import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dto.auth.ChangePasswordRequestDTO;
 import com.vzap.trytons.dto.auth.ProfileResponseDTO;
 import com.vzap.trytons.dto.auth.ProfileUpdateRequestDTO;
-import com.vzap.trytons.dto.shared.ErrorResponseDTO;
-import com.vzap.trytons.exceptions.ApplicationException;
 import com.vzap.trytons.exceptions.AuthenticationException;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
@@ -23,16 +21,12 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 @RequestScoped
 @Authenticated
 @Path("/users/profile")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class ProfileResource {
-    private static final Logger LOGGER = Logger.getLogger(ProfileResource.class.getName());
 
     @Inject
     private RegisteredUserServices registeredUserServices;
@@ -42,52 +36,31 @@ public class ProfileResource {
 
     @GET
     public Response getProfile() {
-        try {
-            AuthPrincipal principal = currentPrincipal();
-            ProfileResponseDTO response = registeredUserServices.getProfile(principal.getUserId());
+        AuthPrincipal principal = currentPrincipal();
+        ProfileResponseDTO response = registeredUserServices.getProfile(principal.getUserId());
 
-            return Response.status(Response.Status.OK)
-                    .entity(response)
-                    .build();
-        } catch (ApplicationException e) {
-            return handledApplicationError(e);
-
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.status(Response.Status.OK)
+                .entity(response)
+                .build();
     }
 
     @PUT
     public Response updateProfile(ProfileUpdateRequestDTO request) {
-        try {
-            AuthPrincipal principal = currentPrincipal();
-            ProfileResponseDTO response = registeredUserServices.updateProfile(principal.getUserId(), request);
+        AuthPrincipal principal = currentPrincipal();
+        ProfileResponseDTO response = registeredUserServices.updateProfile(principal.getUserId(), request);
 
-            return Response.status(Response.Status.OK)
-                    .entity(response)
-                    .build();
-        } catch (ApplicationException e) {
-            return handledApplicationError(e);
-
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.status(Response.Status.OK)
+                .entity(response)
+                .build();
     }
 
     @POST
     @Path("/change-password")
     public Response changePassword(ChangePasswordRequestDTO request) {
-        try {
-            AuthPrincipal principal = currentPrincipal();
-            registeredUserServices.changePassword(principal.getUserId(), request);
+        AuthPrincipal principal = currentPrincipal();
+        registeredUserServices.changePassword(principal.getUserId(), request);
 
-            return Response.status(Response.Status.OK).build();
-        } catch (ApplicationException e) {
-            return handledApplicationError(e);
-
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.status(Response.Status.OK).build();
     }
 
     private AuthPrincipal currentPrincipal() {
@@ -96,26 +69,5 @@ public class ProfileResource {
             throw new AuthenticationException("The authenticated user could not be identified.");
         }
         return principal;
-    }
-
-    private Response handledApplicationError(ApplicationException e) {
-
-        ErrorResponseDTO errorPayload = ErrorResponseDTO.of(e.getMessage(), e.getErrorCode());
-
-        return Response.status(e.getStatusCode())
-                .entity(errorPayload)
-                .build();
-    }
-
-    private Response unexpected(Exception e) {
-
-        LOGGER.log(Level.SEVERE, "Unexpected error in ProfileResource.", e);
-
-        ErrorResponseDTO errorPayload =
-                ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR");
-
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(errorPayload)
-                .build();
     }
 }

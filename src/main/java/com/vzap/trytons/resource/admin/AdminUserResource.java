@@ -5,8 +5,6 @@ import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dto.admin.AdminUserSearchResponseDTO;
 import com.vzap.trytons.dto.admin.AdminUserStatusRequestDTO;
 import com.vzap.trytons.dto.admin.AdminUserStatusResponseDTO;
-import com.vzap.trytons.dto.shared.ErrorResponseDTO;
-import com.vzap.trytons.exceptions.ApplicationException;
 import com.vzap.trytons.exceptions.AuthenticationException;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
@@ -21,8 +19,6 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Path("/admin/users")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -32,8 +28,6 @@ import java.util.logging.Logger;
 
 public class AdminUserResource {
 
-    private static final Logger LOGGER = Logger.getLogger(AdminUserResource.class.getName());
-
     @Inject
     AdminUserService adminUserService;
 
@@ -41,19 +35,11 @@ public class AdminUserResource {
     public Response searchUsers(
             @QueryParam("searchTerm") String searchTerm,
             @Context ContainerRequestContext requestContext) {
-        try {
-            UUID actorUserId = currentUserId(requestContext);
+        UUID actorUserId = currentUserId(requestContext);
 
-            List<AdminUserSearchResponseDTO> results = adminUserService.searchUsers(actorUserId, searchTerm);
+        List<AdminUserSearchResponseDTO> results = adminUserService.searchUsers(actorUserId, searchTerm);
 
-            return Response.ok(results).build();
-
-        } catch (ApplicationException e) {
-            return handledApplicationError(e);
-
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.ok(results).build();
     }
 
     @PUT
@@ -62,18 +48,10 @@ public class AdminUserResource {
     public Response updateUserStatus(
             @PathParam("targetUserId") UUID targetUserId, AdminUserStatusRequestDTO request,
             @Context ContainerRequestContext requestContext) {
-        try {
-            UUID actorUserId = currentUserId(requestContext);
-            AdminUserStatusResponseDTO result = adminUserService.updateUserStatus(actorUserId, targetUserId, request);
+        UUID actorUserId = currentUserId(requestContext);
+        AdminUserStatusResponseDTO result = adminUserService.updateUserStatus(actorUserId, targetUserId, request);
 
-            return Response.ok(result).build();
-
-        } catch (ApplicationException e) {
-            return handledApplicationError(e);
-
-        } catch (Exception e) {
-            return unexpected(e);
-        }
+        return Response.ok(result).build();
     }
 
     //getting methods from Timmy Timmy Timmy - the goat
@@ -87,26 +65,5 @@ public class AdminUserResource {
 
         return principal.getUserId();
     }
-
-    private Response handledApplicationError(ApplicationException e) {
-        ErrorResponseDTO errorPayload = ErrorResponseDTO.of(e.getMessage(), e.getErrorCode());
-
-        return Response.status(e.getStatusCode())
-                .entity(errorPayload)
-                .build();
-    }
-
-    private Response unexpected(Exception e) {
-        LOGGER.log(Level.SEVERE, "Unexpected error in AdminUserResource.", e);
-
-        ErrorResponseDTO errorPayload =
-                ErrorResponseDTO.of("An unexpected error occurred.", "INTERNAL_SERVER_ERROR");
-
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(errorPayload)
-                .build();
-    }
-
-
 
 }
