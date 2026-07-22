@@ -44,7 +44,7 @@ public class SquadValidationServiceImpl implements SquadValidationService {
 
     @Override
     public SquadValidationResultDTO validateSquad(List<UUID> proposedPlayerIds) {
-        SquadValidationResultDTO result = SquadValidationResultDTO.builder().build();
+        SquadValidationResultDTO result = new SquadValidationResultDTO();
         validateDuplicatePlayers(proposedPlayerIds, result);
         List<Player> players = getPlayers(proposedPlayerIds, result);
         validateSquadSize(proposedPlayerIds, result);
