@@ -47,7 +47,7 @@ public class LeaderboardResource {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        return Response.ok(result).build();
+        return Response.ok(result.get()).build();
     }
 
     @POST
