@@ -98,7 +98,7 @@ public class PositionDAOImpl extends BaseDAO implements PositionDAO {
 
     @Override
     public boolean createPosition(Position position) {
-        String query = "INSERT INTO position(positionId, positionName, positionCategory, minRequired, maxAllowed) VALUES (?, ?, ?, ?, ?)";
+        String query = "INSERT INTO position (positionId, positionName, positionCategory, minRequired, maxAllowed) VALUES (?, ?, ?, ?, ?)";
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query)){
             ps.setString(1, position.getPositionId().toString());
