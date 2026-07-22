@@ -56,6 +56,10 @@ public class CompetitionProcessingServiceImpl implements CompetitionProcessingSe
         int skipped = 0;
         int errors = 0;
         List<String> errorMessages = new ArrayList<>();
+        // A skip is an expected business-rule outcome rather than a fault, so it stays out of errorMessages.
+        // It is still recorded, because a bare skipped count gives an operator no way to learn why work
+        // was not done.
+        List<String> skippedMessages = new ArrayList<>();
 
         LocalDateTime now = LocalDateTime.now();
         List<FantasyRound> openRounds = fantasyRoundDAO.getRoundsByStatus(FantasyRoundStatus.OPEN);
@@ -66,6 +70,7 @@ public class CompetitionProcessingServiceImpl implements CompetitionProcessingSe
                     roundsLocked++;
                 } catch (ApplicationException e) {
                     skipped++;
+                    skippedMessages.add("Round " + round.getRoundId() + " [" + e.getErrorCode() + "]: " + e.getMessage());
                 } catch (Exception e) {
                     errors++;
                     errorMessages.add("Round " + round.getRoundId() + ": " + e.getMessage());
@@ -80,6 +85,7 @@ public class CompetitionProcessingServiceImpl implements CompetitionProcessingSe
                 fixturesSimulated++;
             } catch (ApplicationException e) {
                 skipped++;
+                skippedMessages.add("Simulate fixture " + fixture.getFixtureId() + " [" + e.getErrorCode() + "]: " + e.getMessage());
             } catch (Exception e) {
                 errors++;
                 errorMessages.add("Fixture " + fixture.getFixtureId() + ": " + e.getMessage());
@@ -94,6 +100,7 @@ public class CompetitionProcessingServiceImpl implements CompetitionProcessingSe
                 leaderboardsRefreshed++;
             } catch (ApplicationException e) {
                 skipped++;
+                skippedMessages.add("Process fixture " + fixture.getFixtureId() + " [" + e.getErrorCode() + "]: " + e.getMessage());
             } catch (Exception e) {
                 errors++;
                 errorMessages.add("Fixture " + fixture.getFixtureId() + ": " + e.getMessage());
@@ -107,6 +114,7 @@ public class CompetitionProcessingServiceImpl implements CompetitionProcessingSe
             }
         } catch (ApplicationException e) {
             skipped++;
+            skippedMessages.add("Overall leaderboard refresh [" + e.getErrorCode() + "]: " + e.getMessage());
         } catch (Exception e) {
             errors++;
             errorMessages.add("Overall leaderboard refresh: " + e.getMessage());
@@ -121,6 +129,7 @@ public class CompetitionProcessingServiceImpl implements CompetitionProcessingSe
                 .skipped(skipped)
                 .errors(errors)
                 .errorMessages(errorMessages)
+                .skippedMessages(skippedMessages)
                 .build();
     }
 
