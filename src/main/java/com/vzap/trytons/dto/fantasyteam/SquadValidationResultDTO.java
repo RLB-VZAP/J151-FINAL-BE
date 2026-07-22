@@ -1,16 +1,23 @@
 package com.vzap.trytons.dto.fantasyteam;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class SquadValidationResultDTO{
 
-    private final List<SquadValidationErrorDTO> errors = new ArrayList<>();
+    @Builder.Default
+    private List<SquadValidationErrorDTO> errors = new ArrayList<>();
 
     public boolean isValid(){
         return errors.isEmpty();
