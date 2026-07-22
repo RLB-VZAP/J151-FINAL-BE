@@ -1,5 +1,6 @@
 package com.vzap.trytons.dao.scoring;
 
+import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.scoring.ScoringRule;
 import jakarta.ejb.Singleton;
@@ -154,6 +155,11 @@ public class ScoringRuleDAOImpl extends BaseDAO implements ScoringRuleDAO {
             return rule;
 
         } catch (SQLException e) {
+            String message = e.getMessage();
+            if (message != null && message.contains("uk_scoringRule_season_event")) {
+                throw new ConflictException("A scoring rule already exists for this season and event type.");
+            }
+
             LOG.log(Level.SEVERE, "Unable to save scoring rule", e);
             throw new DataAccessException("Unable to save scoring rule", e);
         }

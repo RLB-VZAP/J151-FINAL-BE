@@ -173,7 +173,7 @@ public class FantasyPointsDAOImpl extends BaseDAO implements FantasyPointsDAO {
 
     @Override
     public List<PlayerPointSummary> findTopPlayerByFinalPoints(int limit) {
-        String query = "SELECT ps.playerId AS playerId, SUM(fp.totalPoints) AS totalPoints FROM fantasyPoints fp JOIN" +
+        String query = "SELECT ps.playerId AS playerId, SUM(fp.totalPoints) AS totalPoints FROM fantasyPoints fp JOIN " +
                 "playerStatistics ps ON ps.statId = fp.statId WHERE fp.isFinal = TRUE" +
                 " GROUP BY ps.playerId ORDER BY totalPoints DESC LIMIT ?";
         try(Connection con = getConnection();

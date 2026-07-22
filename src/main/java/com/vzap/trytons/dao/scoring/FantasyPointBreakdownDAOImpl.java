@@ -1,5 +1,6 @@
 package com.vzap.trytons.dao.scoring;
 
+import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.scoring.FantasyPointBreakdown;
 
@@ -43,6 +44,19 @@ public class FantasyPointBreakdownDAOImpl extends BaseDAO implements FantasyPoin
             return fantasyPointBreakdown;
 
         } catch (SQLException e) {
+            if ("45000".equals(e.getSQLState())) {
+                throw new ConflictException(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "The fantasy point breakdown could not be saved because it conflicts with an existing record."
+                );
+            }
+
+            String message = e.getMessage();
+            if (message != null && message.contains("uk_fantasy_point_breakdown_rule")) {
+                throw new ConflictException("A fantasy point breakdown already exists for this points and rule combination.");
+            }
+
             LOG.log(Level.SEVERE, "Could not save fantasy points breakdown", e);
             throw new DataAccessException("Could not save fantasy points breakdown", e);
         }
