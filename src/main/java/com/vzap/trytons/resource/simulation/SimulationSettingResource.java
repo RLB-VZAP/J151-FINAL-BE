@@ -57,9 +57,11 @@ public class SimulationSettingResource {
     @Path("/{simulationSettingsId}")
     public Response updateSimulationSetting(@PathParam("simulationSettingsId") UUID simulationSettingsId, SimulationSettingRequestDTO request) {
         AuthPrincipal principal = (AuthPrincipal) requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY);
+
         if (principal == null) {
             throw new AuthenticationException("The authenticated user could not be identified.");
         }
+
         SimulationSettingResponseDTO response =  simulationSettingService.updateSimulationSetting(principal.getUserId(), simulationSettingsId, request);
 
 
@@ -72,7 +74,6 @@ public class SimulationSettingResource {
     @Path("/{simulationSettingsId}")
     public Response getSimulationSettingById(@PathParam("simulationSettingsId") UUID simulationSettingsId) {
         SimulationSettingResponseDTO response = simulationSettingService.getSimulationSettingById(simulationSettingsId);
-
 
         return Response.status(Response.Status.OK)
                 .entity(response)

@@ -34,7 +34,6 @@ import com.vzap.trytons.service.leaderboard.LeaderboardService;
 
 @ApplicationScoped
 public class MatchProcessingServiceImpl implements MatchProcessingService {
-
     private static final Logger LOG = Logger.getLogger(MatchProcessingServiceImpl.class.getName());
 
     private static final int TEAMS_PER_FIXTURE = 2;
@@ -151,11 +150,6 @@ public class MatchProcessingServiceImpl implements MatchProcessingService {
         return refresh != null && refresh.isSuccess();
     }
 
-
-    /**
-     * Notifies each team's owner of the fantasy points their team earned in the just-processed
-     * fixture. A notification failure must never affect the already-completed processing result.
-     */
     private void notifyPointsUpdates(Fixture fixture, List<MatchTeamScore> persistedScores) {
         try {
             for (MatchTeamScore score : persistedScores) {

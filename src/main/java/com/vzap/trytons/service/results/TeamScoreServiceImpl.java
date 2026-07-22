@@ -31,7 +31,6 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class TeamScoreServiceImpl implements TeamScoreService {
-
     @Inject
     MatchTeamScoreDAO matchTeamScoreDAO;
 
@@ -66,8 +65,6 @@ public class TeamScoreServiceImpl implements TeamScoreService {
 
         UUID currentRoundId = currentFixture.getRoundId();
 
-        //get round squad for Team A and Team B
-
         UUID teamAId = currentFixture.getTeamAId();
 
         UUID teamBId = currentFixture.getTeamBId();
@@ -75,8 +72,6 @@ public class TeamScoreServiceImpl implements TeamScoreService {
         List<FantasyTeamRoundSelection> teamARoundSelection = fantasyTeamRoundSelectionDAO.getSelectionsByRoundIdAndTeamId(currentRoundId, teamAId);
 
         List<FantasyTeamRoundSelection> teamBRoundSelection = fantasyTeamRoundSelectionDAO.getSelectionsByRoundIdAndTeamId(currentRoundId, teamBId);
-
-        //loop through team A team to find each player and their fixture statistics and final FantasyPoints
 
         int teamATotal = 0;
 
@@ -101,7 +96,6 @@ public class TeamScoreServiceImpl implements TeamScoreService {
 
         }
 
-        //do the same for team B
         int teamBTotal = 0;
 
         for (FantasyTeamRoundSelection selection : teamBRoundSelection) {
@@ -124,8 +118,6 @@ public class TeamScoreServiceImpl implements TeamScoreService {
 
             teamBTotal += finalPointsOpt.get().getTotalPoints();
         }
-
-        //find team scores
 
         Optional<MatchTeamScore> existingTeamAScore = matchTeamScoreDAO.findByResultIdAndTeamSide(resultId, MatchTeamSide.TEAM_A);
 
@@ -173,8 +165,6 @@ public class TeamScoreServiceImpl implements TeamScoreService {
             teamBScore = matchTeamScoreDAO.save(scoreToCreate);
         }
 
-        //find outcome of match
-
             String outcome;
 
             if (teamAScore.getTotalScore() > teamBScore.getTotalScore()) {
@@ -184,14 +174,6 @@ public class TeamScoreServiceImpl implements TeamScoreService {
             } else {
                 outcome = "DRAW";
             }
-
-
-            // The league leaderboard is refreshed by MatchProcessingServiceImpl after this method returns,
-            // using the acting administrator. Refreshing it here as well passed a null actor into
-            // refreshLeagueLeaderboard, whose requireLeagueManagerOrAdmin gate rejected it, so the whole
-            // fixture-processing run failed after the team scores had already been written.
-
-            //return the updated result
 
         return TeamScoreUpdateResultDTO.builder()
                 .fixtureId(fixtureId)
@@ -226,8 +208,6 @@ public class TeamScoreServiceImpl implements TeamScoreService {
             }
         }
 
-
-
         MatchTeamSide team;
         int seasonTotal = 0;
 
@@ -250,7 +230,6 @@ public class TeamScoreServiceImpl implements TeamScoreService {
             }
 
             seasonTotal += teamScore.get().getTotalScore();
-
         }
 
         return TeamScoreUpdateResultDTO.builder()

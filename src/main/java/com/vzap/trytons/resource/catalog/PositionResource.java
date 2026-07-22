@@ -20,13 +20,14 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class PositionResource {
-
     @Inject
     private PositionService positionService;
+
     @GET
     public Response listPositions(){
         return  Response.ok(positionService.getAllPositions()).build();
     }
+
     @GET
     @Path("/{id}")
     public Response getPosition(@PathParam("id") UUID id){

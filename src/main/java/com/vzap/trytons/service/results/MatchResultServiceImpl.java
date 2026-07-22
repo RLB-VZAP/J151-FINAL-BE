@@ -46,6 +46,7 @@ public class MatchResultServiceImpl implements MatchResultService {
     public MatchResultResponseDTO captureResult(UUID actorUserId, MatchResultRequestDTO request) {
         validateRequest(request);
         requireAdmin(actorUserId);
+
         Fixture fixture = fixtureDAO.findFixtureById(request.getFixtureId()).orElseThrow(() -> new ResourceNotFoundException("Fixture was not found."));
 
         if (!CAPTURABLE_STATES.contains(fixture.getStatus())) {

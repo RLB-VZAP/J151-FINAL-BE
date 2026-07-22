@@ -17,11 +17,17 @@ import java.util.UUID;
 public class LeagueResponseDTO {
     private UUID leagueId;
     private UUID managerUserId;
+
     private String leagueName;
     private String description;
+
     private LeagueType leagueType;
+
     private LocalDateTime creationDate;
+
     private Boolean isActive;
+
     private int maxMembers;
+
     private String leagueCode;
 }

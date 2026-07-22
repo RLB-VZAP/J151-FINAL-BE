@@ -15,8 +15,11 @@ import java.util.UUID;
 @Builder
 public class MatchProcessingResultDTO {
     private UUID fixtureId;
+
     private int pointsCalculated;
     private int teamsUpdated;
+
     private boolean leaderboardsRefreshed;
+
     private String status;
 }

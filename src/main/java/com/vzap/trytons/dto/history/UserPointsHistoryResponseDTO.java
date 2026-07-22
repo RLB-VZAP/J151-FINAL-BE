@@ -11,9 +11,9 @@ import java.util.List;
 @Builder
 
 public class UserPointsHistoryResponseDTO {
-
 private int totals;
-private List<WeeklyPerformanceResponseDTO> rounds;
-private Integer ranking;
 
+private List<WeeklyPerformanceResponseDTO> rounds;
+
+private Integer ranking;
 }

@@ -19,7 +19,6 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class AuthServiceImpl implements AuthService {
-
     @Inject
     private UserDAO userDAO;
 

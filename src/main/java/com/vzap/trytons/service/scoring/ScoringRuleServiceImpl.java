@@ -19,7 +19,6 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class ScoringRuleServiceImpl implements ScoringRuleService {
-
     @Inject
     ScoringRuleDAO scoringRuleDAO;
 
@@ -42,8 +41,7 @@ public class ScoringRuleServiceImpl implements ScoringRuleService {
         requireAdmin(actorUserId);
 
         if (request.getRuleId() != null) {
-            ScoringRule existing = scoringRuleDAO.findById(request.getRuleId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Scoring rule not found."));
+            ScoringRule existing = scoringRuleDAO.findById(request.getRuleId()).orElseThrow(() -> new ResourceNotFoundException("Scoring rule not found."));
 
             existing.setEventType(request.getEventType());
             existing.setPointsAwarded(request.getPointsAwarded());
@@ -56,12 +54,9 @@ public class ScoringRuleServiceImpl implements ScoringRuleService {
             return mapToResponse(updated);
         }
 
-        scoringRuleDAO.findBySeasonAndEventType(request.getSeason(), request.getEventType())
-                .ifPresent(existingRule -> {
-                    throw new ConflictException(
-                            "A scoring rule for season '" + request.getSeason()
-                                    + "' and event type '" + request.getEventType() + "' already exists.");
-                });
+        scoringRuleDAO.findBySeasonAndEventType(request.getSeason(), request.getEventType()).ifPresent(existingRule -> {
+            throw new ConflictException("A scoring rule for this season and event type  already exists.");
+        });
 
         ScoringRule newRule = ScoringRule.builder()
                 .eventType(request.getEventType())

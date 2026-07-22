@@ -12,12 +12,18 @@ import java.util.UUID;
 @Builder
 public class RecommendedPlayerDTO {
     private UUID playerId;
+
     private String playerName;
     private String positionName;
     private String clubName;
+
     private BigDecimal value;
+
     private int currentForm;
+
     private String availabilityStatus;
+
     private UUID replacesPlayerId;
+
     private String reason;
 }

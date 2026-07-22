@@ -84,11 +84,7 @@ public class SimulationSettingsDAOImpl extends BaseDAO implements SimulationSett
 
             } catch (SQLException e) {
                 if ("45000".equals(e.getSQLState())) {
-                    throw new ConflictException(
-                            e.getMessage() != null
-                                    ? e.getMessage()
-                                    : "The simulation settings could not be updated because it conflicts with an existing record."
-                    );
+                    throw new ConflictException(e.getMessage() != null ? e.getMessage() : "The simulation settings could not be updated because it conflicts with an existing record.");
                 }
 
                 LOG.log(Level.SEVERE, "Save simulation settings failed", e);

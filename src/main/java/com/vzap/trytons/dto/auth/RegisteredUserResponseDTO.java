@@ -17,7 +17,10 @@ import java.util.UUID;
 @Builder
 public class RegisteredUserResponseDTO {
     private UUID userId;
+
     private String username;
+
     private UserRole role;
+
     private RegistrationStatus status;
 }

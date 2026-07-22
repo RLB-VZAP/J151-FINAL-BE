@@ -12,11 +12,13 @@ import java.util.UUID;
 @Getter
 @Setter
 public class PlayerAvailability {
-
     private UUID availabilityId;
+
     private AvailabilityStatus status;
+
     private LocalDate effectiveDate;
     private LocalDate endDate;
+
     private String notes;
 
     private UUID playerId;

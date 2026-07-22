@@ -16,9 +16,6 @@ public class ApplicationExceptionMapper implements ExceptionMapper<ApplicationEx
 
     @Override
     public Response toResponse(ApplicationException e) {
-        // Server-side faults (e.g. DataAccessException) are logged centrally so diagnosability is
-        // preserved now that resources let application exceptions propagate to this mapper.
-        // Expected client-side rejections (4xx) are logged at FINE to avoid log noise.
         if (e.getStatusCode() >= 500) {
             LOGGER.log(Level.SEVERE, "Application error [" + e.getErrorCode() + "]: " + e.getMessage(), e);
         } else {

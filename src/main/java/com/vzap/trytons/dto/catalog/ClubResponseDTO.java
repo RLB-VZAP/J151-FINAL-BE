@@ -16,9 +16,11 @@ import java.util.UUID;
 
 public class ClubResponseDTO {
     private UUID clubId;
+
     private String clubName;
     private String location;
     private String homeVenue;
+
     @JsonProperty("isActive")
     private boolean isActive;
 }

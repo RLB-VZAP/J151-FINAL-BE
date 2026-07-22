@@ -14,9 +14,12 @@ public class TeamPlayerSelection {
     private UUID selectionId;
     private UUID teamId;
     private UUID playerId;
+
     private LocalDateTime selectedDate;
+
     private Boolean isCaptain;
     private Boolean isViceCaptain;
+
     private SquadRole squadRole;
 
 

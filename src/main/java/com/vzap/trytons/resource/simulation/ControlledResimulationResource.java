@@ -31,7 +31,6 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class ControlledResimulationResource {
-
     @Inject
     private ControlledResimulationService controlledResimulationService;
 

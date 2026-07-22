@@ -1,7 +1,9 @@
 package com.vzap.trytons.exceptions;
 
-public abstract class ApplicationException extends RuntimeException {
+import lombok.Getter;
 
+@Getter
+public abstract class ApplicationException extends RuntimeException {
     private final String errorCode;
     private final int statusCode;
 
@@ -17,11 +19,4 @@ public abstract class ApplicationException extends RuntimeException {
         this.statusCode = statusCode;
     }
 
-    public String getErrorCode() {
-        return errorCode;
-    }
-
-    public int getStatusCode() {
-        return statusCode;
-    }
 }

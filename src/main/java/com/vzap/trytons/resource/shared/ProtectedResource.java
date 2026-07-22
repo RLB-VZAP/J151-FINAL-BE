@@ -31,8 +31,7 @@ public class ProtectedResource {
     public Response ping() {
         AuthPrincipal principal = (AuthPrincipal) requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY);
 
-        return Response.ok(Map.of(
-                "message", "Authenticated request received.",
+        return Response.ok(Map.of("message", "Authenticated request received.",
                 "userId", principal.getUserId(),
                 "username", principal.getUsername(),
                 "role", principal.getRole()

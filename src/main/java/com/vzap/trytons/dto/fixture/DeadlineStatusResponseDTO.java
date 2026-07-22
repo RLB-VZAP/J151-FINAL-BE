@@ -16,11 +16,15 @@ import java.util.UUID;
 @Builder
 public class DeadlineStatusResponseDTO {
     private UUID roundId;
+
     private FantasyRoundStatus roundStatus;
+
     private LocalDateTime openDate;
     private LocalDateTime lockDeadline;
     private LocalDateTime endDate;
+
     private boolean locked;
     private boolean openForTransfers;
+
     private String message;
 }

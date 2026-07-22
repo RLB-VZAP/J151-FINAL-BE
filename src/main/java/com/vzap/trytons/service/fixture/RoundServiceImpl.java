@@ -19,18 +19,22 @@ public class RoundServiceImpl implements RoundService {
     @Override
     public List<RoundResponseDTO> listRounds() {
         List<RoundResponseDTO> responses = new ArrayList<>();
+
         for (FantasyRound round : fantasyRoundDAO.getAllRounds()) {
             responses.add(mapToResponse(round));
         }
+
         return responses;
     }
 
     @Override
     public List<RoundResponseDTO> listRoundsByStatus(FantasyRoundStatus status) {
         List<RoundResponseDTO> responses = new ArrayList<>();
+
         for (FantasyRound round : fantasyRoundDAO.getRoundsByStatus(status)) {
             responses.add(mapToResponse(round));
         }
+
         return responses;
     }
 
@@ -48,6 +52,7 @@ public class RoundServiceImpl implements RoundService {
         response.setLockDeadline(round.getLockDeadline());
         response.setEndDate(round.getEndDate());
         response.setStatus(round.getStatus());
+
         return response;
     }
 }
