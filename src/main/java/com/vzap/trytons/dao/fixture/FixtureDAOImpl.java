@@ -17,8 +17,7 @@ public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
     private static final Logger LOG = Logger.getLogger(FixtureDAOImpl.class.getName());
     @Override
     public Fixture create(Fixture fixture) {
-        String query = "INSERT INTO fixture " +
-                "(fixtureId, leagueId, roundId, team_a_id, team_b_id, fixtureDate, fixtureTime, status, simulationDate) " +
+        String query = "INSERT INTO fixture (fixtureId, leagueId, roundId, team_a_id, team_b_id, fixtureDate, fixtureTime, status, simulationDate) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try(Connection con = getConnection();
             PreparedStatement ps = con.prepareStatement(query)){
@@ -194,11 +193,7 @@ public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
 
         } catch (SQLException e) {
             if ("45000".equals(e.getSQLState())) {
-                throw new ConflictException(
-                        e.getMessage() != null
-                                ? e.getMessage()
-                                : "The fixture could not be updated because it conflicts with an existing record."
-                );
+                throw new ConflictException(e.getMessage() != null ? e.getMessage() : "The fixture could not be updated because it conflicts with an existing record.");
             }
 
             LOG.log(Level.SEVERE, "Unable to update fixture", e);

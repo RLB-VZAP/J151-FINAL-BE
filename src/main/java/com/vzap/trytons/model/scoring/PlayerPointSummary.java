@@ -14,5 +14,6 @@ import java.util.UUID;
 @NoArgsConstructor
 public class PlayerPointSummary {
     private UUID playerId;
+
     private BigDecimal totalPoints;
 }

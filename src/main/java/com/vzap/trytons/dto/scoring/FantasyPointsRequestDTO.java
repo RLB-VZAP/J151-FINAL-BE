@@ -14,6 +14,5 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class FantasyPointsRequestDTO {
-
     private UUID statId;
 }

@@ -15,11 +15,10 @@ import com.vzap.trytons.dao.shared.BaseDAO;
 @Singleton
 public class PlayerStatisticsCorrectionDAOImpl extends BaseDAO implements PlayerStatisticsCorrectionDAO {
     private static final Logger LOG = Logger.getLogger(PlayerStatisticsCorrectionDAOImpl.class.getName());
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private static final String SELECT_COLUMNS = """
-        SELECT correctionId, statId, corrected_by_admin_user_id, reason, old_values_json, new_values_json, correctedAt FROM player_statistics_correction
-        """;
+    private static final String SELECT_COLUMNS = "SELECT correctionId, statId, corrected_by_admin_user_id, reason, old_values_json, new_values_json, correctedAt " +
+            "FROM player_statistics_correction";
 
     private PlayerStatisticsCorrection mapRow(ResultSet rs) throws SQLException {
         Timestamp correctionTimestamp = rs.getTimestamp("correctedAt");
@@ -41,9 +40,7 @@ public class PlayerStatisticsCorrectionDAOImpl extends BaseDAO implements Player
         try (Connection con = DBConnectionManager.getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
             ps.setString(1, playerStatisticsCorrection.getCorrectionId().toString());
             ps.setString(2, playerStatisticsCorrection.getStatId().toString());
-            ps.setString(3, playerStatisticsCorrection.getCorrectionByAdminUserId() == null
-                    ? null
-                    : playerStatisticsCorrection.getCorrectionByAdminUserId().toString());
+            ps.setString(3, playerStatisticsCorrection.getCorrectionByAdminUserId() == null ? null : playerStatisticsCorrection.getCorrectionByAdminUserId().toString());
             ps.setString(4, playerStatisticsCorrection.getReason());
             ps.setString(5, mapToJson(playerStatisticsCorrection.getOldValuesJson()));
             ps.setString(6, mapToJson(playerStatisticsCorrection.getNewValuesJson()));
@@ -114,8 +111,7 @@ public class PlayerStatisticsCorrectionDAOImpl extends BaseDAO implements Player
             return null;
         }
         try {
-            return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {
-            });
+            return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse JSON column to Map", e);
         }

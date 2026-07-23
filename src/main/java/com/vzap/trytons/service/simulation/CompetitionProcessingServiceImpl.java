@@ -23,7 +23,6 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class CompetitionProcessingServiceImpl implements CompetitionProcessingService {
-
     @Inject
     private AdminDAO adminDAO;
 
@@ -55,10 +54,8 @@ public class CompetitionProcessingServiceImpl implements CompetitionProcessingSe
         int leaderboardsRefreshed = 0;
         int skipped = 0;
         int errors = 0;
+
         List<String> errorMessages = new ArrayList<>();
-        // A skip is an expected business-rule outcome rather than a fault, so it stays out of errorMessages.
-        // It is still recorded, because a bare skipped count gives an operator no way to learn why work
-        // was not done.
         List<String> skippedMessages = new ArrayList<>();
 
         LocalDateTime now = LocalDateTime.now();

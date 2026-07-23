@@ -27,7 +27,6 @@ import java.util.logging.Logger;
 
 @ApplicationScoped
 public class PlayerAvailabilityServiceImpl implements PlayerAvailabilityService {
-
     private static final Logger LOG = Logger.getLogger(PlayerAvailabilityServiceImpl.class.getName());
 
     @Inject
@@ -64,11 +63,6 @@ public class PlayerAvailabilityServiceImpl implements PlayerAvailabilityService 
         return mapToResponse(saved);
     }
 
-    /**
-     * Notifies the owner of every fantasy team currently rostering this player that the
-     * player's availability has changed. A notification failure must never affect the
-     * already-persisted availability change.
-     */
     private void notifyAffectedTeamOwners(Player player, PlayerAvailability saved) {
         try {
             String status = saved.getStatus() != null ? saved.getStatus().name() : null;
@@ -76,8 +70,7 @@ public class PlayerAvailabilityServiceImpl implements PlayerAvailabilityService 
             for (UUID teamId : teamIds) {
                 fantasyTeamDAO.getTeamById(teamId)
                         .map(FantasyTeam::getOwnerUserId)
-                        .ifPresent(ownerId -> notificationService.notifyPlayerAvailabilityChange(
-                                ownerId, player.getPlayerId(), player.getPlayerName(), status));
+                        .ifPresent(ownerId -> notificationService.notifyPlayerAvailabilityChange(ownerId, player.getPlayerId(), player.getPlayerName(), status));
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to send player-availability-change notifications for player " + player.getPlayerId(), e);
@@ -95,11 +88,15 @@ public class PlayerAvailabilityServiceImpl implements PlayerAvailabilityService 
         if (actorUserId == null) {
             throw new ValidationException("An authenticated administrator is required.");
         }
+
         Optional<User> userOptional = userDAO.getUserById(actorUserId);
+
         if (userOptional.isEmpty()) {
             throw new AuthorisationException("An authenticated administrator is required.");
         }
+
         User user = userOptional.get();
+
         if (user.getRole() != UserRole.ADMINISTRATOR) {
             throw new AuthorisationException("Only admins can perform this action.");
         }
@@ -115,12 +112,15 @@ public class PlayerAvailabilityServiceImpl implements PlayerAvailabilityService 
         if (request == null) {
             throw new ValidationException("Availability details are required.");
         }
+
         if (request.getStatus() == null) {
             throw new ValidationException("Availability status is required.");
         }
+
         if (request.getEffectiveDate() == null) {
             throw new ValidationException("Effective date is required.");
         }
+
         if (request.getEndDate() != null && request.getEndDate().isBefore(request.getEffectiveDate())) {
             throw new ValidationException("End date cannot be before the effective date.");
         }

@@ -27,7 +27,6 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class MatchResultResource {
-
     @Inject
     private MatchResultService matchResultService;
 
@@ -44,7 +43,8 @@ public class MatchResultResource {
     public Response getResult(@PathParam("fixtureId") UUID fixtureId) {
         MatchResultResponseDTO result = matchResultService.getResult(fixtureId);
 
-        return Response.ok(result).build();
+        return Response.ok(result)
+                .build();
     }
 
     private UUID currentUserId(ContainerRequestContext requestContext) {

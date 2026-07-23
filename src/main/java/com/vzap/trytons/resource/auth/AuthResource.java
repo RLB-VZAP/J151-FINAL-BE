@@ -27,7 +27,6 @@ import java.net.URI;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class AuthResource {
-
     @Inject
     private RegisteredUserServices registeredUserServices;
 
@@ -63,15 +62,13 @@ public class AuthResource {
 
     @POST
     @Path("/register")
-    public Response register(
-            @Valid RegisteredUserRequestDTO request,
-            @Context UriInfo uriInfo) {
+    public Response register(@Valid RegisteredUserRequestDTO request, @Context UriInfo uriInfo) {
         RegisteredUser created = registeredUserServices.registerUser(request);
-        RegisteredUserResponseDTO response =
-                new RegisteredUserResponseDTO(created.getUserId(), created.getUsername(), created.getRole(), created.getRegistrationStatus());
+        RegisteredUserResponseDTO response = new RegisteredUserResponseDTO(created.getUserId(), created.getUsername(), created.getRole(), created.getRegistrationStatus());
         URI location = uriInfo.getAbsolutePathBuilder()
                 .path(created.getUsername())
                 .build();
+
         return Response.created(location)
                 .entity(response)
                 .build();

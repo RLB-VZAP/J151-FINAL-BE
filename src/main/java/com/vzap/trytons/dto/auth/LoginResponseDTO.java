@@ -15,10 +15,12 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class LoginResponseDTO {
-
     private UUID userId;
+
     private String username;
     private String email;
+
     private UserRole role;
+
     private String token;
 }

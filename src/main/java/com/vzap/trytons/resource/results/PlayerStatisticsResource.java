@@ -52,7 +52,8 @@ public class PlayerStatisticsResource {
     public Response listResultStatisticsForTeam(@PathParam("resultId") UUID resultId, @PathParam("teamId") UUID teamId) {
         List<PlayerStatisticsResponseDTO> playersStatistics = playerStatisticsService.listResultStatisticsForTeam(resultId, teamId);
 
-        return Response.ok(playersStatistics).build();
+        return Response.ok(playersStatistics)
+                .build();
     }
 
     private UUID currentUserId(ContainerRequestContext requestContext) {

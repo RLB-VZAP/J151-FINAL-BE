@@ -16,7 +16,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 public class PlayerResponseDTO {
-
     private UUID playerId;
     private UUID clubId;
     private UUID positionId;

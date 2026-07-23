@@ -22,9 +22,9 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class RegisteredUserServicesImpl implements RegisteredUserServices {
-
     @Inject
     private UserDAO userDAO;
+
     @Inject
     private RegisteredUserDAO registeredUserDAO;
 
@@ -50,6 +50,7 @@ public class RegisteredUserServicesImpl implements RegisteredUserServices {
         newUser.setRole(UserRole.REGISTERED_USER);
         newUser.setRegistrationStatus(RegistrationStatus.PENDING);
         newUser.setIsActive(true);
+
         return registeredUserDAO.register(newUser).orElseThrow(() -> new DataAccessException("Failed to register user.", null));
     }
 
@@ -88,6 +89,7 @@ public class RegisteredUserServicesImpl implements RegisteredUserServices {
         currentUser.setUsername(newUsername);
         currentUser.setEmail(newEmail);
         currentUser.setProfilePic(newProfilePic);
+
         return toProfileResponse(currentUser);
     }
 

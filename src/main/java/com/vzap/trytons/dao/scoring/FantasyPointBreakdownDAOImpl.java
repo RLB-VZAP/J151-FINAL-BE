@@ -45,11 +45,7 @@ public class FantasyPointBreakdownDAOImpl extends BaseDAO implements FantasyPoin
 
         } catch (SQLException e) {
             if ("45000".equals(e.getSQLState())) {
-                throw new ConflictException(
-                        e.getMessage() != null
-                                ? e.getMessage()
-                                : "The fantasy point breakdown could not be saved because it conflicts with an existing record."
-                );
+                throw new ConflictException(e.getMessage() != null ? e.getMessage() : "The fantasy point breakdown could not be saved because it conflicts with an existing record.");
             }
 
             String message = e.getMessage();

@@ -39,20 +39,25 @@ public class FixtureResource {
     @GET
     public Response listFixtures(@QueryParam("status")FixtureStatus status){
         List<FixtureResponseDTO>fixtures = fixtureService.listFixtures(status);
-        return Response.ok(fixtures).build();
+        return Response.ok(fixtures)
+                .build();
     }
+
     @GET
     @Path("/{fixtureId}")
     public Response getFixture(@PathParam("fixtureId") UUID fixtureId){
         FixtureResponseDTO fixture = fixtureService.getFixture(fixtureId);
         return Response.ok(fixture).build();
     }
+
     @POST
     @AdminOnly
     public Response createFixture(@Valid FixtureRequestDTO request, @Context UriInfo uriInfo){
         FixtureResponseDTO created = fixtureService.createFixture(getCurrentUserId(),request);
         URI location = uriInfo.getAbsolutePathBuilder().path(created.getFixtureId().toString()).build();
-        return Response.created(location).entity(created).build();
+        return Response.created(location)
+                .entity(created)
+                .build();
     }
 
     @PUT
@@ -60,7 +65,8 @@ public class FixtureResource {
     @AdminOnly
     public Response updateFixtureStatus(@PathParam("fixtureId") UUID fixtureId, @QueryParam("status") FixtureStatus status){
         FixtureResponseDTO updated = fixtureService.updateFixtureStatus(getCurrentUserId(),fixtureId,status);
-        return Response.ok(updated).build();
+        return Response.ok(updated)
+                .build();
     }
 
 }
