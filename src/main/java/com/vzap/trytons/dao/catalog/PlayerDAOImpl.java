@@ -304,6 +304,23 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
     }
 
     @Override
+    public boolean updateValue(UUID playerId, BigDecimal newValue) {
+        String query = "UPDATE player SET value = ? WHERE playerId = ?";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setBigDecimal(1, newValue);
+            ps.setString(2, playerId.toString());
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to update player value.", e);
+            throw new DataAccessException("Unable to update player value.", e);
+        }
+    }
+
+    @Override
     public boolean deactivatePlayer(UUID playerId) {
         String query = "UPDATE player SET isActive = FALSE WHERE playerId = ? AND isActive = TRUE";
 

@@ -1866,6 +1866,53 @@ END$$
 
 DELIMITER ;
 
+-- =====================================================================
+-- Dynamic player pricing: tunable weighting config + per-player price
+-- change audit trail. Prices themselves live on `player`.`value`.
+-- =====================================================================
+
+CREATE TABLE `pricing_settings`
+(
+    `settingsId`       VARCHAR(36)   NOT NULL,
+    `w_form`           DECIMAL(6, 4) NOT NULL DEFAULT 0.1000,
+    `w_popularity`     DECIMAL(6, 4) NOT NULL DEFAULT 0.0500,
+    `w_points`         DECIMAL(6, 4) NOT NULL DEFAULT 0.1000,
+    `w_injury`         DECIMAL(6, 4) NOT NULL DEFAULT 0.1500,
+    `w_demand`         DECIMAL(6, 4) NOT NULL DEFAULT 0.0800,
+    `w_availability`   DECIMAL(6, 4) NOT NULL DEFAULT 0.2000,
+    `max_delta_pct`    DECIMAL(6, 4) NOT NULL DEFAULT 0.1500,
+    `min_value`        DECIMAL(10, 2) NOT NULL DEFAULT 1.00,
+    `max_value`        DECIMAL(10, 2) NOT NULL DEFAULT 300.00,
+    `updatedAt`        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`settingsId`),
+
+    CONSTRAINT `chk_pricing_bounds`
+        CHECK (`min_value` >= 0 AND `max_value` > `min_value` AND `max_delta_pct` > 0)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE `player_price_history`
+(
+    `historyId` VARCHAR(36)    NOT NULL,
+    `playerId`  VARCHAR(36)    NOT NULL,
+    `oldValue`  DECIMAL(10, 2) NOT NULL,
+    `newValue`  DECIMAL(10, 2) NOT NULL,
+    `delta`     DECIMAL(10, 2) GENERATED ALWAYS AS (`newValue` - `oldValue`) STORED,
+    `reason`    VARCHAR(255)            DEFAULT NULL,
+    `createdAt` DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`historyId`),
+    KEY `idx_price_history_player_time` (`playerId`, `createdAt`),
+
+    CONSTRAINT `fk_price_history_player`
+        FOREIGN KEY (`playerId`) REFERENCES `player` (`playerId`)
+            ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
         /*
             Derived replacement for the old performanceHistory table.
             A row describes one player's simulated performance for one fantasy team

@@ -931,4 +931,10 @@ VALUES (UUID(),
         'CREATE',
         'Created private league');
 
+-- Default dynamic-pricing weighting configuration (single row).
+INSERT INTO `pricing_settings`
+(settingsId, w_form, w_popularity, w_points, w_injury, w_demand, w_availability,
+ max_delta_pct, min_value, max_value)
+VALUES (UUID(), 0.1000, 0.0500, 0.1000, 0.1500, 0.0800, 0.2000, 0.1500, 1.00, 300.00);
+
 COMMIT;
