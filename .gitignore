@@ -37,7 +37,7 @@ database.properties
 *.tmp
 *.bak
 *.swp
-env
+.env
 
 # Serena MCP (local code-navigation cache/config)
 .serena/

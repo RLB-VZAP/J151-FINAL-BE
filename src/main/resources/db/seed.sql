@@ -931,4 +931,13 @@ VALUES (UUID(),
         'CREATE',
         'Created private league');
 
+-- Starter profanity/keyword blocklist for league chat moderation.
+INSERT INTO `message_blocklist`
+(blocklistId, phrase, created_by_user_id)
+VALUES (UUID(), 'idiot', @adminId),
+       (UUID(), 'stupid', @adminId),
+       (UUID(), 'trash', @adminId),
+       (UUID(), 'moron', @adminId),
+       (UUID(), 'loser', @adminId);
+
 COMMIT;

@@ -20,7 +20,11 @@ import com.vzap.trytons.resource.fixture.LockStatusResource;
 import com.vzap.trytons.resource.fixture.RoundResource;
 import com.vzap.trytons.resource.history.UserHistoryResource;
 import com.vzap.trytons.resource.leaderboard.LeaderboardResource;
+import com.vzap.trytons.resource.admin.MessageModerationResource;
+import com.vzap.trytons.resource.device.DeviceResource;
 import com.vzap.trytons.resource.league.LeagueResource;
+import com.vzap.trytons.resource.message.LeagueMessageResource;
+import com.vzap.trytons.resource.message.MessageResource;
 import com.vzap.trytons.resource.notification.NotificationResource;
 import com.vzap.trytons.resource.results.MatchResultResource;
 import com.vzap.trytons.resource.results.MatchTeamScoreResource;
@@ -59,6 +63,10 @@ public class RestApplication extends Application {
                 FixtureResource.class,
                 LeaderboardResource.class,
                 LeagueResource.class,
+                LeagueMessageResource.class,
+                MessageResource.class,
+                MessageModerationResource.class,
+                DeviceResource.class,
                 LockStatusResource.class,
                 LogResource.class,
                 MatchResultResource.class,

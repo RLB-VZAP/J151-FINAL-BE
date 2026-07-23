@@ -1868,6 +1868,132 @@ END$$
 
 DELIMITER ;
 
+-- =====================================================================
+-- Messaging: private direct messages, moderated league chat, blocklist,
+-- per-user block list, and FCM device tokens.
+-- =====================================================================
+
+CREATE TABLE `direct_message`
+(
+    `messageId`         VARCHAR(36) NOT NULL,
+    `sender_user_id`    VARCHAR(36) NOT NULL,
+    `recipient_user_id` VARCHAR(36) NOT NULL,
+    `body`              TEXT        NOT NULL,
+    `createdAt`         DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `isRead`            BOOLEAN     NOT NULL DEFAULT FALSE,
+
+    PRIMARY KEY (`messageId`),
+    KEY `idx_dm_pair_time` (`sender_user_id`, `recipient_user_id`, `createdAt`),
+    KEY `idx_dm_recipient_read` (`recipient_user_id`, `isRead`),
+
+    CONSTRAINT `fk_dm_sender`
+        FOREIGN KEY (`sender_user_id`) REFERENCES `registeredUser` (`userId`)
+            ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_dm_recipient`
+        FOREIGN KEY (`recipient_user_id`) REFERENCES `registeredUser` (`userId`)
+            ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `chk_dm_not_self` CHECK (`sender_user_id` <> `recipient_user_id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE `league_message`
+(
+    `messageId`            VARCHAR(36) NOT NULL,
+    `leagueId`             VARCHAR(36) NOT NULL,
+    `sender_user_id`       VARCHAR(36) NOT NULL,
+    `body`                 TEXT        NOT NULL,
+    `status`               ENUM('APPROVED', 'PENDING_REVIEW', 'REJECTED') NOT NULL DEFAULT 'APPROVED',
+    `flagged_reason`       VARCHAR(255)         DEFAULT NULL,
+    `moderated_by_user_id` VARCHAR(36)          DEFAULT NULL,
+    `moderatedAt`          DATETIME             DEFAULT NULL,
+    `createdAt`            DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`messageId`),
+    KEY `idx_lm_feed` (`leagueId`, `status`, `createdAt`),
+    KEY `idx_lm_pending` (`status`, `createdAt`),
+
+    CONSTRAINT `fk_lm_league`
+        FOREIGN KEY (`leagueId`) REFERENCES `league` (`leagueId`)
+            ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_lm_sender`
+        FOREIGN KEY (`sender_user_id`) REFERENCES `registeredUser` (`userId`)
+            ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_lm_moderator`
+        FOREIGN KEY (`moderated_by_user_id`) REFERENCES `administrator` (`userId`)
+            ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE `message_blocklist`
+(
+    `blocklistId`        VARCHAR(36)  NOT NULL,
+    `phrase`             VARCHAR(100) NOT NULL,
+    `created_by_user_id` VARCHAR(36)           DEFAULT NULL,
+    `createdAt`          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`blocklistId`),
+    UNIQUE KEY `uk_blocklist_phrase` (`phrase`),
+
+    CONSTRAINT `fk_blocklist_admin`
+        FOREIGN KEY (`created_by_user_id`) REFERENCES `administrator` (`userId`)
+            ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE `user_block`
+(
+    `blockId`         VARCHAR(36) NOT NULL,
+    `blocker_user_id` VARCHAR(36) NOT NULL,
+    `blocked_user_id` VARCHAR(36) NOT NULL,
+    `createdAt`       DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`blockId`),
+    UNIQUE KEY `uk_user_block_pair` (`blocker_user_id`, `blocked_user_id`),
+    KEY `idx_user_block_blocked` (`blocked_user_id`),
+
+    CONSTRAINT `fk_block_blocker`
+        FOREIGN KEY (`blocker_user_id`) REFERENCES `registeredUser` (`userId`)
+            ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_block_blocked`
+        FOREIGN KEY (`blocked_user_id`) REFERENCES `registeredUser` (`userId`)
+            ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `chk_block_not_self` CHECK (`blocker_user_id` <> `blocked_user_id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE `device_token`
+(
+    `tokenId`      VARCHAR(36)  NOT NULL,
+    `userId`       VARCHAR(36)  NOT NULL,
+    `token`        VARCHAR(512) NOT NULL,
+    `platform`     ENUM('WEB', 'ANDROID', 'IOS') NOT NULL DEFAULT 'WEB',
+    `isActive`     BOOLEAN      NOT NULL DEFAULT TRUE,
+    `createdAt`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `last_seen_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`tokenId`),
+    UNIQUE KEY `uk_device_token` (`token`),
+    KEY `idx_device_user` (`userId`, `isActive`),
+
+    CONSTRAINT `fk_device_user`
+        FOREIGN KEY (`userId`) REFERENCES `user` (`userId`)
+            ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+-- Align notification.type with the Java NotificationType enum (adds CHAT_MESSAGE and friends).
+ALTER TABLE `notification`
+    MODIFY `type` ENUM(
+        'LEADERBOARD_CHANGE', 'POINTS_UPDATE', 'MATCHUP_RESULT', 'SIMULATED_RESULT',
+        'PLAYER_AVAILABILITY', 'TRANSFER_DEADLINE', 'ROUND_LOCK', 'SYSTEM',
+        'CHAT_MESSAGE', 'LEAGUE_INVITATION', 'REPORT_UPDATE'
+        ) NOT NULL;
+
         /*
             Derived replacement for the old performanceHistory table.
             A row describes one player's simulated performance for one fantasy team
