@@ -38,15 +38,11 @@ public class FantasyTeamResource {
     private FantasyTeamService fantasyTeamService;
 
     @POST
-    public Response createTeam(
-            @Valid FantasyTeamRequestDTO request,
-            @Context ContainerRequestContext requestContext,
-            @Context UriInfo uriInfo) {
+    public Response createTeam(@Valid FantasyTeamRequestDTO request, @Context ContainerRequestContext requestContext, @Context UriInfo uriInfo) {
 
         UUID userId = currentUserId(requestContext);
 
-        FantasyTeamResponseDTO created =
-                fantasyTeamService.createTeam(userId, request);
+        FantasyTeamResponseDTO created = fantasyTeamService.createTeam(userId, request);
 
         URI location = uriInfo
                 .getAbsolutePathBuilder()
@@ -59,14 +55,6 @@ public class FantasyTeamResource {
                 .build();
     }
 
-    /*
-     * The caller's own team. A literal path segment, so it cannot collide with
-     * the /{teamId} template.
-     *
-     * Returns 404 when the user has not created a team yet. That is a normal
-     * state for a new account, not an error, and it is what lets a client ask
-     * "do I have a team" before offering actions that require one.
-     */
     @GET
     @Path("/mine")
     public Response getOwnTeam(@Context ContainerRequestContext requestContext) {
@@ -77,10 +65,6 @@ public class FantasyTeamResource {
         return Response.ok(team).build();
     }
 
-    /*
-     * This route is kept separate from the opponent route to prevent
-     * ambiguous JAX-RS GET mappings during GlassFish deployment.
-     */
     @GET
     @Path("/own/{teamId}")
     public Response viewOwnTeam(
@@ -95,52 +79,35 @@ public class FantasyTeamResource {
         return Response.ok(team).build();
     }
 
-    /*
-     * This route must remain different from /own/{teamId}.
-     */
     @GET
     @Path("/opponent/{teamId}")
     public Response viewOpponentTeam(
             @PathParam("teamId") UUID teamId) {
 
-        ViewOpponentTeamDTO team =
-                fantasyTeamService.viewOpponentTeam(teamId);
+        ViewOpponentTeamDTO team = fantasyTeamService.viewOpponentTeam(teamId);
 
         return Response.ok(team).build();
     }
 
     @PUT
     @Path("/{teamId}")
-    public Response updateTeam(
-            @PathParam("teamId") UUID teamId,
-            @Valid FantasyTeamRequestDTO request,
-            @Context ContainerRequestContext requestContext) {
-
+    public Response updateTeam(@PathParam("teamId") UUID teamId, @Valid FantasyTeamRequestDTO request, @Context ContainerRequestContext requestContext) {
         UUID userId = currentUserId(requestContext);
 
-        FantasyTeamResponseDTO updated =
-                fantasyTeamService.updateTeam(
-                        userId,
-                        teamId,
-                        request
-                );
+        FantasyTeamResponseDTO updated = fantasyTeamService.updateTeam(userId, teamId, request);
 
-        return Response.ok(updated).build();
+        return Response.ok(updated)
+                .build();
     }
 
     private UUID currentUserId(
             ContainerRequestContext requestContext) {
 
-        Object currentUser = requestContext.getProperty(
-                AuthFilter.CURRENT_USER_PROPERTY
-        );
+        Object currentUser = requestContext.getProperty(AuthFilter.CURRENT_USER_PROPERTY);
 
-        if (!(currentUser instanceof AuthPrincipal principal)
-                || principal.getUserId() == null) {
+        if (!(currentUser instanceof AuthPrincipal principal) || principal.getUserId() == null) {
 
-            throw new AuthenticationException(
-                    "Authentication required."
-            );
+            throw new AuthenticationException("Authentication required.");
         }
 
         return principal.getUserId();
