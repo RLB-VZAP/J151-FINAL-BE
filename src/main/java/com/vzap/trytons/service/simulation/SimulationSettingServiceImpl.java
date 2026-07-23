@@ -145,9 +145,9 @@ public class SimulationSettingServiceImpl implements SimulationSettingService {
                         .add(request.getTeamBalanceWeight())
                         .add(request.getRandomVariationWeight());
 
-        if (totalWeight.compareTo(new BigDecimal("100.00")) != 0) {
-            throw new ValidationException("Simulation weights must total 100.");
-        }
+//        if (totalWeight.compareTo(new BigDecimal("100.00")) != 0) {
+//            throw new ValidationException("Simulation weights must total 100.");
+//        }
 
         if (request.getRequireAdminApproval() == null || request.getAllowResimulation() == null || request.getIsActive() == null) {
             throw new ValidationException("All simulation setting options are required.");
