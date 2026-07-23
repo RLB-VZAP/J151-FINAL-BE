@@ -9,6 +9,7 @@ import com.vzap.trytons.dto.league.JoinLeagueResponseDTO;
 import com.vzap.trytons.dto.league.LeagueMemberResponseDTO;
 import com.vzap.trytons.dto.league.LeagueRequestDTO;
 import com.vzap.trytons.dto.league.LeagueResponseDTO;
+import com.vzap.trytons.dto.publicpreview.PublicLeaguePreviewDTO;
 import com.vzap.trytons.enums.LeagueType;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.BusinessRuleException;
@@ -141,6 +142,29 @@ public class LeagueServiceImpl implements LeagueService {
         }
 
         return responses;
+    }
+
+    @Override
+    public List<PublicLeaguePreviewDTO> getPublicLeaguePreviews(int limit) {
+        List<PublicLeaguePreviewDTO> previews = new ArrayList<>();
+        for (League league : leagueDAO.findAllLeagues()) {
+            if (league.getLeagueType() != LeagueType.PUBLIC) {
+                continue;
+            }
+            if (Boolean.FALSE.equals(league.getIsActive())) {
+                continue;
+            }
+            previews.add(PublicLeaguePreviewDTO.builder()
+                    .leagueName(league.getLeagueName())
+                    .description(league.getDescription())
+                    .maxMembers(league.getMaxMembers())
+                    .memberCount(membershipDAO.countActiveMembers(league.getLeagueId()))
+                    .build());
+            if (limit > 0 && previews.size() >= limit) {
+                break;
+            }
+        }
+        return previews;
     }
 
     @Override
