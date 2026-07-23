@@ -30,7 +30,7 @@ public class SquadValidationServiceImpl implements SquadValidationService {
     private static final int MAX_PROPS = 4;
     private static final int MAX_HOOKERS = 2;
     private static final int MAX_LOCKS = 4;
-    private static final int MAX_LOOSE_FORWARDS = 6;
+    private static final int MAX_LOOSE_FORWARDS = 5;
     private static final int MAX_SCRUM_HALVES = 2;
     private static final int MAX_FLY_HALVES = 2;
     private static final int MAX_CENTRES = 4;
@@ -133,6 +133,10 @@ public class SquadValidationServiceImpl implements SquadValidationService {
                     lockCount++;
                     break;
 
+                // "Loose Forward" is the position name the DB/position table actually uses
+                // (single position, min 3 / max 5). Flanker and Number Eight are kept for
+                // backward compatibility with any legacy data that split the loose trio.
+                case "Loose Forward":
                 case "Flanker":
                     case "Number Eight":
                         looseForwardCount++;
