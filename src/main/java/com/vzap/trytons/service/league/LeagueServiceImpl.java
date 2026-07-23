@@ -33,7 +33,6 @@ import java.util.logging.Logger;
 
 @ApplicationScoped
 public class LeagueServiceImpl implements LeagueService {
-
     private static final Logger LOG = Logger.getLogger(LeagueServiceImpl.class.getName());
 
     @Inject
@@ -61,8 +60,7 @@ public class LeagueServiceImpl implements LeagueService {
             throw new ConflictException("A league with this name already exists.");
         }
 
-        FantasyTeam team = fantasyTeamDAO.getTeamByOwner(currentUserId)
-                .orElseThrow(() -> new BusinessRuleException("You must create a fantasy team before creating a league."));
+        FantasyTeam team = fantasyTeamDAO.getTeamByOwner(currentUserId).orElseThrow(() -> new BusinessRuleException("You must create a fantasy team before creating a league."));
 
         League league = new League();
         league.setLeagueId(UUID.randomUUID());
@@ -137,10 +135,7 @@ public class LeagueServiceImpl implements LeagueService {
         List<LeagueResponseDTO> responses = new ArrayList<>();
 
         for (League league : leagues) {
-            if (actorIsAdmin
-                    || league.getLeagueType() == LeagueType.PUBLIC
-                    || isLeagueMember(league.getLeagueId(), currentUserId)) {
-
+            if (actorIsAdmin || league.getLeagueType() == LeagueType.PUBLIC || isLeagueMember(league.getLeagueId(), currentUserId)) {
                 responses.add(toResponse(league));
             }
         }
@@ -178,8 +173,7 @@ public class LeagueServiceImpl implements LeagueService {
 
         League league = requireLeague(request.getLeagueId());
 
-        FantasyTeam team = fantasyTeamDAO.getTeamById(request.getTeamId())
-                .orElseThrow(() -> new ResourceNotFoundException("Fantasy team not found."));
+        FantasyTeam team = fantasyTeamDAO.getTeamById(request.getTeamId()).orElseThrow(() -> new ResourceNotFoundException("Fantasy team not found."));
 
         if (team.getOwnerUserId() == null || !currentUserId.equals(team.getOwnerUserId())) {
             throw new AuthorisationException("The selected fantasy team does not belong to the current user.");
@@ -206,13 +200,12 @@ public class LeagueServiceImpl implements LeagueService {
 
         notifyLeagueJoin(league, currentUserId, team);
 
-        JoinLeagueResponseDTO response = new JoinLeagueResponseDTO();
-        response.setLeagueId(league.getLeagueId());
-        response.setLeagueName(league.getLeagueName());
-        response.setMembershipId(membership.getMembershipId());
-        response.setMessage("Joined the league successfully.");
-
-        return response;
+        return JoinLeagueResponseDTO.builder()
+                .leagueId(league.getLeagueId())
+                .leagueName(league.getLeagueName())
+                .message("Joined the league successfully.")
+                .membershipId(membership.getMembershipId())
+                .build();
     }
 
     @Override
@@ -245,8 +238,7 @@ public class LeagueServiceImpl implements LeagueService {
         League league = requireLeague(parsedLeagueId);
         requireLeagueManager(league, actorId);
 
-        LeagueMembership membership = membershipDAO.findById(parsedMembershipId)
-                .orElseThrow(() -> new ResourceNotFoundException("League membership not found."));
+        LeagueMembership membership = membershipDAO.findById(parsedMembershipId).orElseThrow(() -> new ResourceNotFoundException("League membership not found."));
 
         if (!parsedLeagueId.equals(membership.getLeagueId())) {
             throw new ResourceNotFoundException("League membership not found.");
@@ -256,8 +248,7 @@ public class LeagueServiceImpl implements LeagueService {
             throw new ConflictException("The league membership is not active.");
         }
 
-        if (league.getManagerUserId() != null
-                && league.getManagerUserId().equals(membership.getRegisteredUserId())) {
+        if (league.getManagerUserId() != null && league.getManagerUserId().equals(membership.getRegisteredUserId())) {
 
             throw new BusinessRuleException("The league manager cannot be removed.");
         }
@@ -331,17 +322,13 @@ public class LeagueServiceImpl implements LeagueService {
     private void validatePrivateLeagueCode(League league, String suppliedCode) {
         String actualCode = league.getLeagueCode();
 
-        if (suppliedCode == null || suppliedCode.isBlank()
-                || actualCode == null
-                || !actualCode.equalsIgnoreCase(suppliedCode.trim())) {
-
+        if (suppliedCode == null || suppliedCode.isBlank() || actualCode == null || !actualCode.equalsIgnoreCase(suppliedCode.trim())) {
             throw new AuthorisationException("The private league code is invalid.");
         }
     }
 
     private League requireLeague(UUID leagueId) {
-        return leagueDAO.findLeagueById(leagueId)
-                .orElseThrow(() -> new ResourceNotFoundException("League not found."));
+        return leagueDAO.findLeagueById(leagueId).orElseThrow(() -> new ResourceNotFoundException("League not found."));
     }
 
     private void requireLeagueManager(League league, UUID actorUserId) {
@@ -417,12 +404,6 @@ public class LeagueServiceImpl implements LeagueService {
         return user.isPresent() && user.get().getRole() == UserRole.ADMINISTRATOR;
     }
 
-
-    /**
-     * Notifies the newly joined member (welcome) and the league manager (roster change) that a
-     * membership was created. A notification failure must never affect the already-created
-     * membership.
-     */
     private void notifyLeagueJoin(League league, UUID newMemberUserId, FantasyTeam team) {
         try {
             String memberBody = "You joined the league \"" + league.getLeagueName() + "\".";
@@ -438,10 +419,6 @@ public class LeagueServiceImpl implements LeagueService {
         }
     }
 
-    /**
-     * Notifies the removed member and the league manager that a membership was deactivated.
-     * A notification failure must never affect the already-completed removal.
-     */
     private void notifyLeagueRemoval(League league, LeagueMembership membership) {
         try {
             UUID removedUserId = membership.getRegisteredUserId();
@@ -461,16 +438,16 @@ public class LeagueServiceImpl implements LeagueService {
 
     private LeagueResponseDTO toResponse(League league) {
 
-        LeagueResponseDTO response = new LeagueResponseDTO();
-        response.setLeagueId(league.getLeagueId());
-        response.setManagerUserId(league.getManagerUserId());
-        response.setLeagueName(league.getLeagueName());
-        response.setDescription(league.getDescription());
-        response.setLeagueType(league.getLeagueType());
-        response.setCreationDate(league.getCreationDate());
-        response.setIsActive(league.getIsActive());
-        response.setMaxMembers(league.getMaxMembers());
-        response.setLeagueCode(league.getLeagueCode());
-        return response;
+        return LeagueResponseDTO.builder()
+                .leagueId(league.getLeagueId())
+                .managerUserId(league.getManagerUserId())
+                .leagueName(league.getLeagueName())
+                .description(league.getDescription())
+                .leagueType(league.getLeagueType())
+                .creationDate(league.getCreationDate())
+                .isActive(league.getIsActive())
+                .maxMembers(league.getMaxMembers())
+                .leagueCode(league.getLeagueCode())
+                .build();
     }
 }

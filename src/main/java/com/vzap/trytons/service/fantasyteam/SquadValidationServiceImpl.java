@@ -100,15 +100,6 @@ public class SquadValidationServiceImpl implements SquadValidationService {
         }
     }
 
-    /*
-    Squad size
-    Duplicate players
-    Null or nonexistent player IDs
-    Player active status
-    Player availability
-    Minimum position requirements
-    Maximum position requirements
-     */
 
     private void validatePositionRules(List<Player> players, SquadValidationResultDTO result) {
         int propCount = 0;
@@ -121,6 +112,7 @@ public class SquadValidationServiceImpl implements SquadValidationService {
         int wingCount = 0;
         int fullbackCount = 0;
         int invalidCount = 0;
+
         for (Player player : players) {
             Position position = positionDAO.findById(player.getPositionId()).orElseThrow(() -> new ResourceNotFoundException("Position Not Found."));
             if(position.getPositionName() == null){
@@ -142,9 +134,9 @@ public class SquadValidationServiceImpl implements SquadValidationService {
                     break;
 
                 case "Flanker":
-                case "Number Eight":
-                    looseForwardCount++;
-                    break;
+                    case "Number Eight":
+                        looseForwardCount++;
+                        break;
 
                 case "Scrum Half":
                     scrumHalfCount++;
@@ -171,6 +163,7 @@ public class SquadValidationServiceImpl implements SquadValidationService {
                     break;
             }
         }
+
         if (propCount < MIN_PROPS) {
             result.addError("INVALID_POSITION_COUNT", "Not enough props for eligible team", "List<UUID> proposedPlayerIds");
         }

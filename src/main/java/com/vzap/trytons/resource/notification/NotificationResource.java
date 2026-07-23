@@ -21,43 +21,51 @@ import java.util.UUID;
 @Authenticated
 @Produces(MediaType.APPLICATION_JSON)
 public class NotificationResource {
-
     @Inject
     private NotificationService notificationService;
+
     @Context
     private ContainerRequestContext request;
 
     private UUID getCurrentUserId() {
         AuthPrincipal principal = (AuthPrincipal) request.getProperty(AuthFilter.CURRENT_USER_PROPERTY);
+
         return principal.getUserId();
     }
 
     @GET
     public Response listNotifications(@QueryParam("unreadOnly") Boolean unreadOnly) {
         boolean unreadOnlyFilter = Boolean.TRUE.equals(unreadOnly);
-        List<NotificationResponseDTO> notifications =
-                notificationService.getNotificationsForUser(getCurrentUserId(), unreadOnly);
-        return Response.ok(notifications).build();
+
+        List<NotificationResponseDTO> notifications = notificationService.getNotificationsForUser(getCurrentUserId(), unreadOnly);
+
+        return Response.ok(notifications)
+                .build();
     }
 
     @GET
     @Path("/unread-count")
     public Response getUnreadCount() {
         int count = notificationService.getUnreadCount(getCurrentUserId());
-        return Response.ok(Map.of("unreadCount", count)).build();
+        return Response.ok(Map.of("unreadCount", count))
+                .build();
     }
 
     @PUT
     @Path("/{notificationId}/read")
     public Response markAsRead(@PathParam("notificationId") UUID notificationId) {
         NotificationResponseDTO updated = notificationService.markAsRead(getCurrentUserId(), notificationId);
-        return Response.ok(updated).build();
+
+        return Response.ok(updated)
+                .build();
     }
 
     @PUT
     @Path("/read-all")
     public Response markAllAsRead() {
         int updatedCount = notificationService.markAllAsRead(getCurrentUserId());
-        return Response.ok(Map.of("updatedCount", updatedCount)).build();
+
+        return Response.ok(Map.of("updatedCount", updatedCount))
+                .build();
     }
 }

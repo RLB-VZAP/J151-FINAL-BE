@@ -8,7 +8,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +16,6 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.vzap.trytons.util.DBConnectionManager.getConnection;
 import com.vzap.trytons.dao.shared.BaseDAO;
 
 public class FantasyRoundDAOImpl extends BaseDAO implements FantasyRoundDAO {
@@ -155,7 +153,6 @@ public class FantasyRoundDAOImpl extends BaseDAO implements FantasyRoundDAO {
                             .lockDeadline(rs.getObject("lockDeadline", LocalDateTime.class))
                             .endDate(rs.getObject("endDate", LocalDateTime.class))
                             .status(status)
-
                             .build();
 
                     fantasyRounds.add(fr);
@@ -217,9 +214,9 @@ public class FantasyRoundDAOImpl extends BaseDAO implements FantasyRoundDAO {
             ps.setString(1, status.name());
             ps.setString(2, roundId.toString());
 
-             if(ps.executeUpdate() > 0){
-                 return true;
-             }
+            if(ps.executeUpdate() > 0){
+                return true;
+            }
 
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Could not update fantasy round status", e);

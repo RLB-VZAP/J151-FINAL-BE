@@ -15,5 +15,6 @@ import java.util.UUID;
 @Builder
 public class ResimulationRequestDTO {
     private UUID fixtureId;
+
     private String resimulationReason;
 }

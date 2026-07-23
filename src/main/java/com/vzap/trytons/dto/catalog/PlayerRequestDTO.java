@@ -14,7 +14,6 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class PlayerRequestDTO {
-
     private UUID clubId;
     private UUID positionId;
 

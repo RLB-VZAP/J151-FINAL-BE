@@ -83,11 +83,11 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
 
         UUID resultId = matchResult.getResultId() == null ? UUID.randomUUID() : matchResult.getResultId();
 
-        String query = """
-                INSERT INTO matchResult
-                    (resultId, fixtureId, settingsId, team_a_score, team_b_score, winnerSide, isDraw, approved, isCurrent, resultDate, approved_by_admin_user_id, simulation_run_number)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """;
+        String query =
+                "INSERT INTO matchResult"+
+                    "(resultId, fixtureId, settingsId, team_a_score, team_b_score, winnerSide, isDraw, approved, isCurrent, resultDate, approved_by_admin_user_id, simulation_run_number)"+
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
 
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
@@ -153,21 +153,17 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
                         + " WHERE mr.resultId = ?";
 
         try (Connection connection = getConnection();
-             PreparedStatement statement =
-                     connection.prepareStatement(query)) {
+             PreparedStatement statement = connection.prepareStatement(query)) {
 
             statement.setString(
                     1,
                     resultId.toString()
             );
 
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
+            try (ResultSet resultSet = statement.executeQuery()) {
 
                 if (resultSet.next()) {
-                    return Optional.of(
-                            mapMatchResult(resultSet)
-                    );
+                    return Optional.of(mapMatchResult(resultSet));
                 }
             }
 
@@ -187,45 +183,29 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
             return Optional.empty();
         }
 
-        String query =
-                MATCH_RESULT_SELECT
-                        + """
-                           WHERE mr.fixtureId = ?
-                             AND mr.isCurrent = TRUE
-                           ORDER BY mr.simulation_run_number DESC
-                           LIMIT 1
-                           """;
+        String query = MATCH_RESULT_SELECT + "WHERE mr.fixtureId = ?"+
+                "AND mr.isCurrent = TRUE"+
+                "ORDER BY mr.simulation_run_number DESC"+
+                "LIMIT 1";
 
         try (Connection connection = getConnection();
-             PreparedStatement statement =
-                     connection.prepareStatement(query)) {
+             PreparedStatement statement = connection.prepareStatement(query)) {
 
-            statement.setString(
-                    1,
-                    fixtureId.toString()
-            );
+            statement.setString(1, fixtureId.toString());
 
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
+            try (ResultSet resultSet = statement.executeQuery()) {
 
                 if (resultSet.next()) {
-                    return Optional.of(
-                            mapMatchResult(resultSet)
-                    );
+                    return Optional.of(mapMatchResult(resultSet));
                 }
             }
 
         } catch (SQLException e) {
             LOG.log(
-                    Level.SEVERE,
-                    "Unable to retrieve the current match result.",
-                    e
+                    Level.SEVERE, "Unable to retrieve the current match result.", e
             );
 
-            throw new DataAccessException(
-                    "Unable to retrieve the current match result.",
-                    e
-            );
+            throw new DataAccessException("Unable to retrieve the current match result.", e);
         }
 
         return Optional.empty();
@@ -241,47 +221,27 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
             return results;
         }
 
-        String query =
-                MATCH_RESULT_SELECT
-                        + """
-                           WHERE mr.fixtureId = ?
-                           ORDER BY mr.simulation_run_number ASC
-                           """;
+        String query = MATCH_RESULT_SELECT + "WHERE mr.fixtureId = ?"+
+                "ORDER BY mr.simulation_run_number ASC";
 
         try (Connection connection = getConnection();
-             PreparedStatement statement =
-                     connection.prepareStatement(query)) {
+             PreparedStatement statement = connection.prepareStatement(query)) {
 
-            statement.setString(
-                    1,
-                    fixtureId.toString()
-            );
+            statement.setString(1, fixtureId.toString());
 
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
+            try (ResultSet resultSet = statement.executeQuery()) {
 
                 while (resultSet.next()) {
-                    results.add(
-                            mapMatchResult(resultSet)
-                    );
+                    results.add(mapMatchResult(resultSet));
                 }
             }
 
             return results;
 
         } catch (SQLException e) {
-            LOG.log(
-                    Level.SEVERE,
-                    "Unable to retrieve match results "
-                            + "for the fixture.",
-                    e
-            );
 
-            throw new DataAccessException(
-                    "Unable to retrieve match results "
-                            + "for the fixture.",
-                    e
-            );
+            LOG.log(Level.SEVERE, "Unable to retrieve match results for the fixture.", e);
+            throw new DataAccessException("Unable to retrieve match results for the fixture.", e);
         }
     }
 
@@ -290,33 +250,24 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
             UUID fixtureId) {
 
         if (fixtureId == null) {
-            throw new DataAccessException(
-                    "Fixture ID is required.",
-                    null
-            );
+            throw new DataAccessException("Fixture ID is required.", null);
         }
 
-        String query = """
-                SELECT MAX(simulation_run_number)
-                FROM matchResult
-                WHERE fixtureId = ?
-                """;
+        String query =
+                "SELECT MAX(simulation_run_number)"+
+                "FROM matchResult"+
+                "WHERE fixtureId = ?";
+
 
         try (Connection connection = getConnection();
-             PreparedStatement statement =
-                     connection.prepareStatement(query)) {
+             PreparedStatement statement = connection.prepareStatement(query)) {
 
-            statement.setString(
-                    1,
-                    fixtureId.toString()
-            );
+            statement.setString(1, fixtureId.toString());
 
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
+            try (ResultSet resultSet = statement.executeQuery()) {
 
                 if (resultSet.next()) {
-                    int currentRunNumber =
-                            resultSet.getInt(1);
+                    int currentRunNumber = resultSet.getInt(1);
 
                     if (resultSet.wasNull()) {
                         return 1;
@@ -328,18 +279,9 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
             return 1;
 
         } catch (SQLException e) {
-            LOG.log(
-                    Level.SEVERE,
-                    "Unable to determine the next "
-                            + "simulation run number.",
-                    e
-            );
+            LOG.log(Level.SEVERE, "Unable to determine the next simulation run number.", e);
 
-            throw new DataAccessException(
-                    "Unable to determine the next "
-                            + "simulation run number.",
-                    e
-            );
+            throw new DataAccessException("Unable to determine the next simulation run number.", e);
         }
     }
 
@@ -348,51 +290,28 @@ public class MatchResultDAOImpl extends BaseDAO implements MatchResultDAO {
             UUID fixtureId) {
 
         if (fixtureId == null) {
-            throw new DataAccessException(
-                    "Fixture ID is required.",
-                    null
-            );
+            throw new DataAccessException("Fixture ID is required.", null);
         }
 
-        String query = """
-                UPDATE matchResult
-                SET isCurrent = FALSE
-                WHERE fixtureId = ?
-                  AND isCurrent = TRUE
-                """;
+        String query = "UPDATE matchResult"+
+                "SET isCurrent = FALSE"+
+                "WHERE fixtureId = ?"+
+                "AND isCurrent = TRUE";
+
 
         try (Connection connection = getConnection();
-             PreparedStatement statement =
-                     connection.prepareStatement(query)) {
+             PreparedStatement statement = connection.prepareStatement(query)) {
 
-            statement.setString(
-                    1,
-                    fixtureId.toString()
-            );
+            statement.setString(1, fixtureId.toString());
 
             return statement.executeUpdate();
 
         } catch (SQLException e) {
             if ("45000".equals(e.getSQLState())) {
-                throw new ConflictException(
-                        e.getMessage() != null
-                                ? e.getMessage()
-                                : "The previous match result could not be superseded because its stored data is inconsistent."
-                );
+                throw new ConflictException(e.getMessage() != null ? e.getMessage() : "The previous match result could not be superseded because its stored data is inconsistent.");
             }
-
-            LOG.log(
-                    Level.SEVERE,
-                    "Unable to mark previous fixture "
-                            + "results as not current.",
-                    e
-            );
-
-            throw new DataAccessException(
-                    "Unable to mark previous fixture "
-                            + "results as not current.",
-                    e
-            );
+            LOG.log(Level.SEVERE, "Unable to mark previous fixture results as not current.", e);
+            throw new DataAccessException("Unable to mark previous fixture results as not current.", e);
         }
     }
 }

@@ -16,12 +16,14 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class FantasyPointsResponseDTO {
-
     private UUID pointsId;
     private UUID statId;
+
     private int totalPoints;
     private int calculationVersion;
+
     @JsonProperty("isFinal")
     private boolean isFinal;
+
     private LocalDateTime calculatedAt;
 }

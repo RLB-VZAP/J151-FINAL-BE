@@ -27,7 +27,6 @@ import java.util.List;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class TransferResource {
-
     @Inject
     private TransferService transferService;
 
@@ -39,20 +38,19 @@ public class TransferResource {
 
         TransferResponseDTO response = transferService.executeTransfer(actorUserId, request);
 
-        return Response.ok(response).build();
+        return Response.ok(response)
+                .build();
     }
 
     @GET
     @Path("/{teamId}/history")
-    public Response listTransferHistory(
-            @PathParam("teamId") String teamId,
-            @Context ContainerRequestContext requestContext) {
+    public Response listTransferHistory(@PathParam("teamId") String teamId, @Context ContainerRequestContext requestContext) {
         String actorUserId = currentUserId(requestContext);
 
-        List<TransferResponseDTO> history =
-                transferService.listTransferHistory(actorUserId, teamId);
+        List<TransferResponseDTO> history = transferService.listTransferHistory(actorUserId, teamId);
 
-        return Response.ok(history).build();
+        return Response.ok(history)
+                .build();
     }
 
     private String currentUserId(ContainerRequestContext requestContext) {

@@ -16,8 +16,11 @@ import java.util.UUID;
 @Builder
 public class NotificationCreateRequestDTO {
     private UUID userId;
+
     private NotificationType type;
+
     private String body;
     private String relatedEntityType;
+
     private UUID relatedEntityId;
 }

@@ -12,11 +12,14 @@ import java.util.UUID;
 @Getter
 @Setter
 public class PlayerRecommendation {
-
     private UUID recommendationId;
+
     private String reason;
+
     private BigDecimal score;
+
     private LocalDateTime createdAt;
+
     private Boolean isDismissed;
 
     private UUID teamId;

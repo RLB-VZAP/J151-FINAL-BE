@@ -12,13 +12,17 @@ import java.util.UUID;
 @Setter
 @Getter
 @Builder
-
 public class SystemReportResponseDTO {
     private UUID reportId;
+
     private SystemReportType reportType;
+
     private String reportTitle;
+
     private Map<String , Object > parametersJson;
     private Map<String , Object > resultJson;
+
     private LocalDateTime generatedAt;
+
     private UUID generatedByAdminUserId;
 }

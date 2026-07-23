@@ -16,13 +16,8 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class ClubServiceImpl implements ClubService {
-
-    private final ClubDAO clubDAO;
-
     @Inject
-    public ClubServiceImpl(ClubDAO clubDAO) {
-        this.clubDAO = clubDAO;
-    }
+    private ClubDAO clubDAO;
 
     @Override
     public ClubResponseDTO createClub(ClubRequestDTO request) {
@@ -30,9 +25,7 @@ public class ClubServiceImpl implements ClubService {
 
         String cleanClubName = request.getClubName().trim();
 
-        clubDAO.findByClubName(cleanClubName).ifPresent(foundClub -> {
-            throw new ConflictException("Club '" + foundClub.getClubName() + "' already exists.");
-        });
+        clubDAO.findByClubName(cleanClubName).ifPresent(foundClub -> {throw new ConflictException("Club '" + foundClub.getClubName() + "' already exists.");});
 
         Club club = mapRequestToClub(request);
         club.setClubId(UUID.randomUUID());
@@ -106,16 +99,17 @@ public class ClubServiceImpl implements ClubService {
         club.setClubName(request.getClubName().trim());
         club.setLocation(request.getLocation() != null && !request.getLocation().isBlank() ? request.getLocation().trim() : null);
         club.setHomeVenue(request.getHomeVenue() != null && !request.getHomeVenue().isBlank() ? request.getHomeVenue().trim() : null);
+
         return club;
     }
 
     private ClubResponseDTO mapToResponse(Club club) {
-        ClubResponseDTO response = new ClubResponseDTO();
-        response.setClubId(club.getClubId());
-        response.setClubName(club.getClubName());
-        response.setLocation(club.getLocation());
-        response.setHomeVenue(club.getHomeVenue());
-        response.setActive(club.isActive());
-        return response;
+        return ClubResponseDTO.builder()
+                .clubId(club.getClubId())
+                .clubName(club.getClubName())
+                .location(club.getLocation())
+                .homeVenue(club.getHomeVenue())
+                .isActive(club.isActive())
+                .build();
     }
 }

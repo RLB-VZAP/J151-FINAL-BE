@@ -42,9 +42,9 @@ public class LogDAOImpl extends BaseDAO implements LogDAO {
                 ORDER BY createdAt DESC
                 LIMIT ?""";
         try(Connection con = getConnection();
-            PreparedStatement ps = con.prepareStatement(query);){
+            PreparedStatement ps = con.prepareStatement(query)){
             ps.setInt(1, limit);
-            try(ResultSet rs = ps.executeQuery();){
+            try(ResultSet rs = ps.executeQuery()){
                 List<Log> logs = new ArrayList<>();
                 while (rs.next()) {
                     logs.add(mapRow(rs));
@@ -59,14 +59,14 @@ public class LogDAOImpl extends BaseDAO implements LogDAO {
 
     @Override
     public List<LogActionCount> countByActionType() {
-        String query = """
-                SELECT actionType, COUNT(*) AS actionCount
-                FROM log
-                GROUP BY actionType
-                ORDER BY actionCount DESC""";
+        String query ="SELECT actionType, COUNT(*) AS actionCount"+
+                "FROM log"+
+                "GROUP BY actionType" +
+                "ORDER BY actionCount DESC";
+
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query);
-        ResultSet rs = ps.executeQuery();){
+        ResultSet rs = ps.executeQuery()){
             List<LogActionCount> count = new ArrayList<>();
             while (rs.next()) {
                 count.add( new LogActionCount(rs.getString("actionType"), rs.getInt("actionCount")));

@@ -15,13 +15,15 @@ import java.util.UUID;
 @Getter
 @Setter
 public class SystemReport {
-
     private UUID reportId;
     private UUID generatedByAdminUserId;
+
     private SystemReportType reportType;
+
     private String reportTitle;
+
     private Map<String , Object > parametersJson;
     private Map<String , Object > resultJson;
-    private LocalDateTime generatedAt;
 
+    private LocalDateTime generatedAt;
 }

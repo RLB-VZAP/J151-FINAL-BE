@@ -17,9 +17,14 @@ import java.util.UUID;
 public class LeagueMemberResponseDTO {
     private UUID membershipId;
     private UUID userId;
+
     private String userDisplayName;
+
     private UUID teamId;
+
     private String teamDisplayName;
+
     private LocalDateTime joinDate;
+
     private Boolean isActive;
 }

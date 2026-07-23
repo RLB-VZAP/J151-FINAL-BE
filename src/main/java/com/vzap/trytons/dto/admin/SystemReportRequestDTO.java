@@ -10,9 +10,10 @@ import java.util.Map;
 @Setter
 @Getter
 @Builder
-
 public class SystemReportRequestDTO {
     private SystemReportType reportType;
+
     private String reportTitle;
+
     private Map<String , Object > parametersJson;
 }

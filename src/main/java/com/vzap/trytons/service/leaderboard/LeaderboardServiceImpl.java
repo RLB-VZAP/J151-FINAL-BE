@@ -94,11 +94,12 @@ public class LeaderboardServiceImpl implements LeaderboardService{
             if (team == null) {
                 continue;
             }
+
             String ownerUsername = userDAO.getUserById(team.getOwnerUserId())
                     .map(User::getUsername)
                     .orElse(null);
-            entries.add(LeaderboardEntryResponseDTO.builder()
-                    .teamId(ranking.getTeamId())
+
+            entries.add(LeaderboardEntryResponseDTO.builder().teamId(ranking.getTeamId())
                     .teamName(team.getTeamName())
                     .owner(ownerUsername)
                     .rank(ranking.getCurrentRanking())
@@ -110,15 +111,13 @@ public class LeaderboardServiceImpl implements LeaderboardService{
                     .matchesLost(ranking.getMatchesLost())
                     .pointsFor(ranking.getPointsFor())
                     .pointsAgainst(ranking.getPointsAgainst())
-                    .scoreDifference(ranking.getScoreDifference())
+                    .pointsDifference(ranking.getScoreDifference())
                     .leaguePoints(ranking.getLeaguePoints())
                     .totalFantasyPoints(ranking.getTotalFantasyPoints())
                     .build());
         }
         return entries;
     }
-
-    //================================================================================================================================================
 
     @Override
     public List<LeaderboardEntryResponseDTO> getLeaderboardForLeague(UUID leagueId, UUID requestingUserId) throws AuthorisationException {
@@ -154,7 +153,7 @@ public class LeaderboardServiceImpl implements LeaderboardService{
                     .matchesLost(ranking.getMatchesLost())
                     .pointsFor(ranking.getPointsFor())
                     .pointsAgainst(ranking.getPointsAgainst())
-                    .scoreDifference(ranking.getScoreDifference())
+                    .pointsDifference(ranking.getScoreDifference())
                     .leaguePoints(ranking.getLeaguePoints())
                     .totalFantasyPoints(ranking.getTotalFantasyPoints())
                     .build();
@@ -188,7 +187,7 @@ public class LeaderboardServiceImpl implements LeaderboardService{
                     .map(User::getUsername)
                     .orElse(null);
             LeaderboardEntryResponseDTO dto = LeaderboardEntryResponseDTO.builder()
-                    .teamId(team.getTeamId())
+                    .teamId(ranking.getTeamId())
                     .teamName(team.getTeamName())
                     .owner(ownerUsername)
                     .rank(ranking.getCurrentRanking())
@@ -200,7 +199,7 @@ public class LeaderboardServiceImpl implements LeaderboardService{
                     .matchesLost(ranking.getMatchesLost())
                     .pointsFor(ranking.getPointsFor())
                     .pointsAgainst(ranking.getPointsAgainst())
-                    .scoreDifference(ranking.getScoreDifference())
+                    .pointsDifference(ranking.getScoreDifference())
                     .leaguePoints(ranking.getLeaguePoints())
                     .totalFantasyPoints(ranking.getTotalFantasyPoints())
                     .build();
@@ -210,7 +209,6 @@ public class LeaderboardServiceImpl implements LeaderboardService{
         return Optional.empty();
     }
 
-    //Re-ranks the stored rankings for a leaderboard and persists the new positions:
     private LeaderboardRefreshResultDTO refreshRankings(Leaderboard leaderboard) {
         List<Ranking> rankings = leaderboardDAO.getRankingsByLeaderboardId(leaderboard.getLeaderboardId());
         rankings.sort(Comparator.comparingInt(Ranking::getLeaguePoints).reversed()
@@ -219,12 +217,6 @@ public class LeaderboardServiceImpl implements LeaderboardService{
 
         LocalDateTime now = LocalDateTime.now();
 
-        // ranking.uk_ranking_position is a unique key on (leaderboardId, currentRanking) that MySQL
-        // enforces per statement, not per transaction. Re-assigning final positions directly can
-        // collide with another row that still holds the target position (e.g. swapping ranks 1 and
-        // 2 - moving row A to position 1 fails while row B still occupies position 1). To keep this
-        // idempotent and collision-free, every row is first moved to a temporary position guaranteed
-        // to be outside the real 1..N range, then the real positions are assigned in a second pass.
         int temporaryBase = rankings.size();
         for (int i = 0; i < rankings.size(); i++) {
             Ranking ranking = rankings.get(i);
@@ -255,12 +247,6 @@ public class LeaderboardServiceImpl implements LeaderboardService{
                 .build();
     }
 
-    /**
-     * Notifies each team owner whose rank changed on this refresh. Only wired for league-scoped
-     * leaderboards (notifyLeaderboardChange is a per-league notification); the master/overall
-     * leaderboard has no leagueId to attach the notification to, so it is skipped there.
-     * A notification failure must never affect the already-persisted ranking refresh.
-     */
     private void notifyRankChanges(Leaderboard leaderboard, List<Ranking> rankings) {
         if (leaderboard.getLeagueId() == null) {
             return;
@@ -271,13 +257,12 @@ public class LeaderboardServiceImpl implements LeaderboardService{
                     continue;
                 }
                 Integer previousRanking = ranking.getPreviousRanking();
-                if (previousRanking != null && previousRanking.intValue() == ranking.getCurrentRanking()) {
+                if (previousRanking != null && previousRanking == ranking.getCurrentRanking()) {
                     continue;
                 }
                 fantasyTeamDAO.getTeamById(ranking.getTeamId())
                         .map(FantasyTeam::getOwnerUserId)
-                        .ifPresent(ownerId -> notificationService.notifyLeaderboardChange(
-                                ownerId, leaderboard.getLeagueId(), ranking.getCurrentRanking()));
+                        .ifPresent(ownerId -> notificationService.notifyLeaderboardChange(ownerId, leaderboard.getLeagueId(), ranking.getCurrentRanking()));
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to send leaderboard-change notifications for leaderboard " + leaderboard.getLeaderboardId(), e);
@@ -289,7 +274,6 @@ public class LeaderboardServiceImpl implements LeaderboardService{
         if (openRound.isPresent()) {
             return openRound.get().getSeason();
         }
-        //Between rounds there is no open round, so fall back to the most recently opened round's season:
         FantasyRound latest = null;
         for (FantasyRound round : fantasyRoundDAO.getAllRounds()) {
             if (latest == null || round.getOpenDate().isAfter(latest.getOpenDate())) {
@@ -306,13 +290,14 @@ public class LeaderboardServiceImpl implements LeaderboardService{
         if (actorUserId == null) {
             throw new AuthorisationException("Authentication required.");
         }
-        User actor = userDAO.getUserById(actorUserId)
-                .orElseThrow(() -> new AuthorisationException("Authentication required."));
+
+        User actor = userDAO.getUserById(actorUserId).orElseThrow(() -> new AuthorisationException("Authentication required."));
+
         if (actor.getRole() == UserRole.ADMINISTRATOR) {
             return;
         }
-        League league = leagueDAO.findLeagueById(leagueId)
-                .orElseThrow(() -> new ResourceNotFoundException("League not found."));
+        League league = leagueDAO.findLeagueById(leagueId).orElseThrow(() -> new ResourceNotFoundException("League not found."));
+
         if (!actorUserId.equals(league.getManagerUserId())) {
             throw new AuthorisationException("Only the league manager or an administrator may refresh this leaderboard.");
         }
@@ -322,17 +307,17 @@ public class LeaderboardServiceImpl implements LeaderboardService{
         if (actorUserId == null) {
             throw new AuthorisationException("An authenticated administrator is required.");
         }
-        User actor = userDAO.getUserById(actorUserId)
-                .orElseThrow(() -> new AuthorisationException("An authenticated administrator is required."));
+
+        User actor = userDAO.getUserById(actorUserId).orElseThrow(() -> new AuthorisationException("An authenticated administrator is required."));
+
         if (actor.getRole() != UserRole.ADMINISTRATOR) {
             throw new AuthorisationException("Only administrators may refresh leaderboards.");
         }
     }
 
-    //Small private helper method for calculating the rank movement:
     private Integer calculateRankMovement(int currentRanking, Integer previousRanking) {
         if (previousRanking != null){
             return previousRanking - currentRanking;
-        }else return null;
+        } else return null;
     }
 }

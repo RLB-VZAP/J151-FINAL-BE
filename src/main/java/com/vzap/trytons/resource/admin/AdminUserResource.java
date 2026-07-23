@@ -32,9 +32,7 @@ public class AdminUserResource {
     AdminUserService adminUserService;
 
     @GET
-    public Response searchUsers(
-            @QueryParam("searchTerm") String searchTerm,
-            @Context ContainerRequestContext requestContext) {
+    public Response searchUsers(@QueryParam("searchTerm") String searchTerm, @Context ContainerRequestContext requestContext) {
         UUID actorUserId = currentUserId(requestContext);
 
         List<AdminUserSearchResponseDTO> results = adminUserService.searchUsers(actorUserId, searchTerm);
@@ -45,9 +43,7 @@ public class AdminUserResource {
     @PUT
     @Path("/{targetUserId}/status")
     @Valid
-    public Response updateUserStatus(
-            @PathParam("targetUserId") UUID targetUserId, AdminUserStatusRequestDTO request,
-            @Context ContainerRequestContext requestContext) {
+    public Response updateUserStatus(@PathParam("targetUserId") UUID targetUserId, AdminUserStatusRequestDTO request, @Context ContainerRequestContext requestContext) {
         UUID actorUserId = currentUserId(requestContext);
         AdminUserStatusResponseDTO result = adminUserService.updateUserStatus(actorUserId, targetUserId, request);
 

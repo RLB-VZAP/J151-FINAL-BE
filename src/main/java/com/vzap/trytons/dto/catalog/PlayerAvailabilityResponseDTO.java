@@ -16,11 +16,13 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 public class PlayerAvailabilityResponseDTO {
-
     private UUID availabilityId;
     private UUID playerId;
+
     private AvailabilityStatus status;
+
     private LocalDate effectiveDate;
     private LocalDate endDate;
+
     private String notes;
 }

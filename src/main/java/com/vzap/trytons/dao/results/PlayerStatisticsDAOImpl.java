@@ -24,12 +24,8 @@ public class PlayerStatisticsDAOImpl extends BaseDAO implements PlayerStatistics
 
     private static final Logger LOG = Logger.getLogger(PlayerStatisticsDAOImpl.class.getName());
 
-    private static final String SELECT_COLUMNS = """
-            SELECT statId, resultId, teamId, playerId, tries, assists, tackles,
-                   missedTackles, conversions, penalties, metersGained,
-                   yellowCards, redCards, statisticDate
-              FROM playerStatistics
-            """;
+    private static final String SELECT_COLUMNS = "SELECT statId, resultId, teamId, playerId, tries, assists, tackles, missedTackles, conversions, penalties, metersGained, yellowCards, redCards, statisticDate " +
+            "FROM playerStatistics";
 
     private PlayerStatistics mapRow(ResultSet rs) throws SQLException {
         Timestamp statisticDate = rs.getTimestamp("statisticDate");
@@ -125,13 +121,8 @@ public class PlayerStatisticsDAOImpl extends BaseDAO implements PlayerStatistics
                 ? LocalDateTime.now()
                 : statistics.getStatisticDate();
 
-        String sql = """
-                INSERT INTO playerStatistics
-                    (statId, resultId, teamId, playerId, tries, assists, tackles,
-                     missedTackles, conversions, penalties, metersGained,
-                     yellowCards, redCards, statisticDate)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """;
+        String sql = "INSERT INTO playerStatistics (statId, resultId, teamId, playerId, tries, assists, tackles, missedTackles, conversions, penalties, metersGained, yellowCards, redCards, statisticDate)"+
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {

@@ -4,7 +4,6 @@ import com.vzap.trytons.enums.TransferStatus;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.fixture.FantasyRound;
 import com.vzap.trytons.model.fantasyteam.FantasyTeam;
-import com.vzap.trytons.model.catalog.Player;
 import com.vzap.trytons.model.auth.RegisteredUser;
 import com.vzap.trytons.model.transfer.Transfer;
 import jakarta.inject.Singleton;
@@ -29,13 +28,10 @@ public class TransferDAOImpl extends BaseDAO implements TransferDAO {
 
     private static final Logger LOG = Logger.getLogger(TransferDAOImpl.class.getName());
 
-    private static final String SELECT_TRANSFER_WITH_PLAYERS =
-            "SELECT t.*, " +
-                    "removed.playerName AS removed_player_name, " +
-                    "added.playerName AS added_player_name " +
-                    "FROM `transfer` t " +
-                    "JOIN player removed ON t.removed_player_id = removed.playerId " +
-                    "JOIN player added ON t.added_player_id = added.playerId ";
+    private static final String SELECT_TRANSFER_WITH_PLAYERS = "SELECT t.*, removed.playerName AS removed_player_name, added.playerName AS added_player_name " +
+            "FROM `transfer` t " +
+            "JOIN player removed ON t.removed_player_id = removed.playerId " +
+            "JOIN player added ON t.added_player_id = added.playerId ";
 
     @Override
     public Optional<Transfer> saveTransfer(Transfer transfer) {
@@ -80,8 +76,7 @@ public class TransferDAOImpl extends BaseDAO implements TransferDAO {
 
     @Override
     public Optional<Transfer> getTransferById(UUID transferId) {
-        String query = SELECT_TRANSFER_WITH_PLAYERS +
-                "WHERE t.transferId = ?";
+        String query = SELECT_TRANSFER_WITH_PLAYERS + "WHERE t.transferId = ?";
 
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {
@@ -157,10 +152,7 @@ public class TransferDAOImpl extends BaseDAO implements TransferDAO {
     }
 
     @Override
-    public boolean updateTransferStatus(
-            UUID transferId,
-            TransferStatus transferStatus,
-            LocalDateTime confirmationDate) {
+    public boolean updateTransferStatus(UUID transferId, TransferStatus transferStatus, LocalDateTime confirmationDate) {
         String query = "UPDATE `transfer` SET status = ?, confirmedAt = ? WHERE transferId = ?";
 
         try (Connection con = getConnection();
@@ -211,18 +203,10 @@ public class TransferDAOImpl extends BaseDAO implements TransferDAO {
     }
 
     @Override
-    public boolean existsConfirmedTransfer(
-            UUID teamId,
-            UUID roundId,
-            UUID removedPlayerId,
-            UUID addedPlayerId) {
+    public boolean existsConfirmedTransfer(UUID teamId, UUID roundId, UUID removedPlayerId, UUID addedPlayerId) {
         String query = "SELECT COUNT(*) AS duplicateCount " +
                 "FROM `transfer` " +
-                "WHERE teamId = ? " +
-                "AND roundId = ? " +
-                "AND removed_player_id = ? " +
-                "AND added_player_id = ? " +
-                "AND status = 'CONFIRMED'";
+                "WHERE teamId = ? AND roundId = ? AND removed_player_id = ? AND added_player_id = ? AND status = 'CONFIRMED'";
 
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {

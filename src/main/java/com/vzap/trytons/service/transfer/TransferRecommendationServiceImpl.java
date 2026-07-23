@@ -29,7 +29,6 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class TransferRecommendationServiceImpl implements TransferRecommendationService {
-
     private static final int CANDIDATES_PER_PLAYER = 3;
     private static final int MAX_TOTAL_RECOMMENDATIONS = 10;
 
@@ -70,7 +69,9 @@ public class TransferRecommendationServiceImpl implements TransferRecommendation
         }
 
         List<Player> squadPlayers = loadSquadPlayers(currentSquad);
+
         Set<UUID> squadPlayerIds = getSquadPlayerIds(squadPlayers);
+
         List<Player> focusPlayers = getFocusPlayers(squadPlayers, request.getCurrentPlayerId());
 
         List<RecommendedPlayerDTO> recommendations = new ArrayList<>();

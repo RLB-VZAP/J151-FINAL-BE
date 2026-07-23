@@ -39,15 +39,10 @@ public class FantasyPointsDAOImpl extends BaseDAO implements FantasyPointsDAO {
     @Override
     public FantasyPoints save(FantasyPoints points) {
         UUID pointsId = points.getPointsId() == null ? UUID.randomUUID() : points.getPointsId();
-        LocalDateTime calculatedAt = points.getCalculatedAt() == null
-                ? LocalDateTime.now()
-                : points.getCalculatedAt();
+        LocalDateTime calculatedAt = points.getCalculatedAt() == null ? LocalDateTime.now() : points.getCalculatedAt();
 
-        String sql = """
-                INSERT INTO fantasyPoints
-                    (pointsId, statId, totalPoints, calculationVersion, calculatedAt, isFinal)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """;
+        String sql = "INSERT INTO fantasyPoints (pointsId, statId, totalPoints, calculationVersion, calculatedAt, isFinal)"+
+                "VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {

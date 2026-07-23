@@ -14,10 +14,14 @@ import java.util.UUID;
 @Builder
 public class FantasyRound {
     private UUID roundId;
+
     private String season;
+
     private int roundNumber;
+
     private LocalDateTime openDate;
     private LocalDateTime lockDeadline;
     private LocalDateTime endDate;
+
     private FantasyRoundStatus status;
 }

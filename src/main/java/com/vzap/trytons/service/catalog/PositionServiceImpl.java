@@ -16,13 +16,8 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class PositionServiceImpl implements PositionService {
-
-    private final PositionDAO positionDAO;
-
     @Inject
-    public PositionServiceImpl(PositionDAO positionDAO) {
-        this.positionDAO = positionDAO;
-    }
+    private PositionDAO positionDAO;
 
     @Override
     public PositionResponseDTO createPosition(PositionRequestDTO request) {
@@ -50,8 +45,7 @@ public class PositionServiceImpl implements PositionService {
     public PositionResponseDTO getPosition(UUID positionId) {
         validatePositionId(positionId);
 
-        Position position = positionDAO.findById(positionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Position was not found."));
+        Position position = positionDAO.findById(positionId).orElseThrow(() -> new ResourceNotFoundException("Position was not found."));
 
         return mapToResponse(position);
     }
@@ -70,20 +64,18 @@ public class PositionServiceImpl implements PositionService {
         validatePositionId(positionId);
         validatePositionRequest(request);
 
-        Position existingPosition = positionDAO.findById(positionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Position was not found."));
+        Position existingPosition = positionDAO.findById(positionId).orElseThrow(() -> new ResourceNotFoundException("Position was not found."));
 
         String cleanPositionName = request.getPositionName().trim();
 
         positionDAO.findByName(cleanPositionName).ifPresent(foundPosition -> {
-            if (!foundPosition.getPositionId()
-                    .equals(existingPosition.getPositionId())) {
-
+            if (!foundPosition.getPositionId().equals(existingPosition.getPositionId())) {
                 throw new ConflictException("A position with the name '" + cleanPositionName + "' already exists.");
             }
         });
 
         Position updatedPosition = mapRequestToPosition(request);
+
         updatedPosition.setPositionId(existingPosition.getPositionId());
 
         boolean updated = positionDAO.updatePosition(updatedPosition);

@@ -24,7 +24,6 @@ import java.util.*;
 
 @ApplicationScoped
 public class UserHistoryServiceImpl implements UserHistoryService {
-
     @Inject
     private FantasyTeamDAO fantasyTeamDAO;
 
@@ -106,15 +105,15 @@ public class UserHistoryServiceImpl implements UserHistoryService {
 
     @Override
     public List<WeeklyPerformanceResponseDTO> getWeeklyPerformance(UUID actorUserId) {
-
         validateActorUserId(actorUserId);
+
         FantasyTeam fantasyTeam = fantasyTeamDAO.getTeamByOwner(actorUserId).orElseThrow(() -> new ResourceNotFoundException("No fantasy team was found for this user."));
+
         return buildWeeklyPerformance(fantasyTeam);
     }
 
 
     private List<WeeklyPerformanceResponseDTO> buildWeeklyPerformance(FantasyTeam fantasyTeam) {
-
         if (fantasyTeam == null || fantasyTeam.getTeamId() == null) {
             throw new ResourceNotFoundException("A valid fantasy team is required.");
         }
@@ -143,11 +142,11 @@ public class UserHistoryServiceImpl implements UserHistoryService {
                             .pointsScored(teamScore.getTotalScore())
                             .result(outcome)
                             .build();
-
                     weeklyPerformance.add(performance);
                 }
             }
         }
+
         return weeklyPerformance;
     }
 
@@ -169,14 +168,15 @@ public class UserHistoryServiceImpl implements UserHistoryService {
     }
 
     private String resolveOutcome(MatchResult result, MatchTeamSide teamSide) {
-
         if (result.isDraw()) {
             return "DRAW";
         }
+
         MatchTeamSide winnerSide = result.getWinnerSide();
         if (winnerSide == null) {
             throw new ResourceNotFoundException("The match result does not have a winning side.");
         }
+
         return winnerSide == teamSide ? "WIN" : "LOSS";
     }
 }

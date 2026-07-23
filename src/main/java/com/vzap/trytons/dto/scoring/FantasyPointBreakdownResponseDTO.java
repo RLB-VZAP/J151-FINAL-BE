@@ -17,7 +17,10 @@ public class FantasyPointBreakdownResponseDTO {
 
     private UUID breakdownId;
     private UUID pointsId;
+
     private String category;
+
     private int points;
+
     private String description;
 }

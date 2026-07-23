@@ -10,12 +10,13 @@ import java.util.UUID;
 @Setter
 @Getter
 @Builder
-
 public class AdminUserStatusResponseDTO {
-
     private UUID userId;
+
     private String email;
     private String username;
+
     private UserRole role;
+
     private Boolean isActive;
 }
