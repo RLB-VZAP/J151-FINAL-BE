@@ -33,6 +33,7 @@ import java.util.UUID;
 @Produces(MediaType.APPLICATION_JSON)
 
 public class FantasyTeamResource {
+
     @Inject
     private FantasyTeamService fantasyTeamService;
 
@@ -52,6 +53,16 @@ public class FantasyTeamResource {
                 .created(location)
                 .entity(created)
                 .build();
+    }
+
+    @GET
+    @Path("/mine")
+    public Response getOwnTeam(@Context ContainerRequestContext requestContext) {
+        FantasyTeamResponseDTO team = fantasyTeamService.getOwnTeam(currentUserId(requestContext));
+        if (team == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(team).build();
     }
 
     @GET

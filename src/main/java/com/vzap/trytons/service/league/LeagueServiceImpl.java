@@ -145,6 +145,24 @@ public class LeagueServiceImpl implements LeagueService {
 
     @Override
     public JoinLeagueResponseDTO joinLeague(JoinLeagueRequestDTO request, UUID currentUserId) {
+        if (request == null) {
+            throw new ValidationException("Join-league request cannot be null.");
+        }
+        if (currentUserId == null) {
+            throw new ValidationException("Current user ID is required.");
+        }
+
+        if (request.getLeagueId() == null
+                && request.getLeagueCode() != null && !request.getLeagueCode().isBlank()) {
+            leagueDAO.findLeagueByLeagueCode(request.getLeagueCode().trim())
+                    .ifPresent(found -> request.setLeagueId(found.getLeagueId()));
+        }
+      
+        if (request.getTeamId() == null) {
+            fantasyTeamDAO.getTeamByOwner(currentUserId)
+                    .ifPresent(team -> request.setTeamId(team.getTeamId()));
+        }
+
         validateJoinLeagueRequest(request, currentUserId);
 
         League league = requireLeague(request.getLeagueId());
@@ -287,11 +305,11 @@ public class LeagueServiceImpl implements LeagueService {
         }
 
         if (request.getLeagueId() == null) {
-            throw new ValidationException("League ID is required.");
+            throw new ValidationException("That league could not be found. Check the join code and try again.");
         }
 
         if (request.getTeamId() == null) {
-            throw new ValidationException("Team ID is required.");
+            throw new ValidationException("You need a fantasy team before you can join a league.");
         }
     }
 
