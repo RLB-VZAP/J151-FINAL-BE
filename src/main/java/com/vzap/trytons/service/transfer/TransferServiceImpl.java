@@ -147,7 +147,7 @@ public class TransferServiceImpl implements TransferService {
         proposedPlayerIds.remove(removedPlayerId);
         proposedPlayerIds.add(addedPlayerId);
 
-        SquadValidationResultDTO validationResult = squadValidationService.validateSquad(proposedPlayerIds);
+        SquadValidationResultDTO validationResult = squadValidationService.validateSquad(proposedPlayerIds, List.of(addedPlayerId));
 
         if (validationResult == null || !validationResult.isValid()) {
             String firstError = "Unknown squad validation error";
