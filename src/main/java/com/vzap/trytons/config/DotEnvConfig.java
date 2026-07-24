@@ -19,6 +19,15 @@ public final class DotEnvConfig {
         return value;
     }
 
+    /**
+     * Reads an optional configuration value, falling back to {@code defaultValue}
+     * when the key is not set as a JVM -D property, environment variable, or env-file entry.
+     */
+    public static String get(String key, String defaultValue) {
+        String value = firstNonBlank(System.getProperty(key), System.getenv(key), DOTENV.get(key));
+        return value != null ? value : defaultValue;
+    }
+
     public static long getRequiredLong(String key) {
         try {
             return Long.parseLong(getRequired(key));
