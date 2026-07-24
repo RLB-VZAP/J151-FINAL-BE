@@ -526,9 +526,12 @@ INSERT INTO `roundLock`
     (lockId, roundId, lockAction, action_by_admin_user_id, reason)
 VALUES (UUID(), @round1, 'LOCKED', @adminId, 'Round 1 locked for seed simulation data');
 
-UPDATE `fantasyRound`
-SET status = 'COMPLETED'
-WHERE roundId = @round1;
+-- Deliberately left LOCKED rather than advanced to COMPLETED: round1 is the only
+-- round seeded with locked 20-player squads (fantasy_team_round_selection above),
+-- so it is the only round that can ever satisfy the admin resimulation feature's
+-- preconditions. Advancing it to COMPLETED here made every one of its fixtures'
+-- results permanently un-resimulatable, with no way to demo or test the feature
+-- against fresh seed data.
 
 SET
 @fixture1 = UUID();
@@ -830,10 +833,14 @@ VALUES (UUID(), @result1, @team1, 'TEAM_A', 15, 0, 0),
        (UUID(), @result3, @team2, 'TEAM_A', 18, 0, 0),
        (UUID(), @result3, @team1, 'TEAM_B', 15, 0, 0);
 
+-- result1 (fixture1) is left unapproved on purpose: an approved result can never be
+-- resimulated (ControlledResimulationServiceImpl), and round1 is the only round seeded
+-- with locked 20-player squads, so leaving at least one of its results unapproved is
+-- what makes the admin resimulation feature demoable/testable against a fresh seed.
 UPDATE `matchResult`
 SET approved                  = TRUE,
     approved_by_admin_user_id = @adminId
-WHERE resultId IN (@result1, @result2, @result3);
+WHERE resultId IN (@result2, @result3);
 
 SET
 @stat1 = UUID();
