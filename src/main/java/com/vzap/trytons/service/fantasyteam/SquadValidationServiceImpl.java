@@ -45,11 +45,21 @@ public class SquadValidationServiceImpl implements SquadValidationService {
 
     @Override
     public SquadValidationResultDTO validateSquad(List<UUID> proposedPlayerIds) {
+        return validateSquad(proposedPlayerIds, proposedPlayerIds);
+    }
+
+    @Override
+    public SquadValidationResultDTO validateSquad(List<UUID> proposedPlayerIds, List<UUID> playersRequiringAvailabilityCheck) {
         SquadValidationResultDTO result = new SquadValidationResultDTO();
         validateDuplicatePlayers(proposedPlayerIds, result);
         List<Player> players = getPlayers(proposedPlayerIds, result);
         validateSquadSize(proposedPlayerIds, result);
-        validatePlayerAvailability(players, result);
+
+        List<Player> playersToCheck = players.stream()
+                .filter(p -> playersRequiringAvailabilityCheck.contains(p.getPlayerId()))
+                .collect(java.util.stream.Collectors.toList());
+        validatePlayerAvailability(playersToCheck, result);
+
         validatePositionRules(players, result);
         return result;
     }
