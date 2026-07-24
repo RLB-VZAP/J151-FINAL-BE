@@ -169,7 +169,24 @@ public class TransferServiceImpl implements TransferService {
             throw new BusinessRuleException("This transfer requires penalty confirmation before it can be completed");
         }
 
-        fantasyTeamPlayerDAO.replaceSquad(teamId, currentSquad);
+        List<TeamPlayerSelection> updatedSquad = currentSquad.stream()
+                .map(selection -> {
+                    if (selection.getPlayerId().equals(removedPlayerId)) {
+                        return TeamPlayerSelection.builder()
+                                .selectionId(UUID.randomUUID())
+                                .teamId(teamId)
+                                .playerId(addedPlayerId)
+                                .selectedDate(LocalDateTime.now())
+                                .isCaptain(false)
+                                .isViceCaptain(false)
+                                .squadRole(selection.getSquadRole())
+                                .build();
+                    }
+                    return selection;
+                })
+                .collect(Collectors.toList());
+
+        fantasyTeamPlayerDAO.replaceSquad(teamId, updatedSquad);
 
         boolean budgetUpdated = fantasyTeamDAO.updateBudget(teamId,  newRemainingBudget);
 
