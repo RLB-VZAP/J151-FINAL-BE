@@ -526,8 +526,11 @@ INSERT INTO `roundLock`
     (lockId, roundId, lockAction, action_by_admin_user_id, reason)
 VALUES (UUID(), @round1, 'LOCKED', @adminId, 'Round 1 locked for seed simulation data');
 
+/* Round 1 is left IN_PROGRESS (not COMPLETED) so its already-simulated fixtures
+   remain resimulatable during the presentation. ControlledResimulationServiceImpl
+   only permits resimulation while the round is LOCKED or IN_PROGRESS. */
 UPDATE `fantasyRound`
-SET status = 'COMPLETED'
+SET status = 'IN_PROGRESS'
 WHERE roundId = @round1;
 
 SET
@@ -756,6 +759,9 @@ INSERT INTO `simulationSettings`
  allowResimulation,
  maxResimulations,
  isActive)
+/* require_admin_approval is FALSE so simulated results are usable and visible
+   without an admin approval step, and allowResimulation is TRUE (up to 3 runs)
+   so fixtures can be resimulated live during the presentation. */
 VALUES (@simulationSettingsId,
         '2026',
         1,
@@ -763,7 +769,7 @@ VALUES (@simulationSettingsId,
         25.00,
         20.00,
         20.00,
-        TRUE,
+        FALSE,
         TRUE,
         3,
         TRUE);
@@ -830,10 +836,11 @@ VALUES (UUID(), @result1, @team1, 'TEAM_A', 15, 0, 0),
        (UUID(), @result3, @team2, 'TEAM_A', 18, 0, 0),
        (UUID(), @result3, @team1, 'TEAM_B', 15, 0, 0);
 
-UPDATE `matchResult`
-SET approved                  = TRUE,
-    approved_by_admin_user_id = @adminId
-WHERE resultId IN (@result1, @result2, @result3);
+/* Results are deliberately LEFT UNAPPROVED (approved = FALSE). An approved match
+   result cannot be resimulated (ControlledResimulationServiceImpl), so keeping
+   every simulated result unapproved lets the presenter demonstrate resimulation
+   on any of these fixtures. With require_admin_approval = FALSE on the active
+   settings, unapproved results still display and count. */
 
 SET
 @stat1 = UUID();
@@ -1542,3 +1549,147 @@ FROM `league` l
 LEFT JOIN `leagueMembership` m ON m.leagueId = l.leagueId AND m.isActive = TRUE
 GROUP BY l.leagueId, l.leagueName, l.leagueType, l.maxMembers
 ORDER BY l.leagueType, l.leagueName;
+
+
+/* ============================================================================
+   SECTION 6 -- Past-season simulation settings and scoring rules
+   ----------------------------------------------------------------------------
+   Historical, INACTIVE simulation-settings versions for prior seasons so the
+   admin simulation-settings screen (SimulationSettingServiceImpl.listSimulation-
+   Settings returns every season) can show and manage past seasons alongside the
+   active 2026 configuration. Only the 2026 row stays active -- the generated
+   uk_simulationSettings_active_season key allows exactly one active season, so
+   these must be isActive = FALSE (and therefore allowResimulation = FALSE with
+   maxResimulations = 0, per chk_simulationSettings_resimulation_enabled).
+   Matching scoring-rule sets are added for each past season; they have no
+   results yet, so they stay editable.
+   ============================================================================ */
+START TRANSACTION;
+
+SET @simSettings2024 = UUID();
+SET @simSettings2025 = UUID();
+
+INSERT INTO `simulationSettings`
+    (settingsId, season, settingsVersion,
+     player_ability_weight, player_form_weight, team_balance_weight, random_variation_weight,
+     require_admin_approval, allowResimulation, maxResimulations, isActive)
+VALUES
+    (@simSettings2024, '2024', 1, 40.00, 25.00, 20.00, 15.00, TRUE, FALSE, 0, FALSE),
+    (@simSettings2025, '2025', 1, 35.00, 30.00, 20.00, 15.00, TRUE, FALSE, 0, FALSE);
+
+INSERT INTO `scoringRule`
+    (ruleId, season, eventType, pointsAwarded, isDeduction, description)
+VALUES
+    (UUID(), '2024', 'TRY',           5, FALSE, 'Points awarded for scoring a try'),
+    (UUID(), '2024', 'ASSIST',        3, FALSE, 'Points awarded for a try assist'),
+    (UUID(), '2024', 'TACKLE',        1, FALSE, 'Points awarded for a successful tackle'),
+    (UUID(), '2024', 'CONVERSION',    2, FALSE, 'Points awarded for a successful conversion'),
+    (UUID(), '2024', 'MISSED_TACKLE', 1, TRUE,  'Deduction for a missed tackle'),
+    (UUID(), '2024', 'YELLOW_CARD',   3, TRUE,  'Deduction for a yellow card'),
+    (UUID(), '2024', 'RED_CARD',     10, TRUE,  'Deduction for a red card'),
+
+    (UUID(), '2025', 'TRY',           5, FALSE, 'Points awarded for scoring a try'),
+    (UUID(), '2025', 'ASSIST',        3, FALSE, 'Points awarded for a try assist'),
+    (UUID(), '2025', 'TACKLE',        1, FALSE, 'Points awarded for a successful tackle'),
+    (UUID(), '2025', 'CONVERSION',    2, FALSE, 'Points awarded for a successful conversion'),
+    (UUID(), '2025', 'MISSED_TACKLE', 1, TRUE,  'Deduction for a missed tackle'),
+    (UUID(), '2025', 'YELLOW_CARD',   3, TRUE,  'Deduction for a yellow card'),
+    (UUID(), '2025', 'RED_CARD',     10, TRUE,  'Deduction for a red card');
+
+COMMIT;
+
+
+/* ============================================================================
+   SECTION 7 -- Closed (finished) leagues
+   ----------------------------------------------------------------------------
+   Two leagues with isActive = FALSE, each carrying final standings, so the
+   presentation can show the "closed league" state next to the live ones.
+   Closed leagues remain visible in the full leagues list
+   (LeagueServiceImpl.getAllLeagues does not filter on isActive) but are hidden
+   from the joinable public preview (getPublicLeaguePreviews skips
+   isActive = FALSE), so watchers cannot accidentally join a finished league.
+   Members reuse the base demo teams (john/sarah/mike/emma/david), re-resolved
+   by username so the section is independent of Section 1's session variables.
+   ============================================================================ */
+START TRANSACTION;
+
+SET @cuJohn  = (SELECT userId FROM `user` WHERE username = 'john');
+SET @cuSarah = (SELECT userId FROM `user` WHERE username = 'sarah');
+SET @cuMike  = (SELECT userId FROM `user` WHERE username = 'mike');
+SET @cuEmma  = (SELECT userId FROM `user` WHERE username = 'emma');
+SET @cuDavid = (SELECT userId FROM `user` WHERE username = 'david');
+
+SET @ctJohn  = (SELECT teamId FROM `fantasyTeam` WHERE owner_user_id = @cuJohn);
+SET @ctSarah = (SELECT teamId FROM `fantasyTeam` WHERE owner_user_id = @cuSarah);
+SET @ctMike  = (SELECT teamId FROM `fantasyTeam` WHERE owner_user_id = @cuMike);
+SET @ctEmma  = (SELECT teamId FROM `fantasyTeam` WHERE owner_user_id = @cuEmma);
+SET @ctDavid = (SELECT teamId FROM `fantasyTeam` WHERE owner_user_id = @cuDavid);
+
+SET @lgAutumn  = UUID();
+SET @lgLegends = UUID();
+
+/* Created active with a NULL manager (trg_league_manager_insert forbids setting
+   a manager on INSERT); the manager is assigned after memberships exist and the
+   leagues are closed at the very end of the section. */
+INSERT INTO `league`
+    (leagueId, manager_user_id, leagueName, description, leagueType, leagueCode, maxMembers)
+VALUES
+    (@lgAutumn, NULL, 'Autumn Classic 2025',
+     'Completed 2025 public league. Final standings only - this league is closed.',
+     'PUBLIC', NULL, 20),
+    (@lgLegends, NULL, 'Legends Invitational 2025',
+     'Completed 2025 invitational. Closed - kept for its final leaderboard.',
+     'PRIVATE', 'LEG789', 12);
+
+INSERT INTO `leagueMembership` (membershipId, leagueId, registered_user_id, teamId)
+VALUES
+    (UUID(), @lgAutumn, @cuJohn,  @ctJohn),
+    (UUID(), @lgAutumn, @cuSarah, @ctSarah),
+    (UUID(), @lgAutumn, @cuMike,  @ctMike),
+    (UUID(), @lgAutumn, @cuEmma,  @ctEmma),
+    (UUID(), @lgAutumn, @cuDavid, @ctDavid),
+
+    (UUID(), @lgLegends, @cuSarah, @ctSarah),
+    (UUID(), @lgLegends, @cuMike,  @ctMike),
+    (UUID(), @lgLegends, @cuEmma,  @ctEmma);
+
+UPDATE `league` SET manager_user_id = @cuJohn  WHERE leagueId = @lgAutumn;
+UPDATE `league` SET manager_user_id = @cuSarah WHERE leagueId = @lgLegends;
+
+SET @lbAutumn  = UUID();
+SET @lbLegends = UUID();
+
+INSERT INTO `leaderboard` (leaderboardId, leagueId, season, scope)
+VALUES
+    (@lbAutumn,  @lgAutumn,  '2025', 'LEAGUE'),
+    (@lbLegends, @lgLegends, '2025', 'LEAGUE');
+
+INSERT INTO `ranking`
+    (rankingId, leaderboardId, teamId, currentRanking, previousRanking,
+     matchesPlayed, matchesWon, matchesDrawn, matchesLost,
+     pointsFor, pointsAgainst, leaguePoints, total_fantasy_points)
+VALUES
+    (UUID(), @lbAutumn, @ctJohn,  1, 2, 4, 3, 0, 1, 82, 60, 12, 82),
+    (UUID(), @lbAutumn, @ctSarah, 2, 1, 4, 2, 1, 1, 74, 66,  8, 74),
+    (UUID(), @lbAutumn, @ctMike,  3, 3, 4, 2, 0, 2, 68, 70,  8, 68),
+    (UUID(), @lbAutumn, @ctEmma,  4, 4, 4, 1, 1, 2, 61, 72,  5, 61),
+    (UUID(), @lbAutumn, @ctDavid, 5, 5, 4, 0, 2, 2, 55, 72,  2, 55),
+
+    (UUID(), @lbLegends, @ctSarah, 1, 1, 3, 3, 0, 0, 60, 40,  9, 60),
+    (UUID(), @lbLegends, @ctMike,  2, 3, 3, 1, 1, 1, 48, 47,  5, 48),
+    (UUID(), @lbLegends, @ctEmma,  3, 2, 3, 0, 1, 2, 38, 59,  1, 38);
+
+/* Close both leagues now that their memberships, manager and standings exist. */
+UPDATE `league` SET isActive = FALSE WHERE leagueId IN (@lgAutumn, @lgLegends);
+
+COMMIT;
+
+/* Presentation cheat-sheet: which leagues are live vs closed, and joinable room. */
+SELECT l.leagueName,
+       l.leagueType,
+       CASE WHEN l.isActive THEN 'LIVE' ELSE 'CLOSED' END                             AS state,
+       l.maxMembers,
+       (SELECT COUNT(*) FROM `leagueMembership` m
+         WHERE m.leagueId = l.leagueId AND m.isActive = TRUE)                          AS members
+FROM `league` l
+ORDER BY l.isActive DESC, l.leagueType, l.leagueName;
