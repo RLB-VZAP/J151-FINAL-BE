@@ -23,7 +23,9 @@ import com.vzap.trytons.resource.fixture.RoundResource;
 import com.vzap.trytons.resource.history.UserHistoryResource;
 import com.vzap.trytons.resource.leaderboard.LeaderboardResource;
 import com.vzap.trytons.resource.league.LeagueResource;
+import com.vzap.trytons.resource.market.MarketDashboardResource;
 import com.vzap.trytons.resource.notification.NotificationResource;
+import com.vzap.trytons.resource.publicpreview.PublicPreviewResource;
 import com.vzap.trytons.resource.results.MatchResultResource;
 import com.vzap.trytons.resource.results.MatchTeamScoreResource;
 import com.vzap.trytons.resource.results.PlayerStatisticsResource;
@@ -61,6 +63,7 @@ public class RestApplication extends Application {
                 FixtureResource.class,
                 LeaderboardResource.class,
                 LeagueResource.class,
+                MarketDashboardResource.class,
                 LockStatusResource.class,
                 LogResource.class,
                 MatchResultResource.class,
@@ -72,6 +75,7 @@ public class RestApplication extends Application {
                 PlayerStatisticsResource.class,
                 PositionResource.class,
                 ProfileResource.class,
+                PublicPreviewResource.class,
                 RoundResource.class,
                 ProtectedResource.class,
                 ScoringRuleResource.class,

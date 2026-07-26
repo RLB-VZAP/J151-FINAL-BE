@@ -13,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -107,6 +108,113 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
         }
 
         return Optional.empty();
+    }
+
+    private static final String IMPORT_INSERT =
+            "INSERT INTO player (playerId, clubId, positionId, playerName, value, attackingAbility, "
+                    + "defensiveAbility, kickingAbility, discipline, consistency, fitness, currentForm, isActive) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)";
+
+    private static final String IMPORT_UPDATE =
+            "UPDATE player SET clubId = ?, positionId = ?, playerName = ?, value = ?, attackingAbility = ?, "
+                    + "defensiveAbility = ?, kickingAbility = ?, discipline = ?, consistency = ?, fitness = ?, "
+                    + "currentForm = ?, isActive = TRUE WHERE playerId = ?";
+
+    private static final String IMPORT_DEACTIVATE =
+            "UPDATE player SET isActive = FALSE WHERE playerId = ? AND isActive = TRUE";
+
+    @Override
+    public void applyFeedImport(Collection<Player> toInsert, Collection<Player> toUpdate, Collection<UUID> idsToDeactivate) {
+        Connection con = null;
+        try {
+            con = getConnection();
+            con.setAutoCommit(false);
+
+            try (PreparedStatement insert = con.prepareStatement(IMPORT_INSERT);
+                 PreparedStatement update = con.prepareStatement(IMPORT_UPDATE);
+                 PreparedStatement deactivate = con.prepareStatement(IMPORT_DEACTIVATE)) {
+
+                for (Player player : toInsert) {
+                    bindInsert(insert, player);
+                    insert.addBatch();
+                }
+                insert.executeBatch();
+
+                for (Player player : toUpdate) {
+                    bindUpdate(update, player);
+                    update.addBatch();
+                }
+                update.executeBatch();
+
+                for (UUID playerId : idsToDeactivate) {
+                    deactivate.setString(1, playerId.toString());
+                    deactivate.addBatch();
+                }
+                deactivate.executeBatch();
+            }
+
+            con.commit();
+
+        } catch (SQLException e) {
+            rollbackQuietly(con);
+            LOG.log(Level.SEVERE, "Unable to apply player feed import.", e);
+            throw new DataAccessException("Unable to apply player feed import.", e);
+        } finally {
+            closeQuietly(con);
+        }
+    }
+
+    private void bindInsert(PreparedStatement ps, Player player) throws SQLException {
+        ps.setString(1, player.getPlayerId().toString());
+        ps.setString(2, player.getClubId().toString());
+        ps.setString(3, player.getPositionId().toString());
+        ps.setString(4, player.getPlayerName());
+        ps.setBigDecimal(5, player.getValue());
+        ps.setInt(6, player.getAttackingAbility());
+        ps.setInt(7, player.getDefensiveAbility());
+        ps.setInt(8, player.getKickingAbility());
+        ps.setInt(9, player.getDiscipline());
+        ps.setInt(10, player.getConsistency());
+        ps.setInt(11, player.getFitness());
+        ps.setInt(12, player.getCurrentForm());
+    }
+
+    private void bindUpdate(PreparedStatement ps, Player player) throws SQLException {
+        ps.setString(1, player.getClubId().toString());
+        ps.setString(2, player.getPositionId().toString());
+        ps.setString(3, player.getPlayerName());
+        ps.setBigDecimal(4, player.getValue());
+        ps.setInt(5, player.getAttackingAbility());
+        ps.setInt(6, player.getDefensiveAbility());
+        ps.setInt(7, player.getKickingAbility());
+        ps.setInt(8, player.getDiscipline());
+        ps.setInt(9, player.getConsistency());
+        ps.setInt(10, player.getFitness());
+        ps.setInt(11, player.getCurrentForm());
+        ps.setString(12, player.getPlayerId().toString());
+    }
+
+    private void rollbackQuietly(Connection con) {
+        if (con == null) {
+            return;
+        }
+        try {
+            con.rollback();
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Unable to roll back player feed import.", e);
+        }
+    }
+
+    private void closeQuietly(Connection con) {
+        if (con == null) {
+            return;
+        }
+        try {
+            con.setAutoCommit(true);
+            con.close();
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Unable to close connection after player feed import.", e);
+        }
     }
 
     @Override

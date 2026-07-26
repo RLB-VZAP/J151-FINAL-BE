@@ -6,10 +6,12 @@ import com.vzap.trytons.dto.catalog.PlayerRequestDTO;
 import com.vzap.trytons.dto.catalog.PlayerResponseDTO;
 import com.vzap.trytons.dto.catalog.PlayerAvailabilityRequestDTO;
 import com.vzap.trytons.dto.catalog.PlayerAvailabilityResponseDTO;
+import com.vzap.trytons.dto.catalog.PlayerImportSummaryDTO;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
 import com.vzap.trytons.service.catalog.PlayerAvailabilityService;
 import com.vzap.trytons.service.catalog.PlayerService;
+import com.vzap.trytons.service.catalog.feed.PlayerImportService;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -32,6 +34,9 @@ public class PlayerResource {
     @Inject
     private PlayerAvailabilityService playerAvailabilityService;
 
+    @Inject
+    private PlayerImportService playerImportService;
+
     @Context
     private ContainerRequestContext requestContext;
 
@@ -41,11 +46,15 @@ public class PlayerResource {
     }
 
     @GET
-    public Response listPlayers(@QueryParam("search") String search, @QueryParam("clubId") UUID clubId, @QueryParam("positionId") UUID positionId ) {
+    public Response listPlayers(@QueryParam("search") String search, @QueryParam("clubId") UUID clubId,
+                                @QueryParam("positionId") UUID positionId, @QueryParam("available") Boolean available) {
         List<PlayerResponseDTO> players;
-        if (search != null || clubId != null || positionId != null) {
+        if (Boolean.TRUE.equals(available)) {
+            // Team-selection pool: only players actually available for selection.
+            players = playerService.searchPlayers(search, clubId, positionId, true);
+        } else if (search != null || clubId != null || positionId != null) {
             players = playerService.searchPlayers(search, clubId, positionId);
-        }else{
+        } else {
             players = playerService.getAllPlayers();
         }
         return Response.ok(players).build();
@@ -56,6 +65,20 @@ public class PlayerResource {
     public Response getPlayer(@PathParam("id") UUID id) {
         PlayerResponseDTO player = playerService.getPlayer(id);
         return Response.ok(player).build();
+    }
+
+    /**
+     * Refreshes the player catalog from the external live feed. The feed re-scrapes
+     * its source on every call and takes about a minute, so this is a deliberate,
+     * admin-triggered "clean refresh" - not something to call in a loop.
+     */
+    @POST
+    @Path("/import")
+    @Authenticated
+    @AdminOnly
+    public Response importPlayers() {
+        PlayerImportSummaryDTO summary = playerImportService.importPlayers();
+        return Response.ok(summary).build();
     }
 
     @POST
