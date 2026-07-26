@@ -30,6 +30,7 @@ public interface PlayerDAO {
     List<Player> searchPlayers(String playerName, UUID clubId, UUID positionId, BigDecimal minValue, BigDecimal maxValue, Integer minCurrentForm, Integer maxCurrentForm, AvailabilityStatus availabilityStatus, Boolean isActive);
     Optional<Player> createPlayer(Player player);
     Optional<Player> updatePlayer(Player player);
+    boolean updateValue(UUID playerId, BigDecimal newValue);
     boolean deactivatePlayer(UUID playerId);
     List<Player> getPlayersByClubId(UUID clubId);
     List<Player> getPlayersByPositionId(UUID positionId);
