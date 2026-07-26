@@ -11,9 +11,7 @@ import com.vzap.trytons.resource.admin.SystemReportResource;
 import com.vzap.trytons.resource.auth.AuthResource;
 import com.vzap.trytons.resource.auth.ProfileResource;
 import com.vzap.trytons.resource.auth.UserResources;
-import com.vzap.trytons.resource.admin.PricingResource;
 import com.vzap.trytons.resource.catalog.ClubResource;
-import com.vzap.trytons.resource.catalog.PlayerPriceHistoryResource;
 import com.vzap.trytons.resource.catalog.PlayerResource;
 import com.vzap.trytons.resource.catalog.PositionResource;
 import com.vzap.trytons.resource.fantasyteam.FantasyTeamResource;
@@ -22,10 +20,12 @@ import com.vzap.trytons.resource.fixture.LockStatusResource;
 import com.vzap.trytons.resource.fixture.RoundResource;
 import com.vzap.trytons.resource.history.UserHistoryResource;
 import com.vzap.trytons.resource.leaderboard.LeaderboardResource;
+import com.vzap.trytons.resource.admin.MessageModerationResource;
+import com.vzap.trytons.resource.device.DeviceResource;
 import com.vzap.trytons.resource.league.LeagueResource;
-import com.vzap.trytons.resource.market.MarketDashboardResource;
+import com.vzap.trytons.resource.message.LeagueMessageResource;
+import com.vzap.trytons.resource.message.MessageResource;
 import com.vzap.trytons.resource.notification.NotificationResource;
-import com.vzap.trytons.resource.publicpreview.PublicPreviewResource;
 import com.vzap.trytons.resource.results.MatchResultResource;
 import com.vzap.trytons.resource.results.MatchTeamScoreResource;
 import com.vzap.trytons.resource.results.PlayerStatisticsResource;
@@ -63,19 +63,19 @@ public class RestApplication extends Application {
                 FixtureResource.class,
                 LeaderboardResource.class,
                 LeagueResource.class,
-                MarketDashboardResource.class,
+                LeagueMessageResource.class,
+                MessageResource.class,
+                MessageModerationResource.class,
+                DeviceResource.class,
                 LockStatusResource.class,
                 LogResource.class,
                 MatchResultResource.class,
                 MatchTeamScoreResource.class,
                 NotificationResource.class,
                 PlayerResource.class,
-                PlayerPriceHistoryResource.class,
-                PricingResource.class,
                 PlayerStatisticsResource.class,
                 PositionResource.class,
                 ProfileResource.class,
-                PublicPreviewResource.class,
                 RoundResource.class,
                 ProtectedResource.class,
                 ScoringRuleResource.class,

@@ -33,6 +33,23 @@ import java.util.List;
 import java.util.UUID;
 
 public class FantasyTeamServiceImpl implements FantasyTeamService {
+    /**
+     * Squad budget, on the same scale as player.value — millions of rands, so
+     * 196.00 means R196m. It has to match that scale because the budget is
+     * spent by subtracting player values from it; the previous 100000000.00
+     * was whole rands, which made every squad look free and overflowed
+     * fantasyTeam.remainingBudget DECIMAL(10,2) on insert.
+     *
+     * Sized against the seeded roster and the 20-player squad rule. Once the
+     * position minimums are applied, the cheapest legal squad costs about 185,
+     * an average one about 203, and the most expensive about 222.
+     *
+     * 196 sits deliberately below the average squad, so a manager cannot just
+     * take twenty players without thinking, while still leaving roughly 11
+     * above the floor for a few premium picks. Anything near 190 would pin the
+     * squad to the cheapest legal combination — the floor is high because the
+     * roster is only 33 players for 20 places.
+     */
     private static final BigDecimal INITIAL_BUDGET = new BigDecimal("196.00");
 
     @Inject
@@ -120,6 +137,9 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         FantasyTeam fantasyTeam = mapRequestToFantasyTeam(request);
         fantasyTeam.setTeamId(UUID.randomUUID());
         fantasyTeam.setOwnerUserId(registeredUserId);
+        // Insert the budget already debited by the squad cost. Storing the full
+        // INITIAL_BUDGET here relied on the updateBudget call below to correct
+        // the row, so any failure in between left the team looking unspent.
         fantasyTeam.setRemainingBudget(remainingBudget);
         fantasyTeam.setCreationDate(LocalDateTime.now());
         fantasyTeam.setIsValid(true);
@@ -157,7 +177,10 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         if (registeredUserId == null) {
             throw new BadRequestException("Current user ID is required.");
         }
-      
+
+        // Summary only — teamId, name and budget. Callers that need the squad
+        // already have viewOwnTeam, and this is used to answer "do I have a team
+        // yet, and which one", so loading every selection would be wasteful.
         return fantasyTeamDAO.getTeamByOwner(registeredUserId)
                 .map(team -> FantasyTeamResponseDTO.builder()
                         .teamId(team.getTeamId())
@@ -165,7 +188,8 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                         .managerId(team.getOwnerUserId())
                         .remainingBudget(team.getRemainingBudget())
                         .valid(team.getIsValid())
-                        .build()).orElse(null);
+                        .build())
+                .orElse(null);
     }
 
     @Override
