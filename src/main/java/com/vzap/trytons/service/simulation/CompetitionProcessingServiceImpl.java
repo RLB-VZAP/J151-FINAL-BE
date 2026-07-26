@@ -11,8 +11,10 @@ import com.vzap.trytons.exceptions.ApplicationException;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.model.fixture.FantasyRound;
 import com.vzap.trytons.model.fixture.Fixture;
+import com.vzap.trytons.dto.pricing.PricingRunSummaryDTO;
 import com.vzap.trytons.service.fixture.DeadlineLockService;
 import com.vzap.trytons.service.leaderboard.LeaderboardService;
+import com.vzap.trytons.service.pricing.PricingService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -44,6 +46,9 @@ public class CompetitionProcessingServiceImpl implements CompetitionProcessingSe
     @Inject
     private LeaderboardService leaderboardService;
 
+    @Inject
+    private PricingService pricingService;
+
     @Override
     public CompetitionProcessingSummaryDTO processDueWork(UUID actorUserId) {
         requireAdmin(actorUserId);
@@ -52,6 +57,7 @@ public class CompetitionProcessingServiceImpl implements CompetitionProcessingSe
         int fixturesSimulated = 0;
         int fixturesProcessed = 0;
         int leaderboardsRefreshed = 0;
+        int playersRepriced = 0;
         int skipped = 0;
         int errors = 0;
 
@@ -117,12 +123,25 @@ public class CompetitionProcessingServiceImpl implements CompetitionProcessingSe
             errorMessages.add("Overall leaderboard refresh: " + e.getMessage());
         }
 
+        // Dynamic player pricing: recalculate values from the latest form,
+        // ownership, points, transfer demand and availability. Non-fatal.
+        try {
+            PricingRunSummaryDTO pricingSummary = pricingService.recalculateAll("Automatic: round processing");
+            if (pricingSummary != null) {
+                playersRepriced = pricingSummary.getPlayersRepriced();
+            }
+        } catch (Exception e) {
+            errors++;
+            errorMessages.add("Dynamic player pricing: " + e.getMessage());
+        }
+
         return CompetitionProcessingSummaryDTO.builder()
                 .processedAt(now)
                 .roundsLocked(roundsLocked)
                 .fixturesSimulated(fixturesSimulated)
                 .fixturesProcessed(fixturesProcessed)
                 .leaderboardsRefreshed(leaderboardsRefreshed)
+                .playersRepriced(playersRepriced)
                 .skipped(skipped)
                 .errors(errors)
                 .errorMessages(errorMessages)

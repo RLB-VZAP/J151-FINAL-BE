@@ -21,6 +21,7 @@ public class CompetitionProcessingSummaryDTO {
     private int fixturesSimulated;
     private int fixturesProcessed;
     private int leaderboardsRefreshed;
+    private int playersRepriced;
     private int skipped;
     private int errors;
 

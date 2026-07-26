@@ -60,14 +60,6 @@ public class UserHistoryServiceImpl implements UserHistoryService {
                 .build();
     }
 
-    /**
-     * The team's position on the master leaderboard for the current season, or null
-     * when it has no ranking yet.
-     *
-     * Null is a legitimate answer — a team that has not been ranked, or a season with
-     * no master leaderboard, genuinely has no position — but it was previously
-     * hardcoded, so the field could never be anything else.
-     */
     private Integer resolveMasterRanking(FantasyTeam fantasyTeam) {
         String season = currentSeason();
         if (season == null) {
@@ -79,12 +71,7 @@ public class UserHistoryServiceImpl implements UserHistoryService {
                 .orElse(null);
     }
 
-    /**
-     * Season of the open round, falling back to the most recently opened one because
-     * between rounds there is no open round. Mirrors LeaderboardServiceImpl, but
-     * returns null rather than throwing: a missing season should leave the ranking
-     * blank, not fail the whole points-history request.
-     */
+
     private String currentSeason() {
         Optional<FantasyRound> openRound = fantasyRoundDAO.getCurrentOpenRound();
         if (openRound.isPresent()) {
