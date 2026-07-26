@@ -28,6 +28,18 @@ public final class DotEnvConfig {
         return value != null ? value : defaultValue;
     }
 
+    /**
+     * Alias for {@link #get(String, String)}.
+     */
+    public static String getOptional(String key, String defaultValue) {
+        return get(key, defaultValue);
+    }
+
+    public static boolean getOptionalBoolean(String key, boolean defaultValue) {
+        String value = get(key, null);
+        return value != null ? Boolean.parseBoolean(value) : defaultValue;
+    }
+
     public static long getRequiredLong(String key) {
         try {
             return Long.parseLong(getRequired(key));
