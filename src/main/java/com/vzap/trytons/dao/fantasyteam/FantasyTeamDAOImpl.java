@@ -131,9 +131,41 @@ public class FantasyTeamDAOImpl extends BaseDAO implements FantasyTeamDAO {
 
     @Override
     public boolean updateBudget(UUID teamId, BigDecimal remainingBudget) {
-        String sql = "UPDATE fantasyTeam SET remainingBudget = ? WHERE teamId = ?";
-        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+        Connection con = null;
 
+        try {
+            con = getConnection();
+            con.setAutoCommit(false);
+
+            boolean updated = updateBudget(con, teamId, remainingBudget);
+            con.commit();
+            return updated;
+
+        } catch (SQLException e) {
+            rollbackQuietly(con, e);
+            LOG.log(Level.SEVERE, "Unable to update fantasy team budget.", e);
+            throw new DataAccessException("Unable to update fantasy team budget.", e);
+
+        } catch (DataAccessException e) {
+            rollbackQuietly(con, e);
+            throw e;
+
+        } finally {
+            if (con != null) {
+                try {
+                    con.setAutoCommit(true);
+                    con.close();
+                } catch (SQLException e) {
+                    LOG.log(Level.SEVERE, "Could not close database connection", e);
+                }
+            }
+        }
+    }
+
+    @Override
+    public boolean updateBudget(Connection con, UUID teamId, BigDecimal remainingBudget) {
+        String sql = "UPDATE fantasyTeam SET remainingBudget = ? WHERE teamId = ?";
+        try (PreparedStatement statement = con.prepareStatement(sql)) {
             statement.setBigDecimal(1, remainingBudget);
             statement.setString(2, teamId.toString());
             return statement.executeUpdate() == 1;

@@ -8,8 +8,7 @@ DATABASE IF NOT EXISTS `tryton_fantasy_rugby`
     DEFAULT CHARACTER SET utf8mb4
     DEFAULT COLLATE utf8mb4_0900_ai_ci;
 
-USE
-`tryton_fantasy_rugby`;
+USE `tryton_fantasy_rugby`;
 
 /*
     CORE DOMAIN FLOW
@@ -1950,3 +1949,146 @@ CREATE TABLE `player_price_history`
                  ps.`playerId`,
                  fr.`season`,
                  fr.`roundNumber`;
+
+-- =====================================================================
+-- Messaging and device registration. Reverse-engineered from the DAO
+-- SQL in dao.message.* and dao.device.DeviceTokenDAOImpl, since these
+-- tables carry no other dependents in the schema above.
+-- =====================================================================
+
+/* Admin-curated phrase list used to auto-flag league messages for moderation. */
+CREATE TABLE `message_blocklist`
+(
+    `blocklistId`        VARCHAR(36)  NOT NULL,
+    `phrase`             VARCHAR(100) NOT NULL,
+    `created_by_user_id` VARCHAR(36)           DEFAULT NULL,
+    `createdAt`          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`blocklistId`),
+    UNIQUE KEY `uk_message_blocklist_phrase` (`phrase`),
+    KEY                  `idx_message_blocklist_created_by` (`created_by_user_id`),
+
+    CONSTRAINT `fk_message_blocklist_created_by_admin`
+        FOREIGN KEY (`created_by_user_id`) REFERENCES `administrator` (`userId`)
+            ON DELETE RESTRICT
+            ON UPDATE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+/* One-to-one private message between two users. */
+CREATE TABLE `direct_message`
+(
+    `messageId`         VARCHAR(36) NOT NULL,
+    `sender_user_id`    VARCHAR(36) NOT NULL,
+    `recipient_user_id` VARCHAR(36) NOT NULL,
+    `body`              TEXT        NOT NULL,
+    `createdAt`         DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `isRead`            BOOLEAN     NOT NULL DEFAULT FALSE,
+
+    PRIMARY KEY (`messageId`),
+    KEY                 `idx_direct_message_sender_recipient` (`sender_user_id`, `recipient_user_id`, `createdAt`),
+    KEY                 `idx_direct_message_recipient_sender` (`recipient_user_id`, `sender_user_id`, `isRead`, `createdAt`),
+
+    CONSTRAINT `fk_direct_message_sender`
+        FOREIGN KEY (`sender_user_id`) REFERENCES `user` (`userId`)
+            ON DELETE RESTRICT
+            ON UPDATE CASCADE,
+
+    CONSTRAINT `fk_direct_message_recipient`
+        FOREIGN KEY (`recipient_user_id`) REFERENCES `user` (`userId`)
+            ON DELETE RESTRICT
+            ON UPDATE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+/* League-wide chat message, subject to blocklist-driven moderation. */
+CREATE TABLE `league_message`
+(
+    `messageId`            VARCHAR(36) NOT NULL,
+    `leagueId`             VARCHAR(36) NOT NULL,
+    `sender_user_id`       VARCHAR(36) NOT NULL,
+    `body`                 TEXT        NOT NULL,
+    `status`               ENUM('APPROVED', 'PENDING_REVIEW', 'REJECTED') NOT NULL DEFAULT 'PENDING_REVIEW',
+    `flagged_reason`       VARCHAR(100)         DEFAULT NULL,
+    `moderated_by_user_id` VARCHAR(36)          DEFAULT NULL,
+    `moderatedAt`          DATETIME             DEFAULT NULL,
+    `createdAt`            DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`messageId`),
+    KEY                    `idx_league_message_league_status_created` (`leagueId`, `status`, `createdAt`),
+    KEY                    `idx_league_message_status_created` (`status`, `createdAt`),
+    KEY                    `idx_league_message_sender` (`sender_user_id`),
+    KEY                    `idx_league_message_moderated_by` (`moderated_by_user_id`),
+
+    CONSTRAINT `fk_league_message_league`
+        FOREIGN KEY (`leagueId`) REFERENCES `league` (`leagueId`)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE,
+
+    CONSTRAINT `fk_league_message_sender`
+        FOREIGN KEY (`sender_user_id`) REFERENCES `user` (`userId`)
+            ON DELETE RESTRICT
+            ON UPDATE CASCADE,
+
+    CONSTRAINT `fk_league_message_moderated_by_admin`
+        FOREIGN KEY (`moderated_by_user_id`) REFERENCES `administrator` (`userId`)
+            ON DELETE RESTRICT
+            ON UPDATE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+/* One user blocking another from direct-messaging them. */
+CREATE TABLE `user_block`
+(
+    `blockId`         VARCHAR(36) NOT NULL,
+    `blocker_user_id` VARCHAR(36) NOT NULL,
+    `blocked_user_id` VARCHAR(36) NOT NULL,
+    `createdAt`       DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`blockId`),
+    UNIQUE KEY `uk_user_block_pair` (`blocker_user_id`, `blocked_user_id`),
+    KEY               `idx_user_block_blocked` (`blocked_user_id`),
+
+    CONSTRAINT `fk_user_block_blocker`
+        FOREIGN KEY (`blocker_user_id`) REFERENCES `user` (`userId`)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE,
+
+    CONSTRAINT `fk_user_block_blocked`
+        FOREIGN KEY (`blocked_user_id`) REFERENCES `user` (`userId`)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE
+/*
+    Self-block is rejected in UserBlockServiceImpl. It cannot also be a CHECK
+    constraint here: MySQL forbids a column from appearing in both a CHECK and
+    a foreign key that carries a referential action (error 3823).
+*/
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+/* Push-notification device registration; upserted by token on re-registration. */
+CREATE TABLE `device_token`
+(
+    `tokenId`      VARCHAR(36)  NOT NULL,
+    `userId`       VARCHAR(36)  NOT NULL,
+    `token`        VARCHAR(255) NOT NULL,
+    `platform`     ENUM('WEB', 'ANDROID', 'IOS') NOT NULL,
+    `isActive`     BOOLEAN      NOT NULL DEFAULT TRUE,
+    `createdAt`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `last_seen_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`tokenId`),
+    UNIQUE KEY `uk_device_token_token` (`token`),
+    KEY            `idx_device_token_user_active` (`userId`, `isActive`),
+
+    CONSTRAINT `fk_device_token_user`
+        FOREIGN KEY (`userId`) REFERENCES `user` (`userId`)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;

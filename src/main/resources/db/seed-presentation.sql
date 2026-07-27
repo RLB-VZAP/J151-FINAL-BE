@@ -33,8 +33,7 @@
     lisa/Lisa@12345, tom/Tom@12345.)
    ============================================================================ */
 
-USE
-`tryton_fantasy_rugby`;
+USE `tryton_fantasy_rugby`;
 
 START TRANSACTION;
 

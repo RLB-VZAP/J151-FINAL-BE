@@ -6,6 +6,7 @@ import com.vzap.trytons.dao.fantasyteam.FantasyTeamPlayerDAO;
 import com.vzap.trytons.dao.fixture.FixtureDAO;
 import com.vzap.trytons.dao.catalog.PlayerDAO;
 import com.vzap.trytons.dao.transfer.TransferDAO;
+import com.vzap.trytons.dao.shared.TransactionRunner;
 import com.vzap.trytons.dto.fixture.DeadlineStatusResponseDTO;
 import com.vzap.trytons.dto.fixture.LockStatusResponseDTO;
 import com.vzap.trytons.dto.fantasyteam.SquadValidationResultDTO;
@@ -31,7 +32,6 @@ import com.vzap.trytons.model.fantasyteam.TeamPlayerSelection;
 import com.vzap.trytons.model.transfer.Transfer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -76,8 +76,10 @@ public class TransferServiceImpl implements TransferService {
     @Inject
     private NotificationService notificationService;
 
+    @Inject
+    private TransactionRunner transactionRunner;
+
     @Override
-    @Transactional
     public TransferResponseDTO executeTransfer(String actorUserId, TransferRequestDTO request) {
         validateRequest(actorUserId, request);
 
@@ -186,14 +188,6 @@ public class TransferServiceImpl implements TransferService {
                 })
                 .collect(Collectors.toList());
 
-        fantasyTeamPlayerDAO.replaceSquad(teamId, updatedSquad);
-
-        boolean budgetUpdated = fantasyTeamDAO.updateBudget(teamId,  newRemainingBudget);
-
-        if (!budgetUpdated) {
-            throw new DataAccessException("Unable to update budget after transfer", null);
-        }
-
         RegisteredUser createdBy = new RegisteredUser();
         createdBy.setUserId(actorId);
 
@@ -213,7 +207,18 @@ public class TransferServiceImpl implements TransferService {
         transfer.setStatus(TransferStatus.CONFIRMED);
         transfer.setConfirmedAt(LocalDateTime.now());
         transfer.setCreatedByUserId(createdBy.getUserId());
-        Transfer savedTransfer = transferDAO.saveTransfer(transfer).orElseThrow(() -> new DataAccessException("Unable to save transfer", null));
+
+        Transfer savedTransfer = transactionRunner.runInTransaction(con -> {
+            fantasyTeamPlayerDAO.replaceSquad(con, teamId, updatedSquad);
+
+            boolean budgetUpdated = fantasyTeamDAO.updateBudget(con, teamId, newRemainingBudget);
+            if (!budgetUpdated) {
+                throw new DataAccessException("Unable to update budget after transfer", null);
+            }
+
+            return transferDAO.saveTransfer(con, transfer)
+                    .orElseThrow(() -> new DataAccessException("Unable to save transfer", null));
+        });
 
         notifyTransferDeadlineReminder(actorId, teamId, round);
 

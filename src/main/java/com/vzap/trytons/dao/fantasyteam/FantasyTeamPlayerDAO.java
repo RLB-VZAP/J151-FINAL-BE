@@ -4,6 +4,7 @@ package com.vzap.trytons.dao.fantasyteam;
 import com.vzap.trytons.enums.SquadRole;
 import com.vzap.trytons.model.fantasyteam.PlayerSelectionCount;
 import com.vzap.trytons.model.fantasyteam.TeamPlayerSelection;
+import java.sql.Connection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,6 +12,7 @@ import java.util.UUID;
 public interface FantasyTeamPlayerDAO {
     boolean addPlayerToSquad(UUID teamId, UUID playerId, SquadRole squadRole);
     void replaceSquad(UUID teamId, List<TeamPlayerSelection> squad);
+    void replaceSquad(Connection con, UUID teamId, List<TeamPlayerSelection> squad);
     List<TeamPlayerSelection> getSquadByTeamId(UUID teamId);
     Optional<TeamPlayerSelection> findSquadEntry(UUID teamId, UUID playerId);
     boolean removePlayerFromSquad(UUID teamId, UUID playerId);

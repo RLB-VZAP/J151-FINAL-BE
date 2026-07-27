@@ -35,13 +35,45 @@ public class TransferDAOImpl extends BaseDAO implements TransferDAO {
 
     @Override
     public Optional<Transfer> saveTransfer(Transfer transfer) {
+        Connection con = null;
+
+        try {
+            con = getConnection();
+            con.setAutoCommit(false);
+
+            Optional<Transfer> savedTransfer = saveTransfer(con, transfer);
+            con.commit();
+            return savedTransfer;
+
+        } catch (SQLException e) {
+            rollbackQuietly(con, e);
+            LOG.log(Level.SEVERE, "Unable to save transfer", e);
+            throw new DataAccessException("Unable to save transfer", e);
+
+        } catch (DataAccessException e) {
+            rollbackQuietly(con, e);
+            throw e;
+
+        } finally {
+            if (con != null) {
+                try {
+                    con.setAutoCommit(true);
+                    con.close();
+                } catch (SQLException e) {
+                    LOG.log(Level.SEVERE, "Could not close database connection", e);
+                }
+            }
+        }
+    }
+
+    @Override
+    public Optional<Transfer> saveTransfer(Connection con, Transfer transfer) {
         String query = "INSERT INTO `transfer` " +
                 "(transferId, teamId, roundId, removed_player_id, added_player_id, transferDate, " +
                 "removed_player_value, added_player_value, penaltyPoints, status, confirmedAt, created_by_user_id) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection con = getConnection();
-             PreparedStatement ps = con.prepareStatement(query)) {
+        try (PreparedStatement ps = con.prepareStatement(query)) {
 
             ps.setString(1, transfer.getTransferId().toString());
             ps.setString(2, transfer.getTeamId().toString());
