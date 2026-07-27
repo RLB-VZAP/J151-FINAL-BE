@@ -3,6 +3,7 @@ package com.vzap.trytons.dao.fantasyteam;
 import com.vzap.trytons.model.fantasyteam.FantasyTeam;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,5 +13,6 @@ public interface FantasyTeamDAO {
     FantasyTeam findTeamById(UUID teamId);
     Optional<FantasyTeam> getTeamByOwner(UUID owner_user_id);
     boolean updateBudget(UUID teamId, BigDecimal remainingBudget);
+    boolean updateBudget(Connection con, UUID teamId, BigDecimal remainingBudget);
     boolean updateTeamName(UUID teamId, String teamName);
 }

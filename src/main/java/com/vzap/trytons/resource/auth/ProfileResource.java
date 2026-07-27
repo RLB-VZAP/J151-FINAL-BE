@@ -10,6 +10,7 @@ import com.vzap.trytons.security.AuthPrincipal;
 import com.vzap.trytons.service.auth.RegisteredUserServices;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -44,7 +45,7 @@ public class ProfileResource {
     }
 
     @PUT
-    public Response updateProfile(ProfileUpdateRequestDTO request) {
+    public Response updateProfile(@Valid ProfileUpdateRequestDTO request) {
         AuthPrincipal principal = currentPrincipal();
         ProfileResponseDTO response = registeredUserServices.updateProfile(principal.getUserId(), request);
 
@@ -55,7 +56,7 @@ public class ProfileResource {
 
     @POST
     @Path("/change-password")
-    public Response changePassword(ChangePasswordRequestDTO request) {
+    public Response changePassword(@Valid ChangePasswordRequestDTO request) {
         AuthPrincipal principal = currentPrincipal();
         registeredUserServices.changePassword(principal.getUserId(), request);
 

@@ -11,4 +11,16 @@ public abstract class BaseDAO {
     protected Connection getConnection() throws SQLException {
         return DBConnectionManager.getConnection();
     }
+
+    protected void rollbackQuietly(Connection con, Exception cause) {
+        if (con == null) {
+            return;
+        }
+
+        try {
+            con.rollback();
+        } catch (SQLException rollbackException) {
+            cause.addSuppressed(rollbackException);
+        }
+    }
 }

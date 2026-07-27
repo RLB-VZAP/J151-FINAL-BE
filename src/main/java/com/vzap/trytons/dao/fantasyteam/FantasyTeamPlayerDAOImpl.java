@@ -88,53 +88,23 @@ public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlay
 
     @Override
     public void replaceSquad(UUID teamId, List<TeamPlayerSelection> squad) {
-        String deleteQuery = "DELETE FROM team_player_selection WHERE teamId = ?";
-        String insertQuery = "INSERT INTO team_player_selection "
-                + "(selectionId, teamId, playerId, selectedDate, isCaptain, is_vice_captain, squadRole) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
-
         Connection con = null; //Declared at the top instead of in try resource for rollback
 
         try {
             con = getConnection();
             con.setAutoCommit(false);
 
-            try (
-                    PreparedStatement dps = con.prepareStatement(deleteQuery);
-                    PreparedStatement ips = con.prepareStatement(insertQuery)
-            ) {
-                dps.setString(1, teamId.toString());
-                dps.executeUpdate();
-
-
-                for (TeamPlayerSelection selection : squad) {
-                    UUID selectionId = selection.getSelectionId() == null ? UUID.randomUUID() : selection.getSelectionId();
-                    ips.setString(1, selectionId.toString());
-                    ips.setString(2, teamId.toString());
-                    ips.setString(3, selection.getPlayerId().toString());
-                    LocalDateTime selectedDate = selection.getSelectedDate() == null ? LocalDateTime.now() : selection.getSelectedDate();
-                    ips.setTimestamp(4, Timestamp.valueOf(selectedDate));
-                    ips.setBoolean(5, Boolean.TRUE.equals(selection.getIsCaptain()));
-                    ips.setBoolean(6, Boolean.TRUE.equals(selection.getIsViceCaptain()));
-                    ips.setString(7,selection.getSquadRole().name());
-                    ips.addBatch();
-                }
-                ips.executeBatch();
-                con.commit();
-
-            }
+            replaceSquad(con, teamId, squad);
+            con.commit();
 
         } catch (SQLException e) {
-            if (con != null) {
-                try {
-                    con.rollback();
-                } catch (SQLException rollbackException) {
-                    e.addSuppressed(rollbackException);
-                }
-            }
-
+            rollbackQuietly(con, e);
             LOG.log(Level.SEVERE, "Could not replace squad", e);
             throw new DataAccessException("Could not replace squad", e);
+
+        } catch (DataAccessException e) {
+            rollbackQuietly(con, e);
+            throw e;
 
         } finally {
             if (con != null) {
@@ -145,6 +115,40 @@ public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlay
                     LOG.log(Level.SEVERE, "Could not close database connection", e);
                 }
             }
+        }
+    }
+
+    @Override
+    public void replaceSquad(Connection con, UUID teamId, List<TeamPlayerSelection> squad) {
+        String deleteQuery = "DELETE FROM team_player_selection WHERE teamId = ?";
+        String insertQuery = "INSERT INTO team_player_selection "
+                + "(selectionId, teamId, playerId, selectedDate, isCaptain, is_vice_captain, squadRole) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        try (
+                PreparedStatement dps = con.prepareStatement(deleteQuery);
+                PreparedStatement ips = con.prepareStatement(insertQuery)
+        ) {
+            dps.setString(1, teamId.toString());
+            dps.executeUpdate();
+
+            for (TeamPlayerSelection selection : squad) {
+                UUID selectionId = selection.getSelectionId() == null ? UUID.randomUUID() : selection.getSelectionId();
+                ips.setString(1, selectionId.toString());
+                ips.setString(2, teamId.toString());
+                ips.setString(3, selection.getPlayerId().toString());
+                LocalDateTime selectedDate = selection.getSelectedDate() == null ? LocalDateTime.now() : selection.getSelectedDate();
+                ips.setTimestamp(4, Timestamp.valueOf(selectedDate));
+                ips.setBoolean(5, Boolean.TRUE.equals(selection.getIsCaptain()));
+                ips.setBoolean(6, Boolean.TRUE.equals(selection.getIsViceCaptain()));
+                ips.setString(7, selection.getSquadRole().name());
+                ips.addBatch();
+            }
+            ips.executeBatch();
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Could not replace squad", e);
+            throw new DataAccessException("Could not replace squad", e);
         }
     }
 
