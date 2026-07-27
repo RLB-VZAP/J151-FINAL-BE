@@ -1,6 +1,7 @@
 package com.vzap.trytons.dao.message;
 
 import com.vzap.trytons.dao.shared.BaseDAO;
+import com.vzap.trytons.enums.DirectMessageStatus;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.message.ConversationThread;
 import com.vzap.trytons.model.message.DirectMessage;
@@ -14,7 +15,9 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -33,6 +36,7 @@ public class DirectMessageDAOImpl extends BaseDAO implements DirectMessageDAO {
             message.setBody(rs.getString("body"));
             message.setCreatedAt(rs.getTimestamp("createdAt").toLocalDateTime());
             message.setIsRead(rs.getBoolean("isRead"));
+            message.setStatus(DirectMessageStatus.valueOf(rs.getString("status")));
             return message;
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage(), e);
@@ -43,8 +47,8 @@ public class DirectMessageDAOImpl extends BaseDAO implements DirectMessageDAO {
     public DirectMessage create(DirectMessage message) {
         UUID newId = UUID.randomUUID();
         String query = "INSERT INTO direct_message "
-                + "(messageId, sender_user_id, recipient_user_id, body, isRead) "
-                + "VALUES (?, ?, ?, ?, ?)";
+                + "(messageId, sender_user_id, recipient_user_id, body, isRead, status) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {
@@ -54,6 +58,7 @@ public class DirectMessageDAOImpl extends BaseDAO implements DirectMessageDAO {
             ps.setString(3, message.getRecipientUserId().toString());
             ps.setString(4, message.getBody());
             ps.setBoolean(5, Boolean.TRUE.equals(message.getIsRead()));
+            ps.setString(6, message.getStatus().name());
 
             if (!(ps.executeUpdate() > 0)) {
                 throw new SQLException("No row inserted for direct message");
@@ -69,10 +74,31 @@ public class DirectMessageDAOImpl extends BaseDAO implements DirectMessageDAO {
     }
 
     @Override
+    public Optional<DirectMessage> findById(UUID messageId) {
+        String query = "SELECT * FROM direct_message WHERE messageId = ?";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, messageId.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapRow(rs));
+                }
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to find direct message by ID", e);
+            throw new DataAccessException("Unable to find direct message by ID", e);
+        }
+        return Optional.empty();
+    }
+
+    @Override
     public List<DirectMessage> findConversation(UUID userA, UUID userB, LocalDateTime since) {
         String query = "SELECT * FROM direct_message "
                 + "WHERE ((sender_user_id = ? AND recipient_user_id = ?) "
                 + "    OR (sender_user_id = ? AND recipient_user_id = ?)) "
+                + "AND status = 'APPROVED' "
                 + "AND (? IS NULL OR createdAt > ?) "
                 + "ORDER BY createdAt ASC";
 
@@ -114,7 +140,8 @@ public class DirectMessageDAOImpl extends BaseDAO implements DirectMessageDAO {
                 + "       (SELECT COUNT(*) FROM direct_message d "
                 + "          WHERE d.recipient_user_id = ? "
                 + "            AND d.sender_user_id = x.counterpartUserId "
-                + "            AND d.isRead = FALSE) AS unreadCount "
+                + "            AND d.isRead = FALSE "
+                + "            AND d.status = 'APPROVED') AS unreadCount "
                 + "FROM ( "
                 + "    SELECT CASE WHEN dm.sender_user_id = ? THEN dm.recipient_user_id ELSE dm.sender_user_id END AS counterpartUserId, "
                 + "           dm.body, "
@@ -124,7 +151,8 @@ public class DirectMessageDAOImpl extends BaseDAO implements DirectMessageDAO {
                 + "               ORDER BY dm.createdAt DESC, dm.messageId DESC "
                 + "           ) AS rn "
                 + "    FROM direct_message dm "
-                + "    WHERE dm.sender_user_id = ? OR dm.recipient_user_id = ? "
+                + "    WHERE (dm.sender_user_id = ? OR dm.recipient_user_id = ?) "
+                + "      AND dm.status = 'APPROVED' "
                 + ") x "
                 + "JOIN `user` u ON u.userId = x.counterpartUserId "
                 + "WHERE x.rn = 1 "
@@ -180,7 +208,7 @@ public class DirectMessageDAOImpl extends BaseDAO implements DirectMessageDAO {
     @Override
     public int countUnread(UUID userId) {
         String query = "SELECT COUNT(*) AS unreadCount FROM direct_message "
-                + "WHERE recipient_user_id = ? AND isRead = FALSE";
+                + "WHERE recipient_user_id = ? AND isRead = FALSE AND status = 'APPROVED'";
 
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {
@@ -196,5 +224,68 @@ public class DirectMessageDAOImpl extends BaseDAO implements DirectMessageDAO {
             throw new DataAccessException("Unable to count unread direct messages", e);
         }
         return 0;
+    }
+
+    @Override
+    public boolean existsApprovedMessageBetween(UUID userA, UUID userB) {
+        String query = "SELECT 1 FROM direct_message "
+                + "WHERE status = 'APPROVED' "
+                + "AND ((sender_user_id = ? AND recipient_user_id = ?) "
+                + "  OR (sender_user_id = ? AND recipient_user_id = ?)) "
+                + "LIMIT 1";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, userA.toString());
+            ps.setString(2, userB.toString());
+            ps.setString(3, userB.toString());
+            ps.setString(4, userA.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to check existing direct conversation", e);
+            throw new DataAccessException("Unable to check existing direct conversation", e);
+        }
+    }
+
+    @Override
+    public List<DirectMessage> findAdminWindow(UUID userA, UUID userB, LocalDateTime anchorCreatedAt,
+                                                UUID anchorMessageId, int windowSize) {
+        String query = "SELECT * FROM direct_message "
+                + "WHERE ((sender_user_id = ? AND recipient_user_id = ?) "
+                + "    OR (sender_user_id = ? AND recipient_user_id = ?)) "
+                + "AND (createdAt < ? OR (createdAt = ? AND messageId <= ?)) "
+                + "ORDER BY createdAt DESC, messageId DESC "
+                + "LIMIT ?";
+
+        List<DirectMessage> window = new ArrayList<>();
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, userA.toString());
+            ps.setString(2, userB.toString());
+            ps.setString(3, userB.toString());
+            ps.setString(4, userA.toString());
+            Timestamp anchorTs = Timestamp.valueOf(anchorCreatedAt);
+            ps.setTimestamp(5, anchorTs);
+            ps.setTimestamp(6, anchorTs);
+            ps.setString(7, anchorMessageId.toString());
+            // +1 to include the anchor message itself alongside the preceding messages.
+            ps.setInt(8, windowSize + 1);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    window.add(mapRow(rs));
+                }
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to load admin conversation window", e);
+            throw new DataAccessException("Unable to load admin conversation window", e);
+        }
+
+        Collections.reverse(window);
+        return window;
     }
 }

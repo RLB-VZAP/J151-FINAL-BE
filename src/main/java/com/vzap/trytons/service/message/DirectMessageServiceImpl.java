@@ -2,13 +2,18 @@ package com.vzap.trytons.service.message;
 
 import com.vzap.trytons.dao.auth.UserDAO;
 import com.vzap.trytons.dao.message.DirectMessageDAO;
+import com.vzap.trytons.dao.message.MessageReportDAO;
+import com.vzap.trytons.dao.message.MessageRequestDAO;
 import com.vzap.trytons.dao.message.UserBlockDAO;
 import com.vzap.trytons.dto.message.ConversationThreadDTO;
 import com.vzap.trytons.dto.message.DirectMessageResponseDTO;
 import com.vzap.trytons.dto.message.SendDirectMessageRequestDTO;
 import com.vzap.trytons.dto.notification.NotificationCreateRequestDTO;
+import com.vzap.trytons.enums.DirectMessageStatus;
+import com.vzap.trytons.enums.MessageScope;
 import com.vzap.trytons.enums.NotificationType;
 import com.vzap.trytons.exceptions.AuthorisationException;
+import com.vzap.trytons.exceptions.BusinessRuleException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.exceptions.ValidationException;
 import com.vzap.trytons.model.auth.User;
@@ -23,6 +28,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -33,10 +39,19 @@ public class DirectMessageServiceImpl implements DirectMessageService {
 
     private static final int PREVIEW_LENGTH = 120;
 
+    /** Rule F bound: the reported message plus this many immediately preceding it. Never more. */
+    private static final int ADMIN_PRECEDING_MESSAGE_COUNT = 10;
+
     @Inject
     private DirectMessageDAO directMessageDAO;
     @Inject
     private UserBlockDAO userBlockDAO;
+    @Inject
+    private MessageRequestDAO messageRequestDAO;
+    @Inject
+    private MessageReportDAO messageReportDAO;
+    @Inject
+    private MessageFilterService messageFilterService;
     @Inject
     private UserDAO userDAO;
     @Inject
@@ -49,7 +64,27 @@ public class DirectMessageServiceImpl implements DirectMessageService {
     @Override
     public DirectMessageResponseDTO send(UUID actorUserId, SendDirectMessageRequestDTO request) {
         User sender = requireAuthenticated(actorUserId);
+        String body = requireMessageBody(actorUserId, request);
+        UUID recipientUserId = request.getRecipientUserId();
+        User recipient = requireActiveRecipient(recipientUserId);
 
+        if (userBlockDAO.existsEitherDirection(actorUserId, recipientUserId)) {
+            throw new AuthorisationException("You cannot send messages to this user.");
+        }
+        requireConsent(actorUserId, recipientUserId);
+
+        DirectMessage created = persistMessage(actorUserId, recipientUserId, body);
+        if (created.getStatus() == DirectMessageStatus.REJECTED) {
+            // Rule D: stored for admin review, but the recipient must never see it.
+            throw new BusinessRuleException("Your message was not delivered because it contains blocked content.");
+        }
+
+        notifyRecipient(recipientUserId, created, sender);
+        pushToRecipient(recipientUserId, created, sender);
+        return mapToResponse(created, actorUserId);
+    }
+
+    private String requireMessageBody(UUID actorUserId, SendDirectMessageRequestDTO request) {
         if (request == null) {
             throw new ValidationException("Message details are required.");
         }
@@ -63,30 +98,42 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         if (actorUserId.equals(request.getRecipientUserId())) {
             throw new ValidationException("You cannot message yourself.");
         }
+        return body;
+    }
 
-        UUID recipientUserId = request.getRecipientUserId();
+    private User requireActiveRecipient(UUID recipientUserId) {
         User recipient = userDAO.getUserById(recipientUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("Recipient not found."));
         if (!Boolean.TRUE.equals(recipient.getIsActive())) {
             throw new ResourceNotFoundException("Recipient not found.");
         }
+        return recipient;
+    }
 
-        if (userBlockDAO.existsEitherDirection(actorUserId, recipientUserId)) {
-            throw new AuthorisationException("You cannot send messages to this user.");
-        }
-
+    private DirectMessage persistMessage(UUID actorUserId, UUID recipientUserId, String body) {
+        Optional<String> blockedPhrase = messageFilterService.firstBlockedPhrase(body);
         DirectMessage message = DirectMessage.builder()
                 .senderUserId(actorUserId)
                 .recipientUserId(recipientUserId)
                 .body(body)
                 .isRead(false)
+                .status(blockedPhrase.isPresent() ? DirectMessageStatus.REJECTED : DirectMessageStatus.APPROVED)
                 .build();
-        DirectMessage created = directMessageDAO.create(message);
+        return directMessageDAO.create(message);
+    }
 
-        notifyRecipient(recipientUserId, created, sender);
-        pushToRecipient(recipientUserId, created, sender);
-
-        return mapToResponse(created, actorUserId);
+    /**
+     * Rule A/B/C: a league in common never grants private-chat access. Sending
+     * requires either an APPROVED message request in either direction, or an
+     * already-existing (grandfathered) conversation between the pair.
+     */
+    private void requireConsent(UUID actorUserId, UUID recipientUserId) {
+        boolean hasApprovedRequest = messageRequestDAO.existsApprovedEitherDirection(actorUserId, recipientUserId);
+        boolean hasExistingConversation = directMessageDAO.existsApprovedMessageBetween(actorUserId, recipientUserId);
+        if (!hasApprovedRequest && !hasExistingConversation) {
+            throw new BusinessRuleException(
+                    "You need this user's permission before you can message them. Please send a message request first.");
+        }
     }
 
     @Override
@@ -135,6 +182,30 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         return directMessageDAO.countUnread(actorUserId);
     }
 
+    @Override
+    public List<DirectMessageResponseDTO> getAdminWindow(UUID adminUserId, UUID reportedMessageId) {
+        requireAuthenticated(adminUserId);
+        if (reportedMessageId == null) {
+            throw new ValidationException("A reported message is required.");
+        }
+
+        DirectMessage anchor = directMessageDAO.findById(reportedMessageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Message not found."));
+        if (!messageReportDAO.existsReportForMessage(MessageScope.DIRECT, reportedMessageId)) {
+            throw new AuthorisationException("This conversation has no reported message; admin access is denied.");
+        }
+
+        List<DirectMessage> window = directMessageDAO.findAdminWindow(
+                anchor.getSenderUserId(), anchor.getRecipientUserId(),
+                anchor.getCreatedAt(), anchor.getMessageId(), ADMIN_PRECEDING_MESSAGE_COUNT);
+
+        List<DirectMessageResponseDTO> response = new ArrayList<>();
+        for (DirectMessage message : window) {
+            response.add(mapToResponse(message, adminUserId));
+        }
+        return response;
+    }
+
     private void notifyRecipient(UUID recipientUserId, DirectMessage message, User sender) {
         try {
             NotificationCreateRequestDTO request = NotificationCreateRequestDTO.builder()
@@ -177,6 +248,7 @@ public class DirectMessageServiceImpl implements DirectMessageService {
                 .createdAt(message.getCreatedAt())
                 .isRead(Boolean.TRUE.equals(message.getIsRead()))
                 .mine(actorUserId.equals(message.getSenderUserId()))
+                .status(message.getStatus())
                 .build();
     }
 

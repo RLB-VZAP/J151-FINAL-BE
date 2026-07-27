@@ -19,4 +19,10 @@ public interface LeagueMessageDAO {
     Optional<LeagueMessage> findById(UUID messageId);
 
     boolean updateStatus(UUID messageId, MessageStatus status, UUID moderatorUserId);
+
+    /**
+     * True if the league has ever had a message the blocklist auto-flagged
+     * (rule E: "reported" includes blocklist auto-flags, not just user reports).
+     */
+    boolean existsFlaggedMessage(UUID leagueId);
 }

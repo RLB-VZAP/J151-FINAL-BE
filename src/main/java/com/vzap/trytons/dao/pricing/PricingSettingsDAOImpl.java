@@ -57,30 +57,39 @@ public class PricingSettingsDAOImpl extends BaseDAO implements PricingSettingsDA
     }
 
     @Override
-    public boolean updateSettings(PricingSettings settings) {
-        String query = "UPDATE pricing_settings SET "
-                + "w_form = ?, w_popularity = ?, w_points = ?, w_injury = ?, w_demand = ?, w_availability = ?, "
-                + "max_delta_pct = ?, min_value = ?, max_value = ? "
-                + "WHERE settingsId = ?";
+    public boolean saveSettings(PricingSettings settings) {
+        // pricing_settings is a singleton config table: a null settingsId means no row exists
+        // yet, so a fresh id is generated and the insert branch below creates the first row.
+        UUID settingsId = settings.getSettingsId() != null ? settings.getSettingsId() : UUID.randomUUID();
+
+        String query = "INSERT INTO pricing_settings "
+                + "(settingsId, w_form, w_popularity, w_points, w_injury, w_demand, w_availability, "
+                + "max_delta_pct, min_value, max_value) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE "
+                + "w_form = VALUES(w_form), w_popularity = VALUES(w_popularity), w_points = VALUES(w_points), "
+                + "w_injury = VALUES(w_injury), w_demand = VALUES(w_demand), w_availability = VALUES(w_availability), "
+                + "max_delta_pct = VALUES(max_delta_pct), min_value = VALUES(min_value), max_value = VALUES(max_value), "
+                + "updatedAt = CURRENT_TIMESTAMP";
 
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {
 
-            ps.setBigDecimal(1, settings.getWeightForm());
-            ps.setBigDecimal(2, settings.getWeightPopularity());
-            ps.setBigDecimal(3, settings.getWeightPoints());
-            ps.setBigDecimal(4, settings.getWeightInjury());
-            ps.setBigDecimal(5, settings.getWeightDemand());
-            ps.setBigDecimal(6, settings.getWeightAvailability());
-            ps.setBigDecimal(7, settings.getMaxDeltaPct());
-            ps.setBigDecimal(8, settings.getMinValue());
-            ps.setBigDecimal(9, settings.getMaxValue());
-            ps.setString(10, settings.getSettingsId().toString());
+            ps.setString(1, settingsId.toString());
+            ps.setBigDecimal(2, settings.getWeightForm());
+            ps.setBigDecimal(3, settings.getWeightPopularity());
+            ps.setBigDecimal(4, settings.getWeightPoints());
+            ps.setBigDecimal(5, settings.getWeightInjury());
+            ps.setBigDecimal(6, settings.getWeightDemand());
+            ps.setBigDecimal(7, settings.getWeightAvailability());
+            ps.setBigDecimal(8, settings.getMaxDeltaPct());
+            ps.setBigDecimal(9, settings.getMinValue());
+            ps.setBigDecimal(10, settings.getMaxValue());
             return ps.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Unable to update pricing settings", e);
-            throw new DataAccessException("Unable to update pricing settings", e);
+            LOG.log(Level.SEVERE, "Unable to save pricing settings", e);
+            throw new DataAccessException("Unable to save pricing settings", e);
         }
     }
 }

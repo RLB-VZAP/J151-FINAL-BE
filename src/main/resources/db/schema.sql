@@ -956,6 +956,7 @@ CREATE TABLE `notification`
     `notificationId`      VARCHAR(36) NOT NULL,
     `userId`              VARCHAR(36) NOT NULL,
     `type`                ENUM(
+                                'CHAT_MESSAGE',
                                 'LEADERBOARD_CHANGE',
                                 'POINTS_UPDATE',
                                 'MATCHUP_RESULT',
@@ -963,6 +964,8 @@ CREATE TABLE `notification`
                                 'PLAYER_AVAILABILITY',
                                 'TRANSFER_DEADLINE',
                                 'ROUND_LOCK',
+                                'LEAGUE_INVITATION',
+                                'REPORT_UPDATE',
                                 'SYSTEM'
                             ) NOT NULL,
     `body`                TEXT        NOT NULL,
@@ -1985,10 +1988,14 @@ CREATE TABLE `direct_message`
     `body`              TEXT        NOT NULL,
     `createdAt`         DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `isRead`            BOOLEAN     NOT NULL DEFAULT FALSE,
+    /* Rule D: a blocklisted send is REJECTED and kept for admin review, never delivered.
+       Existing rows default to APPROVED so pre-existing threads stay grandfathered (rule C). */
+    `status`            ENUM('APPROVED', 'REJECTED') NOT NULL DEFAULT 'APPROVED',
 
     PRIMARY KEY (`messageId`),
     KEY                 `idx_direct_message_sender_recipient` (`sender_user_id`, `recipient_user_id`, `createdAt`),
     KEY                 `idx_direct_message_recipient_sender` (`recipient_user_id`, `sender_user_id`, `isRead`, `createdAt`),
+    KEY                 `idx_direct_message_status` (`status`),
 
     CONSTRAINT `fk_direct_message_sender`
         FOREIGN KEY (`sender_user_id`) REFERENCES `user` (`userId`)
@@ -2087,6 +2094,76 @@ CREATE TABLE `device_token`
 
     CONSTRAINT `fk_device_token_user`
         FOREIGN KEY (`userId`) REFERENCES `user` (`userId`)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+/*
+    Rule A: private chat requires consent. A direct message cannot be sent until
+    the target has APPROVED a request like this from the requester (rule B: a
+    shared league never substitutes for this).
+
+    The UNIQUE key means a (requester, target) pair has exactly one row, ever.
+    A REJECTED request is re-opened back to PENDING in place (see
+    MessageRequestServiceImpl.reopenIfRejectedOtherwiseThrow) rather than
+    inserted again, so a rejected requester can always ask again without
+    violating this constraint or leaving orphaned history rows.
+*/
+CREATE TABLE `message_request`
+(
+    `requestId`         VARCHAR(36) NOT NULL,
+    `requester_user_id` VARCHAR(36) NOT NULL,
+    `target_user_id`    VARCHAR(36) NOT NULL,
+    `status`            ENUM('PENDING', 'APPROVED', 'REJECTED') NOT NULL DEFAULT 'PENDING',
+    `createdAt`         DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `respondedAt`       DATETIME             DEFAULT NULL,
+
+    PRIMARY KEY (`requestId`),
+    UNIQUE KEY `uk_message_request_pair` (`requester_user_id`, `target_user_id`),
+    KEY                 `idx_message_request_target_status` (`target_user_id`, `status`),
+    KEY                 `idx_message_request_requester_status` (`requester_user_id`, `status`),
+
+    CONSTRAINT `fk_message_request_requester`
+        FOREIGN KEY (`requester_user_id`) REFERENCES `user` (`userId`)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE,
+
+    CONSTRAINT `fk_message_request_target`
+        FOREIGN KEY (`target_user_id`) REFERENCES `user` (`userId`)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+/*
+    A user's report of one message (rule E: "reported" = user report OR
+    blocklist auto-flag; the auto-flag half lives on league_message directly).
+
+    message_id intentionally carries no foreign key: it references either
+    direct_message.messageId or league_message.messageId depending on
+    message_scope, and MySQL cannot express a single FK against one of two
+    target tables. Integrity is enforced in MessageReportServiceImpl before
+    the row is inserted (the referenced message must exist and the reporter
+    must be a participant).
+*/
+CREATE TABLE `message_report`
+(
+    `reportId`         VARCHAR(36)  NOT NULL,
+    `reporter_user_id` VARCHAR(36)  NOT NULL,
+    `message_id`       VARCHAR(36)  NOT NULL,
+    `message_scope`    ENUM('DIRECT', 'LEAGUE') NOT NULL,
+    `reason`           VARCHAR(255)          DEFAULT NULL,
+    `createdAt`        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`reportId`),
+    UNIQUE KEY `uk_message_report_reporter_message` (`reporter_user_id`, `message_scope`, `message_id`),
+    KEY                `idx_message_report_message` (`message_scope`, `message_id`),
+
+    CONSTRAINT `fk_message_report_reporter`
+        FOREIGN KEY (`reporter_user_id`) REFERENCES `user` (`userId`)
             ON DELETE CASCADE
             ON UPDATE CASCADE
 ) ENGINE = InnoDB

@@ -19,4 +19,10 @@ public interface DirectMessageService {
     int markThreadRead(UUID actorUserId, UUID counterpartUserId);
 
     int getUnreadCount(UUID actorUserId);
+
+    /**
+     * Admin-only, rule F: the reported message plus a bounded number of
+     * immediately preceding messages in that conversation. Never more.
+     */
+    List<DirectMessageResponseDTO> getAdminWindow(UUID adminUserId, UUID reportedMessageId);
 }

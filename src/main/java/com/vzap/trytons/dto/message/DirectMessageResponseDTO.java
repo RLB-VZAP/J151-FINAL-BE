@@ -1,6 +1,7 @@
 package com.vzap.trytons.dto.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.vzap.trytons.enums.DirectMessageStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -30,4 +31,6 @@ public class DirectMessageResponseDTO {
 
     @JsonProperty("mine")
     private boolean mine;
+
+    private DirectMessageStatus status;
 }

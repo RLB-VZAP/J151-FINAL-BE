@@ -2,11 +2,19 @@ package com.vzap.trytons.resource.message;
 
 import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dto.message.ConversationThreadDTO;
+import com.vzap.trytons.dto.message.CreateMessageRequestDTO;
 import com.vzap.trytons.dto.message.DirectMessageResponseDTO;
+import com.vzap.trytons.dto.message.MessageRequestOverviewDTO;
+import com.vzap.trytons.dto.message.MessageRequestResponseDTO;
+import com.vzap.trytons.dto.message.MessageReportResponseDTO;
+import com.vzap.trytons.dto.message.ReportMessageRequestDTO;
 import com.vzap.trytons.dto.message.SendDirectMessageRequestDTO;
+import com.vzap.trytons.enums.MessageScope;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
 import com.vzap.trytons.service.message.DirectMessageService;
+import com.vzap.trytons.service.message.MessageReportService;
+import com.vzap.trytons.service.message.MessageRequestService;
 import com.vzap.trytons.service.message.UserBlockService;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -42,6 +50,12 @@ public class MessageResource {
 
     @Inject
     private UserBlockService userBlockService;
+
+    @Inject
+    private MessageRequestService messageRequestService;
+
+    @Inject
+    private MessageReportService messageReportService;
 
     @Context
     private ContainerRequestContext request;
@@ -106,6 +120,43 @@ public class MessageResource {
     @Path("/blocked")
     public Response listBlocked() {
         return Response.ok(userBlockService.listBlocked(currentUserId())).build();
+    }
+
+    @POST
+    @Path("/requests")
+    public Response createMessageRequest(CreateMessageRequestDTO body) {
+        MessageRequestResponseDTO created = messageRequestService.createRequest(currentUserId(), body);
+        return Response.status(Response.Status.CREATED).entity(created).build();
+    }
+
+    @GET
+    @Path("/requests")
+    public Response listMessageRequests() {
+        MessageRequestOverviewDTO requests = messageRequestService.listRequests(currentUserId());
+        return Response.ok(requests).build();
+    }
+
+    @PUT
+    @Path("/requests/{requestId}/approve")
+    public Response approveMessageRequest(@PathParam("requestId") UUID requestId) {
+        MessageRequestResponseDTO approved = messageRequestService.approve(currentUserId(), requestId);
+        return Response.ok(approved).build();
+    }
+
+    @PUT
+    @Path("/requests/{requestId}/reject")
+    public Response rejectMessageRequest(@PathParam("requestId") UUID requestId) {
+        MessageRequestResponseDTO rejected = messageRequestService.reject(currentUserId(), requestId);
+        return Response.ok(rejected).build();
+    }
+
+    @POST
+    @Path("/direct/{messageId}/report")
+    public Response reportDirectMessage(@PathParam("messageId") UUID messageId, ReportMessageRequestDTO body) {
+        String reason = body == null ? null : body.getReason();
+        MessageReportResponseDTO created =
+                messageReportService.report(currentUserId(), MessageScope.DIRECT, messageId, reason);
+        return Response.status(Response.Status.CREATED).entity(created).build();
     }
 
     private LocalDateTime parseSince(String since) {

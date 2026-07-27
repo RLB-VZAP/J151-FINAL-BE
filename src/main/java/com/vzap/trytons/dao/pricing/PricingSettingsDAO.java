@@ -8,5 +8,5 @@ public interface PricingSettingsDAO {
 
     Optional<PricingSettings> findSettings();
 
-    boolean updateSettings(PricingSettings settings);
+    boolean saveSettings(PricingSettings settings);
 }

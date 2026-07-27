@@ -168,4 +168,23 @@ public class LeagueMessageDAOImpl extends BaseDAO implements LeagueMessageDAO {
             throw new DataAccessException("Unable to update league message status", e);
         }
     }
+
+    @Override
+    public boolean existsFlaggedMessage(UUID leagueId) {
+        String query = "SELECT 1 FROM league_message "
+                + "WHERE leagueId = ? AND (flagged_reason IS NOT NULL OR status = 'PENDING_REVIEW') "
+                + "LIMIT 1";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, leagueId.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to check flagged league messages", e);
+            throw new DataAccessException("Unable to check flagged league messages", e);
+        }
+    }
 }

@@ -61,20 +61,38 @@ public class LeagueServiceImpl implements LeagueService {
             throw new ConflictException("A league with this name already exists.");
         }
 
-        FantasyTeam team = fantasyTeamDAO.getTeamByOwner(currentUserId).orElseThrow(() -> new BusinessRuleException("You must create a fantasy team before creating a league."));
-
-        League league = new League();
-        league.setLeagueId(UUID.randomUUID());
-        league.setLeagueName(leagueName);
-        league.setDescription(request.getDescription());
-        league.setLeagueType(request.getLeagueType());
-        league.setMaxMembers(request.getMaxMembers());
-        league.setIsActive(true);
-
-        if (request.getLeagueType() == LeagueType.PRIVATE) {
-            league.setLeagueCode(generateLeagueCode());
+        if (isAdmin(currentUserId)) {
+            return createUnmanagedAdminLeague(request, leagueName);
         }
 
+        return createManagedLeague(request, leagueName, currentUserId);
+    }
+
+    /**
+     * Administrators cannot own a fantasy team, so they can never be a league manager.
+     * An admin-created league is therefore left unmanaged (manager_user_id NULL, which
+     * the schema explicitly supports), and must be PUBLIC: a PRIVATE league needs a
+     * manager to distribute its join code.
+     */
+    private LeagueResponseDTO createUnmanagedAdminLeague(LeagueRequestDTO request, String leagueName) {
+        if (request.getLeagueType() != LeagueType.PUBLIC) {
+            throw new BusinessRuleException("Administrators can only create public leagues.");
+        }
+
+        League league = buildLeague(request, leagueName);
+        League savedLeague = leagueDAO.createLeague(league);
+
+        if (savedLeague == null || savedLeague.getLeagueId() == null) {
+            throw new BusinessRuleException("The league could not be created.");
+        }
+
+        return toResponse(requireLeague(savedLeague.getLeagueId()));
+    }
+
+    private LeagueResponseDTO createManagedLeague(LeagueRequestDTO request, String leagueName, UUID currentUserId) {
+        FantasyTeam team = fantasyTeamDAO.getTeamByOwner(currentUserId).orElseThrow(() -> new BusinessRuleException("You must create a fantasy team before creating a league."));
+
+        League league = buildLeague(request, leagueName);
         League savedLeague = leagueDAO.createLeague(league);
 
         if (savedLeague == null || savedLeague.getLeagueId() == null) {
@@ -97,6 +115,22 @@ public class LeagueServiceImpl implements LeagueService {
         return toResponse(requireLeague(savedLeague.getLeagueId()));
     }
 
+    private League buildLeague(LeagueRequestDTO request, String leagueName) {
+        League league = new League();
+        league.setLeagueId(UUID.randomUUID());
+        league.setLeagueName(leagueName);
+        league.setDescription(request.getDescription());
+        league.setLeagueType(request.getLeagueType());
+        league.setMaxMembers(request.getMaxMembers());
+        league.setIsActive(true);
+
+        if (request.getLeagueType() == LeagueType.PRIVATE) {
+            league.setLeagueCode(generateLeagueCode());
+        }
+
+        return league;
+    }
+
     @Override
     public LeagueResponseDTO getLeague(UUID leagueId, UUID currentUserId) {
         if (leagueId == null) {
@@ -109,7 +143,11 @@ public class LeagueServiceImpl implements LeagueService {
 
         League league = requireLeague(leagueId);
 
-        if (league.getLeagueType() == LeagueType.PRIVATE && !isLeagueMember(leagueId, currentUserId)) {
+        // Administrators monitor private leagues they are not members of, so they
+        // read league detail for the same reason they read the message feed.
+        if (league.getLeagueType() == LeagueType.PRIVATE
+                && !isAdmin(currentUserId)
+                && !isLeagueMember(leagueId, currentUserId)) {
             throw new AuthorisationException("You are not permitted to view this private league.");
         }
 
@@ -174,6 +212,9 @@ public class LeagueServiceImpl implements LeagueService {
         }
         if (currentUserId == null) {
             throw new ValidationException("Current user ID is required.");
+        }
+        if (isAdmin(currentUserId)) {
+            throw new BusinessRuleException("Administrators cannot join leagues.");
         }
 
         if (request.getLeagueId() == null

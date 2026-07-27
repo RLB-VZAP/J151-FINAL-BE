@@ -17,6 +17,7 @@ public interface UserDAO {
     boolean usernameExists(String username);
     boolean updateLastLogin(UUID userId, LocalDateTime lastLoginAt);
     List<User> searchUsers(String searchTerm);
+    List<User> searchActiveUsersByUsername(String searchTerm, UUID excludeUserId, int maxResults);
     boolean updateActiveStatus(UUID userId, boolean isActive);
     List<User> getActiveUsers();
     boolean updateProfileDetails(UUID userId, String username, String email, String profilePic);

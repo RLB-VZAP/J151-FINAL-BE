@@ -773,6 +773,14 @@ VALUES (@simulationSettingsId,
         3,
         TRUE);
 
+INSERT INTO `pricing_settings`
+(settingsId, w_form, w_popularity, w_points, w_injury, w_demand, w_availability,
+ max_delta_pct, min_value, max_value)
+/* Weights mirror the column defaults in schema.sql: availability and injury are weighted
+   heaviest since unavailable/injured players are the biggest pricing risk, popularity the
+   lightest. min_value/max_value bracket the real player values seeded below (0.20 - 18.0). */
+VALUES (UUID(), 0.1000, 0.0500, 0.1000, 0.1500, 0.0800, 0.2000, 0.1500, 0.20, 20.00);
+
 
 SET
 @result1 = UUID();

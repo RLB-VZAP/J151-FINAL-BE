@@ -4,16 +4,19 @@ import com.vzap.trytons.dao.auth.UserDAO;
 import com.vzap.trytons.dao.league.LeagueDAO;
 import com.vzap.trytons.dao.league.LeagueMembershipDAO;
 import com.vzap.trytons.dao.message.LeagueMessageDAO;
+import com.vzap.trytons.dao.message.MessageReportDAO;
 import com.vzap.trytons.dto.message.LeagueMessageResponseDTO;
 import com.vzap.trytons.dto.message.PendingLeagueMessageDTO;
 import com.vzap.trytons.dto.message.SendLeagueMessageRequestDTO;
 import com.vzap.trytons.dto.notification.NotificationCreateRequestDTO;
+import com.vzap.trytons.enums.LeagueType;
 import com.vzap.trytons.enums.MessageStatus;
 import com.vzap.trytons.enums.NotificationType;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.BusinessRuleException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.exceptions.ValidationException;
+import com.vzap.trytons.enums.UserRole;
 import com.vzap.trytons.model.auth.User;
 import com.vzap.trytons.model.league.League;
 import com.vzap.trytons.model.league.LeagueMembership;
@@ -45,6 +48,8 @@ public class LeagueMessageServiceImpl implements LeagueMessageService {
     private UserDAO userDAO;
     @Inject
     private MessageFilterService messageFilterService;
+    @Inject
+    private MessageReportDAO messageReportDAO;
     @Inject
     private NotificationService notificationService;
 
@@ -87,7 +92,7 @@ public class LeagueMessageServiceImpl implements LeagueMessageService {
         if (leagueId == null) {
             throw new ValidationException("A league is required.");
         }
-        requireMembership(leagueId, actorUserId);
+        requireReadAccess(leagueId, actorUserId);
 
         List<LeagueMessage> messages = leagueMessageDAO.findApprovedByLeague(leagueId, since);
         Map<UUID, String> usernames = resolveUsernames(messages.stream().map(LeagueMessage::getSenderUserId).toList());
@@ -190,10 +195,55 @@ public class LeagueMessageServiceImpl implements LeagueMessageService {
         return message;
     }
 
+    /**
+     * Gates posting a message. Deliberately strict: membership is required even for
+     * an administrator, so an admin monitoring a league's chat cannot inject messages
+     * into a league they have not joined.
+     */
     private void requireMembership(UUID leagueId, UUID userId) {
         if (!leagueMembershipDAO.existsActiveByLeagueAndUser(leagueId, userId)) {
             throw new AuthorisationException("You are not a member of this league.");
         }
+    }
+
+    /**
+     * Gates reading a league's chat feed. Members always need an active membership.
+     * Administrators may read a PUBLIC league at any time, but a PRIVATE league only
+     * once it has at least one reported message (rule F) - sharing a league is not
+     * itself a reason to expose otherwise-private conversations to an admin.
+     */
+    private void requireReadAccess(UUID leagueId, UUID userId) {
+        if (isAdmin(userId)) {
+            requireAdminReadAccess(leagueId);
+            return;
+        }
+        requireMembership(leagueId, userId);
+    }
+
+    private void requireAdminReadAccess(UUID leagueId) {
+        League league = leagueDAO.findLeagueById(leagueId)
+                .orElseThrow(() -> new ResourceNotFoundException("League not found."));
+        if (league.getLeagueType() == LeagueType.PUBLIC) {
+            return;
+        }
+        if (hasReportedMessage(leagueId)) {
+            return;
+        }
+        throw new AuthorisationException("This private league has no reported messages; admin access is denied.");
+    }
+
+    /**
+     * Rule E: "reported" means a user explicitly reported a message OR the
+     * blocklist auto-flagged one.
+     */
+    private boolean hasReportedMessage(UUID leagueId) {
+        return leagueMessageDAO.existsFlaggedMessage(leagueId) || messageReportDAO.existsReportForLeague(leagueId);
+    }
+
+    private boolean isAdmin(UUID userId) {
+        return userDAO.getUserById(userId)
+                .map(user -> user.getRole() == UserRole.ADMINISTRATOR)
+                .orElse(false);
     }
 
     private LeagueMessageResponseDTO mapToResponse(LeagueMessage message, String senderUsername) {

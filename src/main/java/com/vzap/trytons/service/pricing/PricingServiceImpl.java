@@ -11,7 +11,6 @@ import com.vzap.trytons.dto.pricing.PricingRunSummaryDTO;
 import com.vzap.trytons.dto.pricing.PricingSettingsDTO;
 import com.vzap.trytons.enums.AvailabilityStatus;
 import com.vzap.trytons.exceptions.AuthorisationException;
-import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.exceptions.ValidationException;
 import com.vzap.trytons.model.pricing.PlayerPriceHistory;
 import com.vzap.trytons.model.pricing.PlayerPricingMetrics;
@@ -31,6 +30,18 @@ public class PricingServiceImpl implements PricingService {
 
     private static final Logger LOG = Logger.getLogger(PricingServiceImpl.class.getName());
 
+    // Mirrors the DEFAULT clauses on `pricing_settings` in schema.sql, so the in-memory
+    // fallback used before any row exists behaves identically to a freshly seeded database.
+    private static final BigDecimal DEFAULT_WEIGHT_FORM = new BigDecimal("0.1000");
+    private static final BigDecimal DEFAULT_WEIGHT_POPULARITY = new BigDecimal("0.0500");
+    private static final BigDecimal DEFAULT_WEIGHT_POINTS = new BigDecimal("0.1000");
+    private static final BigDecimal DEFAULT_WEIGHT_INJURY = new BigDecimal("0.1500");
+    private static final BigDecimal DEFAULT_WEIGHT_DEMAND = new BigDecimal("0.0800");
+    private static final BigDecimal DEFAULT_WEIGHT_AVAILABILITY = new BigDecimal("0.2000");
+    private static final BigDecimal DEFAULT_MAX_DELTA_PCT = new BigDecimal("0.1500");
+    private static final BigDecimal DEFAULT_MIN_VALUE = new BigDecimal("0.20");
+    private static final BigDecimal DEFAULT_MAX_VALUE = new BigDecimal("20.00");
+
     @Inject
     private PricingMetricsDAO pricingMetricsDAO;
     @Inject
@@ -45,7 +56,7 @@ public class PricingServiceImpl implements PricingService {
     @Override
     public PricingSettingsDTO getSettings(UUID actorUserId) {
         requireAdmin(actorUserId);
-        return toSettingsDTO(loadSettings());
+        return toSettingsDTO(loadSettingsOrDefaults());
     }
 
     @Override
@@ -55,7 +66,7 @@ public class PricingServiceImpl implements PricingService {
             throw new ValidationException("Pricing settings are required.");
         }
 
-        PricingSettings settings = loadSettings();
+        PricingSettings settings = loadSettingsOrDefaults();
         settings.setWeightForm(requireWeight(request.getWeightForm(), "form"));
         settings.setWeightPopularity(requireWeight(request.getWeightPopularity(), "popularity"));
         settings.setWeightPoints(requireWeight(request.getWeightPoints(), "points"));
@@ -80,26 +91,26 @@ public class PricingServiceImpl implements PricingService {
         settings.setMinValue(minValue);
         settings.setMaxValue(maxValue);
 
-        pricingSettingsDAO.updateSettings(settings);
-        return toSettingsDTO(loadSettings());
+        pricingSettingsDAO.saveSettings(settings);
+        return toSettingsDTO(loadSettingsOrDefaults());
     }
 
     @Override
     public PricingRunSummaryDTO preview(UUID actorUserId) {
         requireAdmin(actorUserId);
-        return run(loadSettings(), false, null);
+        return run(loadSettingsOrDefaults(), false, null);
     }
 
     @Override
     public PricingRunSummaryDTO apply(UUID actorUserId, String reason) {
         requireAdmin(actorUserId);
-        return run(loadSettings(), true, reason == null ? "Manual admin run" : reason);
+        return run(loadSettingsOrDefaults(), true, reason == null ? "Manual admin run" : reason);
     }
 
     @Override
     public PricingRunSummaryDTO recalculateAll(String reason) {
         try {
-            return run(loadSettings(), true, reason == null ? "Automatic: round processing" : reason);
+            return run(loadSettingsOrDefaults(), true, reason == null ? "Automatic: round processing" : reason);
         } catch (RuntimeException e) {
             LOG.log(Level.WARNING, "Automatic price recalculation failed", e);
             return PricingRunSummaryDTO.builder()
@@ -233,9 +244,27 @@ public class PricingServiceImpl implements PricingService {
 
     // ----- helpers -----
 
-    private PricingSettings loadSettings() {
-        return pricingSettingsDAO.findSettings()
-                .orElseThrow(() -> new ResourceNotFoundException("Pricing settings have not been configured."));
+    // No row exists until an admin first saves settings (or the database was seeded without
+    // one). Falling back to sensible defaults, rather than throwing, lets the admin page render
+    // a usable pre-filled form and lets preview/apply run immediately on a fresh database.
+    private PricingSettings loadSettingsOrDefaults() {
+        return pricingSettingsDAO.findSettings().orElseGet(this::buildDefaultSettings);
+    }
+
+    private PricingSettings buildDefaultSettings() {
+        return PricingSettings.builder()
+                .settingsId(UUID.randomUUID())
+                .weightForm(DEFAULT_WEIGHT_FORM)
+                .weightPopularity(DEFAULT_WEIGHT_POPULARITY)
+                .weightPoints(DEFAULT_WEIGHT_POINTS)
+                .weightInjury(DEFAULT_WEIGHT_INJURY)
+                .weightDemand(DEFAULT_WEIGHT_DEMAND)
+                .weightAvailability(DEFAULT_WEIGHT_AVAILABILITY)
+                .maxDeltaPct(DEFAULT_MAX_DELTA_PCT)
+                .minValue(DEFAULT_MIN_VALUE)
+                .maxValue(DEFAULT_MAX_VALUE)
+                .updatedAt(LocalDateTime.now())
+                .build();
     }
 
     private BigDecimal requireWeight(BigDecimal weight, String name) {

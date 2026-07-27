@@ -204,6 +204,40 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
         return searchResults;
     }
 
+    // Privacy-scoped search backing the non-admin "find someone to message" flow:
+    // username-only matching (never email, which would let anyone confirm a
+    // registered address), the caller and inactive accounts excluded, and the
+    // result set capped in SQL rather than trimmed after the fact in Java.
+    @Override
+    public List<User> searchActiveUsersByUsername(String searchTerm, UUID excludeUserId, int maxResults) {
+        List<User> searchResults = new ArrayList<>();
+        String query = "SELECT userId, username FROM user "
+                + "WHERE username LIKE ? AND isActive = TRUE AND userId <> ? "
+                + "ORDER BY username LIMIT ?";
+
+        try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setString(1, "%" + searchTerm + "%");
+            ps.setString(2, excludeUserId.toString());
+            ps.setInt(3, maxResults);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    User result = User.builder()
+                            .userId(UUID.fromString(rs.getString("userId")))
+                            .username(rs.getString("username"))
+                            .build();
+                    searchResults.add(result);
+                }
+            }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to search active users by username.", e);
+            throw new DataAccessException("Unable to search active users by username.", e);
+        }
+
+        return searchResults;
+    }
+
     @Override
     public boolean updateActiveStatus(UUID userId, boolean isActive) {
         String query = "UPDATE user SET isActive = ? WHERE userId = ?";

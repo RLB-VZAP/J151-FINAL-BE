@@ -2,10 +2,14 @@ package com.vzap.trytons.resource.message;
 
 import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dto.message.LeagueMessageResponseDTO;
+import com.vzap.trytons.dto.message.MessageReportResponseDTO;
+import com.vzap.trytons.dto.message.ReportMessageRequestDTO;
 import com.vzap.trytons.dto.message.SendLeagueMessageRequestDTO;
+import com.vzap.trytons.enums.MessageScope;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
 import com.vzap.trytons.service.message.LeagueMessageService;
+import com.vzap.trytons.service.message.MessageReportService;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -35,6 +39,9 @@ public class LeagueMessageResource {
     @Inject
     private LeagueMessageService leagueMessageService;
 
+    @Inject
+    private MessageReportService messageReportService;
+
     @Context
     private ContainerRequestContext request;
 
@@ -55,6 +62,17 @@ public class LeagueMessageResource {
     public Response postMessage(@PathParam("leagueId") UUID leagueId,
                                 SendLeagueMessageRequestDTO body) {
         LeagueMessageResponseDTO created = leagueMessageService.post(currentUserId(), leagueId, body);
+        return Response.status(Response.Status.CREATED).entity(created).build();
+    }
+
+    @POST
+    @Path("/{messageId}/report")
+    public Response reportMessage(@PathParam("leagueId") UUID leagueId,
+                                  @PathParam("messageId") UUID messageId,
+                                  ReportMessageRequestDTO body) {
+        String reason = body == null ? null : body.getReason();
+        MessageReportResponseDTO created =
+                messageReportService.report(currentUserId(), MessageScope.LEAGUE, messageId, reason);
         return Response.status(Response.Status.CREATED).entity(created).build();
     }
 

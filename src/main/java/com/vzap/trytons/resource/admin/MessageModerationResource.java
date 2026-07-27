@@ -3,11 +3,13 @@ package com.vzap.trytons.resource.admin;
 import com.vzap.trytons.annotations.AdminOnly;
 import com.vzap.trytons.annotations.Authenticated;
 import com.vzap.trytons.dto.message.BlockedPhraseDTO;
+import com.vzap.trytons.dto.message.DirectMessageResponseDTO;
 import com.vzap.trytons.dto.message.LeagueMessageResponseDTO;
 import com.vzap.trytons.dto.message.PendingLeagueMessageDTO;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
 import com.vzap.trytons.service.message.BlockedPhraseService;
+import com.vzap.trytons.service.message.DirectMessageService;
 import com.vzap.trytons.service.message.LeagueMessageService;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -42,6 +44,9 @@ public class MessageModerationResource {
     @Inject
     private BlockedPhraseService blockedPhraseService;
 
+    @Inject
+    private DirectMessageService directMessageService;
+
     @Context
     private ContainerRequestContext request;
 
@@ -69,6 +74,13 @@ public class MessageModerationResource {
     public Response reject(@PathParam("messageId") UUID messageId) {
         leagueMessageService.reject(currentUserId(), messageId);
         return Response.ok(Map.of("messageId", messageId.toString(), "status", "REJECTED")).build();
+    }
+
+    @GET
+    @Path("/direct/{messageId}")
+    public Response getDirectMessageContext(@PathParam("messageId") UUID messageId) {
+        List<DirectMessageResponseDTO> window = directMessageService.getAdminWindow(currentUserId(), messageId);
+        return Response.ok(window).build();
     }
 
     @GET

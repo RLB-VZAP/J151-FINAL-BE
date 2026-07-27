@@ -1,5 +1,6 @@
 package com.vzap.trytons.model.message;
 
+import com.vzap.trytons.enums.DirectMessageStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,4 +26,6 @@ public class DirectMessage {
     private LocalDateTime createdAt;
 
     private Boolean isRead;
+
+    private DirectMessageStatus status;
 }
