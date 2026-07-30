@@ -61,7 +61,20 @@ public class LeagueServiceImpl implements LeagueService {
             throw new ConflictException("A league with this name already exists.");
         }
 
-        FantasyTeam team = fantasyTeamDAO.getTeamByOwner(currentUserId).orElseThrow(() -> new BusinessRuleException("You must create a fantasy team before creating a league."));
+        // Administrators run the competition rather than compete in it: they have no
+        // fantasy team, and leagueMembership requires one, so an admin-created league
+        // gets no founding member and no manager. Only public leagues make sense that
+        // way — a private league is a group of friends around its own manager, and
+        // nobody would be able to administer the code.
+        boolean actorIsAdmin = isAdmin(currentUserId);
+        if (actorIsAdmin && request.getLeagueType() != LeagueType.PUBLIC) {
+            throw new BusinessRuleException(
+                    "Administrators can only create public leagues. A private league needs a manager who plays in it.");
+        }
+
+        FantasyTeam team = actorIsAdmin
+                ? null
+                : fantasyTeamDAO.getTeamByOwner(currentUserId).orElseThrow(() -> new BusinessRuleException("You must create a fantasy team before creating a league."));
 
         League league = new League();
         league.setLeagueId(UUID.randomUUID());
@@ -81,17 +94,21 @@ public class LeagueServiceImpl implements LeagueService {
             throw new BusinessRuleException("The league could not be created.");
         }
 
-        LeagueMembership managerMembership = membershipDAO.createMembership(
-                savedLeague.getLeagueId(), currentUserId, team.getTeamId());
+        // An admin is neither a member nor the manager, so the league opens empty and
+        // manager_user_id stays null — the column is nullable for exactly this case.
+        if (!actorIsAdmin) {
+            LeagueMembership managerMembership = membershipDAO.createMembership(
+                    savedLeague.getLeagueId(), currentUserId, team.getTeamId());
 
-        if (managerMembership == null || managerMembership.getMembershipId() == null) {
-            throw new BusinessRuleException("The league manager membership could not be created.");
-        }
+            if (managerMembership == null || managerMembership.getMembershipId() == null) {
+                throw new BusinessRuleException("The league manager membership could not be created.");
+            }
 
-        boolean managerAssigned = leagueDAO.assignManager(savedLeague.getLeagueId(), currentUserId);
+            boolean managerAssigned = leagueDAO.assignManager(savedLeague.getLeagueId(), currentUserId);
 
-        if (!managerAssigned) {
-            throw new BusinessRuleException("The league manager could not be assigned.");
+            if (!managerAssigned) {
+                throw new BusinessRuleException("The league manager could not be assigned.");
+            }
         }
 
         return toResponse(requireLeague(savedLeague.getLeagueId()));
