@@ -20,7 +20,9 @@ import java.util.logging.Level;
 import java.util.UUID;
 import java.util.logging.Logger;
 import com.vzap.trytons.dao.shared.BaseDAO;
+import jakarta.enterprise.context.ApplicationScoped;
 
+@ApplicationScoped
 public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembershipDAO {
 
     private static final Logger LOGGER = Logger.getLogger(LeagueMembershipDAOImpl.class.getName());

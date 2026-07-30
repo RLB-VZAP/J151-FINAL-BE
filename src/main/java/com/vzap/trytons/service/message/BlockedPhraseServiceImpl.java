@@ -10,7 +10,9 @@ import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import jakarta.enterprise.context.ApplicationScoped;
 
+@ApplicationScoped
 public class BlockedPhraseServiceImpl implements BlockedPhraseService {
 
     private static final int MAX_PHRASE_LENGTH = 100;

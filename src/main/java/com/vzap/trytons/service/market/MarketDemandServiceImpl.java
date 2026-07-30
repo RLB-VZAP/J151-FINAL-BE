@@ -12,7 +12,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import jakarta.enterprise.context.ApplicationScoped;
 
+@ApplicationScoped
 public class MarketDemandServiceImpl implements MarketDemandService {
 
     private static final int PANEL_SIZE = 5;

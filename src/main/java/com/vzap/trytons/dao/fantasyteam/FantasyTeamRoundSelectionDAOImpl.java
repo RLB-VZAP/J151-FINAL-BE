@@ -13,7 +13,9 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import com.vzap.trytons.dao.shared.BaseDAO;
+import jakarta.enterprise.context.ApplicationScoped;
 
+@ApplicationScoped
 public class FantasyTeamRoundSelectionDAOImpl extends BaseDAO implements FantasyTeamRoundSelectionDAO {
     private static final Logger LOGGER = Logger.getLogger(FantasyTeamRoundSelectionDAOImpl.class.getName());
     

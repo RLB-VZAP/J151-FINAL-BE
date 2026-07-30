@@ -15,7 +15,9 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import com.vzap.trytons.dao.shared.BaseDAO;
+import jakarta.enterprise.context.ApplicationScoped;
 
+@ApplicationScoped
 public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
 
     private static final Logger LOG = Logger.getLogger(LeaderboardDAOImpl.class.getName());

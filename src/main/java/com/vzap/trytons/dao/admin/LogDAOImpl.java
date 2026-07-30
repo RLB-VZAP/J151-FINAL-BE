@@ -11,7 +11,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jakarta.enterprise.context.ApplicationScoped;
 
+@ApplicationScoped
 public class LogDAOImpl extends BaseDAO implements LogDAO {
     private static final Logger LOG = Logger.getLogger(LogDAOImpl.class.getName());
     private Log mapRow(ResultSet rs) throws SQLException {
@@ -59,9 +61,9 @@ public class LogDAOImpl extends BaseDAO implements LogDAO {
 
     @Override
     public List<LogActionCount> countByActionType() {
-        String query ="SELECT actionType, COUNT(*) AS actionCount"+
-                "FROM log"+
-                "GROUP BY actionType" +
+        String query = "SELECT actionType, COUNT(*) AS actionCount " +
+                "FROM log " +
+                "GROUP BY actionType " +
                 "ORDER BY actionCount DESC";
 
         try(Connection con = getConnection();

@@ -31,7 +31,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import jakarta.enterprise.context.ApplicationScoped;
 
+@ApplicationScoped
 public class FantasyTeamServiceImpl implements FantasyTeamService {
     /**
      * Squad budget, on the same scale as player.value — millions of rands, so

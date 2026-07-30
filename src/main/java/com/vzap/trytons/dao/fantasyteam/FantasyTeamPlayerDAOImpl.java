@@ -15,7 +15,9 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import com.vzap.trytons.dao.shared.BaseDAO;
+import jakarta.enterprise.context.ApplicationScoped;
 
+@ApplicationScoped
 public class FantasyTeamPlayerDAOImpl extends BaseDAO implements FantasyTeamPlayerDAO {
 
     private static final Logger LOG = Logger.getLogger(FantasyTeamPlayerDAOImpl.class.getName());
