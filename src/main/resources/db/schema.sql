@@ -963,7 +963,11 @@ CREATE TABLE `notification`
 (
     `notificationId`      VARCHAR(36) NOT NULL,
     `userId`              VARCHAR(36) NOT NULL,
+    -- Must stay in step with com.vzap.trytons.enums.NotificationType: the DAO
+    -- writes the Java constant name straight into this column, so a value the
+    -- ENUM does not list fails the insert with "Data truncated for column".
     `type`                ENUM(
+                                'CHAT_MESSAGE',
                                 'LEADERBOARD_CHANGE',
                                 'POINTS_UPDATE',
                                 'MATCHUP_RESULT',
@@ -971,6 +975,8 @@ CREATE TABLE `notification`
                                 'PLAYER_AVAILABILITY',
                                 'TRANSFER_DEADLINE',
                                 'ROUND_LOCK',
+                                'LEAGUE_INVITATION',
+                                'REPORT_UPDATE',
                                 'SYSTEM'
                             ) NOT NULL,
     `body`                TEXT        NOT NULL,
