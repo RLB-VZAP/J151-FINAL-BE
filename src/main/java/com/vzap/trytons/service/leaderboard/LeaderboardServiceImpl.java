@@ -26,7 +26,9 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jakarta.enterprise.context.ApplicationScoped;
 
+@ApplicationScoped
 public class LeaderboardServiceImpl implements LeaderboardService{
 
     private static final Logger LOG = Logger.getLogger(LeaderboardServiceImpl.class.getName());

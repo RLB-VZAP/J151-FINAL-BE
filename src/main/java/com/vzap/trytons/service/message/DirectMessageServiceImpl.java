@@ -26,7 +26,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jakarta.enterprise.context.ApplicationScoped;
 
+@ApplicationScoped
 public class DirectMessageServiceImpl implements DirectMessageService {
 
     private static final Logger LOG = Logger.getLogger(DirectMessageServiceImpl.class.getName());
