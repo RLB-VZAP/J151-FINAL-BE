@@ -14,8 +14,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -110,112 +112,6 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
         return Optional.empty();
     }
 
-    private static final String IMPORT_INSERT =
-            "INSERT INTO player (playerId, clubId, positionId, playerName, value, attackingAbility, "
-                    + "defensiveAbility, kickingAbility, discipline, consistency, fitness, currentForm, isActive) "
-                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)";
-
-    private static final String IMPORT_UPDATE =
-            "UPDATE player SET clubId = ?, positionId = ?, playerName = ?, value = ?, attackingAbility = ?, "
-                    + "defensiveAbility = ?, kickingAbility = ?, discipline = ?, consistency = ?, fitness = ?, "
-                    + "currentForm = ?, isActive = TRUE WHERE playerId = ?";
-
-    private static final String IMPORT_DEACTIVATE =
-            "UPDATE player SET isActive = FALSE WHERE playerId = ? AND isActive = TRUE";
-
-    @Override
-    public void applyFeedImport(Collection<Player> toInsert, Collection<Player> toUpdate, Collection<UUID> idsToDeactivate) {
-        Connection con = null;
-        try {
-            con = getConnection();
-            con.setAutoCommit(false);
-
-            try (PreparedStatement insert = con.prepareStatement(IMPORT_INSERT);
-                 PreparedStatement update = con.prepareStatement(IMPORT_UPDATE);
-                 PreparedStatement deactivate = con.prepareStatement(IMPORT_DEACTIVATE)) {
-
-                for (Player player : toInsert) {
-                    bindInsert(insert, player);
-                    insert.addBatch();
-                }
-                insert.executeBatch();
-
-                for (Player player : toUpdate) {
-                    bindUpdate(update, player);
-                    update.addBatch();
-                }
-                update.executeBatch();
-
-                for (UUID playerId : idsToDeactivate) {
-                    deactivate.setString(1, playerId.toString());
-                    deactivate.addBatch();
-                }
-                deactivate.executeBatch();
-            }
-
-            con.commit();
-
-        } catch (SQLException e) {
-            rollbackQuietly(con);
-            LOG.log(Level.SEVERE, "Unable to apply player feed import.", e);
-            throw new DataAccessException("Unable to apply player feed import.", e);
-        } finally {
-            closeQuietly(con);
-        }
-    }
-
-    private void bindInsert(PreparedStatement ps, Player player) throws SQLException {
-        ps.setString(1, player.getPlayerId().toString());
-        ps.setString(2, player.getClubId().toString());
-        ps.setString(3, player.getPositionId().toString());
-        ps.setString(4, player.getPlayerName());
-        ps.setBigDecimal(5, player.getValue());
-        ps.setInt(6, player.getAttackingAbility());
-        ps.setInt(7, player.getDefensiveAbility());
-        ps.setInt(8, player.getKickingAbility());
-        ps.setInt(9, player.getDiscipline());
-        ps.setInt(10, player.getConsistency());
-        ps.setInt(11, player.getFitness());
-        ps.setInt(12, player.getCurrentForm());
-    }
-
-    private void bindUpdate(PreparedStatement ps, Player player) throws SQLException {
-        ps.setString(1, player.getClubId().toString());
-        ps.setString(2, player.getPositionId().toString());
-        ps.setString(3, player.getPlayerName());
-        ps.setBigDecimal(4, player.getValue());
-        ps.setInt(5, player.getAttackingAbility());
-        ps.setInt(6, player.getDefensiveAbility());
-        ps.setInt(7, player.getKickingAbility());
-        ps.setInt(8, player.getDiscipline());
-        ps.setInt(9, player.getConsistency());
-        ps.setInt(10, player.getFitness());
-        ps.setInt(11, player.getCurrentForm());
-        ps.setString(12, player.getPlayerId().toString());
-    }
-
-    private void rollbackQuietly(Connection con) {
-        if (con == null) {
-            return;
-        }
-        try {
-            con.rollback();
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Unable to roll back player feed import.", e);
-        }
-    }
-
-    private void closeQuietly(Connection con) {
-        if (con == null) {
-            return;
-        }
-        try {
-            con.setAutoCommit(true);
-            con.close();
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Unable to close connection after player feed import.", e);
-        }
-    }
 
     @Override
     public List<Player> getAllPlayers() {
@@ -270,7 +166,18 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
             query = query + "AND currentForm <= ? ";
         }
 
-        if (availabilityStatus != null) {
+        if (availabilityStatus == AvailabilityStatus.ACTIVE) {
+            // Available means "nothing currently says otherwise". An EXISTS on an
+            // ACTIVE record would instead demand one, which hides every player who
+            // has never been injured or suspended — most of the catalogue.
+            query = query
+                    + "AND NOT EXISTS (SELECT 1 FROM playerAvailability "
+                    + "WHERE playerAvailability.playerId = player.playerId "
+                    + "AND playerAvailability.status <> ? "
+                    + "AND playerAvailability.effectiveDate <= CURRENT_DATE "
+                    + "AND (playerAvailability.endDate IS NULL "
+                    + "OR playerAvailability.endDate >= CURRENT_DATE)) ";
+        } else if (availabilityStatus != null) {
             query = query
                     + "AND EXISTS (SELECT 1 FROM playerAvailability "
                     + "WHERE playerAvailability.playerId = player.playerId "
@@ -490,6 +397,48 @@ public class PlayerDAOImpl extends BaseDAO implements PlayerDAO {
         }
 
         return players;
+    }
+
+    @Override
+    public Map<UUID, AvailabilityStatus> getCurrentAvailabilityStatuses(Collection<UUID> playerIds) {
+        Map<UUID, AvailabilityStatus> statuses = new HashMap<>();
+
+        if (playerIds == null || playerIds.isEmpty()) {
+            return statuses;
+        }
+
+        // Same "current record" predicate as getCurrentAvailability, but for a whole
+        // page at once. Ordering matches it too, so that when a player has several
+        // overlapping records the first row seen here is the one that lookup would
+        // have returned.
+        String placeholders = String.join(",", java.util.Collections.nCopies(playerIds.size(), "?"));
+        String query = "SELECT playerId, status FROM playerAvailability "
+                + "WHERE playerId IN (" + placeholders + ") "
+                + "AND effectiveDate <= CURRENT_DATE "
+                + "AND (endDate IS NULL OR endDate >= CURRENT_DATE) "
+                + "ORDER BY effectiveDate DESC, availabilityId DESC";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            int parameterIndex = 1;
+            for (UUID playerId : playerIds) {
+                ps.setString(parameterIndex++, playerId.toString());
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    UUID playerId = UUID.fromString(rs.getString("playerId"));
+                    statuses.putIfAbsent(playerId, AvailabilityStatus.valueOf(rs.getString("status")));
+                }
+            }
+
+        } catch (SQLException | IllegalArgumentException e) {
+            LOG.log(Level.SEVERE, "Unable to retrieve current player availability statuses.", e);
+            throw new DataAccessException("Unable to retrieve current player availability statuses.", e);
+        }
+
+        return statuses;
     }
 
     @Override

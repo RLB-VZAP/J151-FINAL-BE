@@ -105,8 +105,14 @@ public class SquadValidationServiceImpl implements SquadValidationService {
     private void validatePlayerAvailability(List<Player> players, SquadValidationResultDTO result) {
 
         for (Player player : players) {
-            PlayerAvailability availability = playerDAO.getCurrentAvailability(player.getPlayerId()).orElseThrow(() -> new ResourceNotFoundException("Player Not Found."));
-            if (availability.getStatus() != AvailabilityStatus.ACTIVE) {
+            // No availability record means nothing has happened to this player:
+            // records are written when someone is injured or suspended, so their
+            // absence is the normal state of a fit player. Treating a missing record
+            // as an error rejected every player who had never been unavailable.
+            AvailabilityStatus status = playerDAO.getCurrentAvailability(player.getPlayerId())
+                    .map(PlayerAvailability::getStatus)
+                    .orElse(AvailabilityStatus.ACTIVE);
+            if (status != AvailabilityStatus.ACTIVE) {
                 result.addError("PLAYER_NOT_AVAILABLE", "Player is not available: " + player.getPlayerName(), "List<UUID> proposedPlayerIds");
             }
         }
