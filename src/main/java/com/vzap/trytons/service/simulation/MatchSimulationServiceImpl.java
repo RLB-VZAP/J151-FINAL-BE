@@ -144,17 +144,27 @@ public class MatchSimulationServiceImpl implements MatchSimulationService {
         for (FantasyTeamRoundSelection selectionA : teamASelections) {
             Player player = playerDAO.getPlayerById(selectionA.getPlayerId()).orElseThrow(() -> new ResourceNotFoundException("A locked player for Team A could not be found."));
 
-            PlayerAvailability availability = playerDAO.getCurrentAvailability(player.getPlayerId()).orElseThrow(() -> new BusinessRuleException("Team A player does not have a current availability."));
+            // No record means nothing has ruled this player out — availability rows
+            // are written for injuries and suspensions, so a fit player simply has
+            // none. Requiring one made every such player unsimulatable.
+            AvailabilityStatus availabilityStatus = playerDAO.getCurrentAvailability(player.getPlayerId())
+                    .map(PlayerAvailability::getStatus)
+                    .orElse(AvailabilityStatus.ACTIVE);
 
             teamA.add(player);
-            availabilityByPlayerIdTeamA.put(player.getPlayerId(), availability.getStatus());
+            availabilityByPlayerIdTeamA.put(player.getPlayerId(), availabilityStatus);
         }
 
         for (FantasyTeamRoundSelection selectionB : teamBSelections) {
             Player player = playerDAO.getPlayerById(selectionB.getPlayerId()).orElseThrow(() -> new ResourceNotFoundException("A locked player for Team B could not be found."));
-            PlayerAvailability availability = playerDAO.getCurrentAvailability(player.getPlayerId()).orElseThrow(() -> new BusinessRuleException("Team B player does not have a current availability."));
+            // No record means nothing has ruled this player out — availability rows
+            // are written for injuries and suspensions, so a fit player simply has
+            // none. Requiring one made every such player unsimulatable.
+            AvailabilityStatus availabilityStatus = playerDAO.getCurrentAvailability(player.getPlayerId())
+                    .map(PlayerAvailability::getStatus)
+                    .orElse(AvailabilityStatus.ACTIVE);
             teamB.add(player);
-            availabilityByPlayerIdTeamB.put(player.getPlayerId(), availability.getStatus());
+            availabilityByPlayerIdTeamB.put(player.getPlayerId(), availabilityStatus);
         }
 
         SimulationSettingResponseDTO settings = simulationSettingService.getActiveSimulationSetting();

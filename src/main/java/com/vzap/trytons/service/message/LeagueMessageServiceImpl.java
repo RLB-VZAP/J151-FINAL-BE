@@ -30,7 +30,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jakarta.enterprise.context.ApplicationScoped;
 
+@ApplicationScoped
 public class LeagueMessageServiceImpl implements LeagueMessageService {
 
     private static final Logger LOG = Logger.getLogger(LeagueMessageServiceImpl.class.getName());

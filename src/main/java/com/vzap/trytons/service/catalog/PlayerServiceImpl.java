@@ -10,12 +10,14 @@ import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.exceptions.ValidationException;
 import com.vzap.trytons.model.catalog.Player;
+import com.vzap.trytons.model.catalog.PlayerAvailability;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -47,19 +49,16 @@ public class PlayerServiceImpl implements PlayerService {
 
         Player player = playerDAO.getPlayerById(playerId).orElseThrow(() -> new ResourceNotFoundException("Player was not found."));
 
-        return mapToResponse(player);
+        PlayerResponseDTO response = mapToResponse(player);
+        response.setAvailabilityStatus(statusNameOf(
+                playerDAO.getCurrentAvailability(playerId).map(PlayerAvailability::getStatus).orElse(null)));
+
+        return response;
     }
 
     @Override
     public List<PlayerResponseDTO> getAllPlayers() {
-        List<Player> players = playerDAO.getAllPlayers();
-        List<PlayerResponseDTO> responses = new ArrayList<>();
-
-        for (Player player : players) {
-            responses.add(mapToResponse(player));
-        }
-
-        return responses;
+        return mapWithAvailability(playerDAO.getAllPlayers());
     }
 
     @Override
@@ -76,14 +75,40 @@ public class PlayerServiceImpl implements PlayerService {
         AvailabilityStatus status = Boolean.TRUE.equals(availableOnly) ? AvailabilityStatus.ACTIVE : null;
         Boolean isActive = Boolean.TRUE.equals(availableOnly) ? Boolean.TRUE : null;
 
-        List<Player> players = playerDAO.searchPlayers(playerName, clubId, positionId, null, null, null, null, status, isActive);
-        List<PlayerResponseDTO> responses = new ArrayList<>();
+        return mapWithAvailability(
+                playerDAO.searchPlayers(playerName, clubId, positionId, null, null, null, null, status, isActive));
+    }
+
+    /**
+     * Maps a page of players, attaching each one's current availability. The
+     * statuses come from a single batch query rather than a lookup per row, which
+     * matters: the catalogue is the better part of a thousand players.
+     */
+    private List<PlayerResponseDTO> mapWithAvailability(List<Player> players) {
+        List<UUID> playerIds = new ArrayList<>(players.size());
+        for (Player player : players) {
+            playerIds.add(player.getPlayerId());
+        }
+
+        Map<UUID, AvailabilityStatus> statuses = playerDAO.getCurrentAvailabilityStatuses(playerIds);
+        List<PlayerResponseDTO> responses = new ArrayList<>(players.size());
 
         for (Player player : players) {
-            responses.add(mapToResponse(player));
+            PlayerResponseDTO response = mapToResponse(player);
+            response.setAvailabilityStatus(statusNameOf(statuses.get(player.getPlayerId())));
+            responses.add(response);
         }
 
         return responses;
+    }
+
+    /**
+     * A player with no availability record is treated as available. Records are
+     * only written when something changes (an injury, a suspension), so their
+     * absence is the normal state for a fit player, not missing data.
+     */
+    private String statusNameOf(AvailabilityStatus status) {
+        return (status == null ? AvailabilityStatus.ACTIVE : status).name();
     }
 
     @Override

@@ -17,7 +17,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jakarta.enterprise.context.ApplicationScoped;
 
+@ApplicationScoped
 public class FcmServiceImpl implements FcmService {
 
     private static final Logger LOG = Logger.getLogger(FcmServiceImpl.class.getName());

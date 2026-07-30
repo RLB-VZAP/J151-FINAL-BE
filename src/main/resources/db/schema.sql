@@ -34,6 +34,14 @@ SET
 FOREIGN_KEY_CHECKS = 0;
 
 DROP VIEW IF EXISTS `player_round_performance`;
+DROP TABLE IF EXISTS `message_request`;
+DROP TABLE IF EXISTS `device_token`;
+DROP TABLE IF EXISTS `user_block`;
+DROP TABLE IF EXISTS `league_message`;
+DROP TABLE IF EXISTS `direct_message`;
+DROP TABLE IF EXISTS `message_blocklist`;
+DROP TABLE IF EXISTS `player_price_history`;
+DROP TABLE IF EXISTS `pricing_settings`;
 DROP TABLE IF EXISTS `systemReport`;
 DROP TABLE IF EXISTS `simulationSettings`;
 DROP TABLE IF EXISTS `roundLock`;
@@ -955,7 +963,11 @@ CREATE TABLE `notification`
 (
     `notificationId`      VARCHAR(36) NOT NULL,
     `userId`              VARCHAR(36) NOT NULL,
+    -- Must stay in step with com.vzap.trytons.enums.NotificationType: the DAO
+    -- writes the Java constant name straight into this column, so a value the
+    -- ENUM does not list fails the insert with "Data truncated for column".
     `type`                ENUM(
+                                'CHAT_MESSAGE',
                                 'LEADERBOARD_CHANGE',
                                 'POINTS_UPDATE',
                                 'MATCHUP_RESULT',
@@ -963,6 +975,8 @@ CREATE TABLE `notification`
                                 'PLAYER_AVAILABILITY',
                                 'TRANSFER_DEADLINE',
                                 'ROUND_LOCK',
+                                'LEAGUE_INVITATION',
+                                'REPORT_UPDATE',
                                 'SYSTEM'
                             ) NOT NULL,
     `body`                TEXT        NOT NULL,
@@ -1894,6 +1908,16 @@ CREATE TABLE `pricing_settings`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
+-- Baseline pricing settings row.
+-- PricingService.updateSettings() loads the existing row before updating it, and
+-- PricingSettingsDAO only issues an UPDATE (there is no INSERT path), so an empty
+-- pricing_settings table leaves the admin pricing screen permanently unusable:
+-- the GET returns "Pricing settings have not been configured." and the PUT cannot
+-- create the missing row. Exactly one row is expected; the column DEFAULTs above
+-- define the intended baseline weights.
+INSERT INTO `pricing_settings` (`settingsId`)
+VALUES (UUID());
+
 CREATE TABLE `player_price_history`
 (
     `historyId` VARCHAR(36)    NOT NULL,
@@ -1999,6 +2023,51 @@ CREATE TABLE `direct_message`
         FOREIGN KEY (`recipient_user_id`) REFERENCES `user` (`userId`)
             ON DELETE RESTRICT
             ON UPDATE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+/* Permission to exchange direct messages.
+   A direct message may only be sent once a request between the two users has
+   been ACCEPTED, in either direction — acceptance is mutual, so the pair is
+   stored unordered-in-effect and both send paths check either direction.
+   League chat needs no row here: membership of the league is the permission. */
+CREATE TABLE `message_request`
+(
+    `requestId`          VARCHAR(36)  NOT NULL,
+    `requester_user_id`  VARCHAR(36)  NOT NULL,
+    `addressee_user_id`  VARCHAR(36)  NOT NULL,
+    `status`             ENUM('PENDING', 'ACCEPTED', 'DECLINED') NOT NULL DEFAULT 'PENDING',
+    `introMessage`       VARCHAR(255)          DEFAULT NULL,
+    `createdAt`          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `respondedAt`        DATETIME              DEFAULT NULL,
+
+    PRIMARY KEY (`requestId`),
+
+    /* One live request per ordered pair. A declined request is updated back to
+       PENDING when the requester tries again rather than inserting a second row,
+       so this stays a hard guarantee. */
+    UNIQUE KEY `uk_message_request_pair` (`requester_user_id`, `addressee_user_id`),
+    KEY `idx_message_request_addressee` (`addressee_user_id`, `status`, `createdAt`),
+    KEY `idx_message_request_requester` (`requester_user_id`, `status`),
+
+    CONSTRAINT `chk_message_request_not_self`
+        CHECK (`requester_user_id` <> `addressee_user_id`),
+
+    /* Fully RESTRICT, unlike the ON UPDATE CASCADE used elsewhere: MySQL rejects
+       a CHECK constraint on any column a foreign key's referential action might
+       write (error 3823), and that covers ON UPDATE as well as ON DELETE. Since
+       user.userId is an immutable UUID, cascading an update would never fire
+       anyway, so the self-request CHECK above is the better trade. */
+    CONSTRAINT `fk_message_request_requester`
+        FOREIGN KEY (`requester_user_id`) REFERENCES `user` (`userId`)
+            ON DELETE RESTRICT
+            ON UPDATE RESTRICT,
+
+    CONSTRAINT `fk_message_request_addressee`
+        FOREIGN KEY (`addressee_user_id`) REFERENCES `user` (`userId`)
+            ON DELETE RESTRICT
+            ON UPDATE RESTRICT
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;

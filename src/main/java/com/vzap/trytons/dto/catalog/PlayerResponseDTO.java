@@ -33,4 +33,12 @@ public class PlayerResponseDTO {
 
     @JsonProperty("isActive")
     private boolean isActive;
+
+    /**
+     * Current availability (ACTIVE, INJURED, SUSPENDED, ...) as the enum name.
+     * Distinct from {@code isActive}, which only says whether the player is still
+     * on a club's roster: a rostered player can be injured and so unpickable. The
+     * team-selection pool needs both to show a player and refuse the pick.
+     */
+    private String availabilityStatus;
 }

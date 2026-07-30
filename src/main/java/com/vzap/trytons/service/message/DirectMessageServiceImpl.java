@@ -26,7 +26,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jakarta.enterprise.context.ApplicationScoped;
 
+@ApplicationScoped
 public class DirectMessageServiceImpl implements DirectMessageService {
 
     private static final Logger LOG = Logger.getLogger(DirectMessageServiceImpl.class.getName());
@@ -39,6 +41,8 @@ public class DirectMessageServiceImpl implements DirectMessageService {
     private UserBlockDAO userBlockDAO;
     @Inject
     private UserDAO userDAO;
+    @Inject
+    private MessageRequestService messageRequestService;
     @Inject
     private NotificationService notificationService;
     @Inject
@@ -73,6 +77,15 @@ public class DirectMessageServiceImpl implements DirectMessageService {
 
         if (userBlockDAO.existsEitherDirection(actorUserId, recipientUserId)) {
             throw new AuthorisationException("You cannot send messages to this user.");
+        }
+
+        // Direct messages need the recipient's consent: one side asks, the other
+        // accepts, and only then may either send. League chat is the unapproved
+        // channel — membership of the league is the permission there, so it goes
+        // through LeagueMessageService and never reaches this check.
+        if (!messageRequestService.canExchangeMessages(actorUserId, recipientUserId)) {
+            throw new AuthorisationException(
+                    "You need an accepted message request before you can message " + recipient.getUsername() + ".");
         }
 
         DirectMessage message = DirectMessage.builder()

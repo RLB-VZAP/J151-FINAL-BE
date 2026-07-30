@@ -26,7 +26,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jakarta.enterprise.context.ApplicationScoped;
 
+@ApplicationScoped
 public class PricingServiceImpl implements PricingService {
 
     private static final Logger LOG = Logger.getLogger(PricingServiceImpl.class.getName());

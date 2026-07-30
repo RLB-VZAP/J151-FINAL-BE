@@ -6,7 +6,9 @@ import jakarta.inject.Inject;
 
 import java.util.Optional;
 import java.util.regex.Pattern;
+import jakarta.enterprise.context.ApplicationScoped;
 
+@ApplicationScoped
 public class MessageFilterServiceImpl implements MessageFilterService {
 
     @Inject
