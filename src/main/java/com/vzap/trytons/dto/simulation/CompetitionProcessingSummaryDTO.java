@@ -22,6 +22,9 @@ public class CompetitionProcessingSummaryDTO {
     private int fixturesProcessed;
     private int leaderboardsRefreshed;
     private int playersRepriced;
+
+    /** Tournaments whose standings or bracket moved on during this run. */
+    private int tournamentsAdvanced;
     private int skipped;
     private int errors;
 

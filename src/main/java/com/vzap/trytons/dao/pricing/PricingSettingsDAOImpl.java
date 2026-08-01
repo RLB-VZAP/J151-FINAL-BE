@@ -83,4 +83,32 @@ public class PricingSettingsDAOImpl extends BaseDAO implements PricingSettingsDA
             throw new DataAccessException("Unable to update pricing settings", e);
         }
     }
+
+    @Override
+    public boolean insertSettings(PricingSettings settings) {
+        String query = "INSERT INTO pricing_settings "
+                + "(settingsId, w_form, w_popularity, w_points, w_injury, w_demand, w_availability, "
+                + "max_delta_pct, min_value, max_value) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, settings.getSettingsId().toString());
+            ps.setBigDecimal(2, settings.getWeightForm());
+            ps.setBigDecimal(3, settings.getWeightPopularity());
+            ps.setBigDecimal(4, settings.getWeightPoints());
+            ps.setBigDecimal(5, settings.getWeightInjury());
+            ps.setBigDecimal(6, settings.getWeightDemand());
+            ps.setBigDecimal(7, settings.getWeightAvailability());
+            ps.setBigDecimal(8, settings.getMaxDeltaPct());
+            ps.setBigDecimal(9, settings.getMinValue());
+            ps.setBigDecimal(10, settings.getMaxValue());
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to insert pricing settings", e);
+            throw new DataAccessException("Unable to insert pricing settings", e);
+        }
+    }
 }

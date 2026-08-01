@@ -1,11 +1,16 @@
 package com.vzap.trytons.dao.league;
+import com.vzap.trytons.enums.LeagueStatus;
 import com.vzap.trytons.enums.LeagueType;
+import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.league.League;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -21,7 +26,7 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
 
     @Override
     public League createLeague(League league) {
-        String query = "INSERT INTO league(leagueId,manager_user_id,leagueName,description,leagueType,leagueCode,isActive,maxMembers) VALUES (?,?,?,?,?,?,?,?)";
+        String query = "INSERT INTO league(leagueId,manager_user_id,leagueName,description,leagueType,leagueCode,isActive,maxMembers,status,startedAt) VALUES (?,?,?,?,?,?,?,?,?,?)";
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query);){
             ps.setString(1,league.getLeagueId().toString());
@@ -32,6 +37,12 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
             ps.setString(6,league.getLeagueCode());
             ps.setBoolean(7,league.getIsActive() == null || league.getIsActive());
             ps.setInt(8,league.getMaxMembers());
+            ps.setString(9, league.getStatus() == null ? LeagueStatus.FORMING.name() : league.getStatus().name());
+            if(league.getStartedAt() != null){
+                ps.setTimestamp(10, Timestamp.valueOf(league.getStartedAt()));
+            }else{
+                ps.setNull(10, Types.TIMESTAMP);
+            }
             if (ps.executeUpdate() > 0){
                 return league;
             }
@@ -230,6 +241,9 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
         if(manager_user_id!=null){
             league.setManagerUserId(UUID.fromString(manager_user_id));
         }
+        league.setStatus(LeagueStatus.valueOf(rs.getString("status")));
+        Timestamp startedAtTimestamp = rs.getTimestamp("startedAt");
+        league.setStartedAt(startedAtTimestamp == null ? null : startedAtTimestamp.toLocalDateTime());
         return league;
     }
 
@@ -244,6 +258,31 @@ public class LeagueDAOImpl extends BaseDAO implements LeagueDAO {
         }catch(SQLException e){
             LOG.log(Level.SEVERE,"Unable to assign manager for league " + leagueId, e);
             throw new DataAccessException("Unable to assign manager for league " + leagueId, e);
+        }
+    }
+
+    @Override
+    public boolean updateStatus(UUID leagueId, LeagueStatus status, LocalDateTime startedAt) {
+        String query = "UPDATE league SET status = ?, startedAt = ? WHERE leagueId = ?";
+        try(Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setString(1, status.name());
+            if(startedAt != null){
+                ps.setTimestamp(2, Timestamp.valueOf(startedAt));
+            }else{
+                ps.setNull(2, Types.TIMESTAMP);
+            }
+            ps.setString(3, leagueId.toString());
+            return ps.executeUpdate() > 0;
+        }catch(SQLException e){
+            if ("45000".equals(e.getSQLState())) {
+                throw new ConflictException(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "The league status could not be updated because it conflicts with an existing record.");
+            }
+            LOG.log(Level.SEVERE,"Unable to update status for league " + leagueId, e);
+            throw new DataAccessException("Unable to update status for league " + leagueId, e);
         }
     }
 }

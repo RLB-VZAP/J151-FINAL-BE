@@ -4,6 +4,7 @@ import com.vzap.trytons.dao.catalog.PlayerDAO;
 import com.vzap.trytons.dao.catalog.PositionDAO;
 import com.vzap.trytons.dto.fantasyteam.SquadValidationResultDTO;
 import com.vzap.trytons.enums.AvailabilityStatus;
+import com.vzap.trytons.exceptions.BusinessRuleException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.model.catalog.Player;
 import com.vzap.trytons.model.catalog.PlayerAvailability;
@@ -11,11 +12,35 @@ import com.vzap.trytons.model.catalog.Position;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 
 @ApplicationScoped
 public class SquadValidationServiceImpl implements SquadValidationService {
+    /**
+     * Squad budget, on the same scale as player.value — millions of rands, so
+     * 196.00 means R196m. It has to match that scale because the budget is
+     * spent by subtracting player values from it; the previous 100000000.00
+     * was whole rands, which made every squad look free and overflowed
+     * fantasyTeam.remainingBudget DECIMAL(10,2) on insert.
+     *
+     * Sized against the seeded roster and the 20-player squad rule. Once the
+     * position minimums are applied, the cheapest legal squad costs about 185,
+     * an average one about 203, and the most expensive about 222.
+     *
+     * 196 sits deliberately below the average squad, so a manager cannot just
+     * take twenty players without thinking, while still leaving roughly 11
+     * above the floor for a few premium picks. Anything near 190 would pin the
+     * squad to the cheapest legal combination — the floor is high because the
+     * roster is only 33 players for 20 places.
+     *
+     * Lives here (rather than in FantasyTeamServiceImpl, where it originated)
+     * because TransferServiceImpl needs the same figure and this is the
+     * shared squad/budget validator both flows already depend on.
+     */
+    private static final BigDecimal INITIAL_BUDGET = new BigDecimal("196.00");
+
     // Minimum position requirements.
     private static final int MIN_PROPS = 2;
     private static final int MIN_HOOKERS = 1;
@@ -62,6 +87,32 @@ public class SquadValidationServiceImpl implements SquadValidationService {
 
         validatePositionRules(players, result);
         return result;
+    }
+
+    @Override
+    public BigDecimal getInitialBudget() {
+        return INITIAL_BUDGET;
+    }
+
+    @Override
+    public BigDecimal computeSquadValue(List<UUID> playerIds) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (UUID playerId : playerIds) {
+            Player player = playerDAO.getPlayerById(playerId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Player not found."));
+            if (player.getValue() != null) {
+                total = total.add(player.getValue());
+            }
+        }
+        return total;
+    }
+
+    @Override
+    public BigDecimal checkRemainingBudget(BigDecimal remainingBudget, String insufficientBudgetMessage) {
+        if (remainingBudget.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessRuleException(insufficientBudgetMessage);
+        }
+        return remainingBudget;
     }
 
     private List<Player> getPlayers(List<UUID> playerIds, SquadValidationResultDTO result) {

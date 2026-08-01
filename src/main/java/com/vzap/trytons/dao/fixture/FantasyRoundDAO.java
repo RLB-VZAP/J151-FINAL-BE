@@ -15,4 +15,8 @@ public interface FantasyRoundDAO {
     Optional<FantasyRound> getCurrentOpenRound();
     boolean updateRoundStatus(UUID roundId, FantasyRoundStatus status);
     boolean roundExists(UUID roundId);
+
+    FantasyRound createRound(FantasyRound round);
+    /** Highest roundNumber used in a season, or 0 when the season has no rounds yet. */
+    int getMaxRoundNumber(String season);
 }

@@ -1,6 +1,7 @@
 package com.vzap.trytons.model.fixture;
 
 import com.vzap.trytons.enums.FixtureStatus;
+import com.vzap.trytons.enums.TournamentStage;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -24,6 +25,17 @@ public class Fixture {
     private LocalTime fixtureTime;
 
     private FixtureStatus status;
+
+    /*
+        Tournament wiring. All null on a standalone fixture created directly by
+        an administrator; a generated fixture always carries tournamentId and
+        stage, and poolId only while it is a pool fixture.
+    */
+    private UUID tournamentId;
+    private UUID poolId;
+    private TournamentStage stage;
+    private Integer bracketSlot;
+    private Integer matchdayNumber;
 
     private LocalDateTime simulationDate;
     private LocalDateTime createdAt;

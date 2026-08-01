@@ -11,6 +11,7 @@ import com.vzap.trytons.dao.fixture.RoundLockDAO;
 import com.vzap.trytons.dto.fixture.DeadlineStatusResponseDTO;
 import com.vzap.trytons.dto.fixture.LockStatusResponseDTO;
 import com.vzap.trytons.enums.FantasyRoundStatus;
+import com.vzap.trytons.enums.FixtureStatus;
 import com.vzap.trytons.enums.RoundLockAction;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.BusinessRuleException;
@@ -134,8 +135,33 @@ public class DeadlineLockServiceImpl implements DeadlineLockService {
         fantasyRoundDAO.updateRoundStatus(roundId,FantasyRoundStatus.LOCKED);
 
         snapshotSquadsForRound(round);
+        lockFixturesForRound(round);
         notifyTransferDeadlineForRound(round);
         return getLockStatus(roundId);
+    }
+
+    /**
+     * Moves the round's fixtures from UPCOMING to LOCKED.
+     *
+     * <p>Without this a locked round left its fixtures UPCOMING forever, and
+     * because {@code CompetitionProcessingService} simulates by looking for
+     * fixtures in the LOCKED state, nothing was ever simulated. Squads have
+     * just been snapshotted above, so the fixtures are genuinely ready to play.
+     */
+    private void lockFixturesForRound(FantasyRound round) {
+        for (Fixture fixture : fixtureDAO.findByRoundId(round.getRoundId())) {
+            if (fixture.getStatus() != FixtureStatus.UPCOMING) {
+                continue;
+            }
+            try {
+                fixtureDAO.updateStatus(fixture, FixtureStatus.LOCKED);
+            } catch (Exception e) {
+                // One stuck fixture must not abort locking the whole round.
+                LOG.log(Level.WARNING,
+                        "Unable to lock fixture " + fixture.getFixtureId()
+                                + " for round " + round.getRoundId(), e);
+            }
+        }
     }
 
     private void snapshotSquadsForRound(FantasyRound round) {

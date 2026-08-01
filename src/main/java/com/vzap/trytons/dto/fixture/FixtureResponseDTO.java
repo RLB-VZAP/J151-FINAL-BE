@@ -1,6 +1,7 @@
 package com.vzap.trytons.dto.fixture;
 
 import com.vzap.trytons.enums.FixtureStatus;
+import com.vzap.trytons.enums.TournamentStage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,6 +22,10 @@ public class FixtureResponseDTO {
     private UUID fixtureId;
     private UUID leagueId;
     private UUID roundId;
+    private Integer roundNumber;
+    private TournamentStage stage;
+    private Integer matchdayNumber;
+
     private UUID teamAId;
 
     private String teamAName;
@@ -28,6 +33,9 @@ public class FixtureResponseDTO {
     private UUID teamBId;
 
     private String teamBName;
+
+    private Integer teamAScore;
+    private Integer teamBScore;
 
     private LocalDate fixtureDate;
     private LocalTime fixtureTime;

@@ -1,6 +1,7 @@
 package com.vzap.trytons.dao.pricing;
 
 import com.vzap.trytons.dao.shared.BaseDAO;
+import com.vzap.trytons.dao.shared.PublicLeagueScope;
 import com.vzap.trytons.enums.AvailabilityStatus;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.pricing.PlayerPricingMetrics;
@@ -28,7 +29,8 @@ public class PricingMetricsDAOImpl extends BaseDAO implements PricingMetricsDAO 
             + "   - (SELECT COUNT(*) FROM transfer t2 WHERE t2.removed_player_id = p.playerId AND t2.status = 'CONFIRMED')) AS netDemand, "
             + "  (SELECT COALESCE(SUM(fp.totalPoints), 0) FROM fantasyPoints fp "
             + "     JOIN playerStatistics ps ON ps.statId = fp.statId "
-            + "     WHERE ps.playerId = p.playerId AND fp.isFinal = TRUE) AS recentPoints, "
+            + "     WHERE ps.playerId = p.playerId AND fp.isFinal = TRUE "
+            + "       AND " + PublicLeagueScope.PLAYER_STATISTICS_FILTER + ") AS recentPoints, "
             + "  (SELECT pa.status FROM playerAvailability pa WHERE pa.playerId = p.playerId "
             + "     ORDER BY pa.effectiveDate DESC LIMIT 1) AS availabilityStatus "
             + "FROM player p "

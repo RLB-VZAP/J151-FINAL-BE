@@ -42,6 +42,11 @@ DROP TABLE IF EXISTS `direct_message`;
 DROP TABLE IF EXISTS `message_blocklist`;
 DROP TABLE IF EXISTS `player_price_history`;
 DROP TABLE IF EXISTS `pricing_settings`;
+DROP TABLE IF EXISTS `tournament_standing`;
+DROP TABLE IF EXISTS `tournament_pool_member`;
+DROP TABLE IF EXISTS `tournament_pool`;
+DROP TABLE IF EXISTS `tournament_settings`;
+DROP TABLE IF EXISTS `tournament`;
 DROP TABLE IF EXISTS `systemReport`;
 DROP TABLE IF EXISTS `simulationSettings`;
 DROP TABLE IF EXISTS `roundLock`;
@@ -345,11 +350,21 @@ CREATE TABLE `league`
     `creationDate`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `isActive`        BOOLEAN      NOT NULL DEFAULT TRUE,
     `maxMembers`      INT          NOT NULL DEFAULT 100,
+    /*
+        Tournament lifecycle. A league is FORMING while managers join and its
+        squad list is still mutable. Starting the league generates the whole
+        pool stage in one transaction and moves it to IN_PROGRESS; crowning a
+        champion moves it to COMPLETED, after which a new season may start a
+        fresh tournament for the same league.
+    */
+    `status`          ENUM('FORMING', 'IN_PROGRESS', 'COMPLETED') NOT NULL DEFAULT 'FORMING',
+    `startedAt`       DATETIME              DEFAULT NULL,
 
     PRIMARY KEY (`leagueId`),
     UNIQUE KEY `uk_league_code` (`leagueCode`),
     KEY               `idx_league_manager` (`manager_user_id`),
     KEY               `idx_league_type_active` (`leagueType`, `isActive`),
+    KEY               `idx_league_status` (`status`),
 
     CONSTRAINT `fk_league_manager`
         FOREIGN KEY (`manager_user_id`) REFERENCES `registeredUser` (`userId`)
@@ -358,6 +373,13 @@ CREATE TABLE `league`
 
     CONSTRAINT `chk_league_maxMembers`
         CHECK (`maxMembers` > 1),
+
+    /* A league that has left FORMING must record when it was started. */
+    CONSTRAINT `chk_league_started`
+        CHECK (
+            (`status` = 'FORMING' AND `startedAt` IS NULL)
+                OR (`status` <> 'FORMING' AND `startedAt` IS NOT NULL)
+            ),
 
     CONSTRAINT `chk_league_code_type`
         CHECK (
@@ -431,6 +453,263 @@ CREATE TABLE `fantasyRound`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
+
+/*
+    =====================================================================
+    Rugby World Cup style tournament.
+
+    Starting a league generates exactly one `tournament` per (league, season).
+    Managers are drawn into balanced pools -- always fours where the league
+    size allows, threes to absorb the remainder, and a five only for the one
+    size (5) that cannot be partitioned into threes and fours at all. Every
+    pool plays a full single round robin, and because pools of three and four
+    both need exactly three matchdays the pool stage is normally three rounds
+    long regardless of league size.
+
+    One tournament matchday maps onto one `fantasyRound`: a fixture's outcome
+    is decided by the fantasy points its two squads accumulate over that
+    round's real rugby matches. The knockout stage then plays one round per
+    fantasyRound until a champion is crowned. This is what keeps a 100-manager
+    league to eight matchdays rather than an entire season of fixtures.
+    =====================================================================
+*/
+CREATE TABLE `tournament`
+(
+    `tournamentId`        VARCHAR(36) NOT NULL,
+    `leagueId`            VARCHAR(36) NOT NULL,
+    `season`              VARCHAR(20) NOT NULL,
+    `status`              ENUM('POOL_STAGE', 'KNOCKOUT_STAGE', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'POOL_STAGE',
+
+    `managerCount`        INT         NOT NULL,
+    `poolCount`           INT         NOT NULL,
+    `poolMatchdays`       INT         NOT NULL,
+    /* Size of the single-elimination bracket; always a power of two. */
+    `bracketSize`         INT         NOT NULL,
+    `thirdPlacePlayoff`   BOOLEAN     NOT NULL DEFAULT TRUE,
+
+    `champion_team_id`    VARCHAR(36)          DEFAULT NULL,
+    `runner_up_team_id`   VARCHAR(36)          DEFAULT NULL,
+    `third_place_team_id` VARCHAR(36)          DEFAULT NULL,
+
+    `createdAt`           DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `completedAt`         DATETIME             DEFAULT NULL,
+
+    PRIMARY KEY (`tournamentId`),
+    /* One tournament per league per season, so a new season regenerates cleanly. */
+    UNIQUE KEY `uk_tournament_league_season` (`leagueId`, `season`),
+    KEY                   `idx_tournament_status` (`status`),
+
+    CONSTRAINT `fk_tournament_league`
+        FOREIGN KEY (`leagueId`) REFERENCES `league` (`leagueId`)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE,
+
+    CONSTRAINT `fk_tournament_champion`
+        FOREIGN KEY (`champion_team_id`) REFERENCES `fantasyTeam` (`teamId`)
+            ON DELETE RESTRICT
+            ON UPDATE CASCADE,
+
+    CONSTRAINT `fk_tournament_runner_up`
+        FOREIGN KEY (`runner_up_team_id`) REFERENCES `fantasyTeam` (`teamId`)
+            ON DELETE RESTRICT
+            ON UPDATE CASCADE,
+
+    CONSTRAINT `fk_tournament_third_place`
+        FOREIGN KEY (`third_place_team_id`) REFERENCES `fantasyTeam` (`teamId`)
+            ON DELETE RESTRICT
+            ON UPDATE CASCADE,
+
+    CONSTRAINT `chk_tournament_managers`
+        CHECK (`managerCount` BETWEEN 2 AND 100),
+
+    CONSTRAINT `chk_tournament_pools`
+        CHECK (`poolCount` >= 1 AND `poolMatchdays` >= 1),
+
+    CONSTRAINT `chk_tournament_bracket`
+        CHECK (`bracketSize` >= 2 AND `bracketSize` <= `managerCount`),
+
+    /*
+        A completed tournament is timestamped. The matching "must have crowned
+        a champion" half of this rule lives in trg_tournament_completion_update
+        because MySQL forbids a CHECK constraint over a foreign key column.
+    */
+    CONSTRAINT `chk_tournament_completion`
+        CHECK (
+            (`status` = 'COMPLETED' AND `completedAt` IS NOT NULL)
+                OR (`status` <> 'COMPLETED' AND `completedAt` IS NULL)
+            )
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE `tournament_pool`
+(
+    `poolId`       VARCHAR(36) NOT NULL,
+    `tournamentId` VARCHAR(36) NOT NULL,
+    /* Pool label as shown to managers: A, B, C ... */
+    `poolName`     VARCHAR(8)  NOT NULL,
+    `poolSize`     INT         NOT NULL,
+    `createdAt`    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`poolId`),
+    UNIQUE KEY `uk_tournament_pool_name` (`tournamentId`, `poolName`),
+
+    CONSTRAINT `fk_tournament_pool_tournament`
+        FOREIGN KEY (`tournamentId`) REFERENCES `tournament` (`tournamentId`)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE,
+
+    /*
+        Two is only reachable in a two-manager league and five only in a
+        five-manager league; every other size is partitioned into threes
+        and fours by the pool allocator.
+    */
+    CONSTRAINT `chk_tournament_pool_size`
+        CHECK (`poolSize` BETWEEN 2 AND 5)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE `tournament_pool_member`
+(
+    `poolMemberId` VARCHAR(36) NOT NULL,
+    /* Denormalised from `tournament_pool` purely to support uk_tournament_member_team. */
+    `tournamentId` VARCHAR(36) NOT NULL,
+    `poolId`       VARCHAR(36) NOT NULL,
+    `teamId`       VARCHAR(36) NOT NULL,
+    /* Snake-draft seed used to balance pools; also the final pool tie-breaker. */
+    `seed`         INT         NOT NULL,
+    `createdAt`    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`poolMemberId`),
+    /* A manager appears in exactly one pool of any given tournament. */
+    UNIQUE KEY `uk_tournament_member_team` (`tournamentId`, `teamId`),
+    UNIQUE KEY `uk_tournament_pool_member` (`poolId`, `teamId`),
+    KEY            `idx_tournament_member_pool` (`poolId`),
+
+    CONSTRAINT `fk_tournament_member_tournament`
+        FOREIGN KEY (`tournamentId`) REFERENCES `tournament` (`tournamentId`)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE,
+
+    CONSTRAINT `fk_tournament_member_pool`
+        FOREIGN KEY (`poolId`) REFERENCES `tournament_pool` (`poolId`)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE,
+
+    CONSTRAINT `fk_tournament_member_team`
+        FOREIGN KEY (`teamId`) REFERENCES `fantasyTeam` (`teamId`)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE,
+
+    CONSTRAINT `chk_tournament_member_seed`
+        CHECK (`seed` > 0)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+/*
+    Pool standings, recomputed from scratch whenever a pool fixture is
+    processed. `pointsFor`/`pointsAgainst` are fantasy points, so
+    pointsDifference is the fantasy-points equivalent of rugby's points
+    difference tie-breaker.
+*/
+CREATE TABLE `tournament_standing`
+(
+    `standingId`       VARCHAR(36) NOT NULL,
+    `tournamentId`     VARCHAR(36) NOT NULL,
+    `poolId`           VARCHAR(36) NOT NULL,
+    `teamId`           VARCHAR(36) NOT NULL,
+
+    `played`           INT         NOT NULL DEFAULT 0,
+    `won`              INT         NOT NULL DEFAULT 0,
+    `drawn`            INT         NOT NULL DEFAULT 0,
+    `lost`             INT         NOT NULL DEFAULT 0,
+
+    `pointsFor`        INT         NOT NULL DEFAULT 0,
+    `pointsAgainst`    INT         NOT NULL DEFAULT 0,
+    `pointsDifference` INT GENERATED ALWAYS AS (`pointsFor` - `pointsAgainst`) STORED,
+
+    /* Rugby World Cup bonus points, adapted to fantasy scoring. */
+    `attackBonus`      INT         NOT NULL DEFAULT 0,
+    `losingBonus`      INT         NOT NULL DEFAULT 0,
+    `tournamentPoints` INT         NOT NULL DEFAULT 0,
+
+    `position`         INT                  DEFAULT NULL,
+    `qualified`        BOOLEAN     NOT NULL DEFAULT FALSE,
+    `updatedAt`        DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`standingId`),
+    UNIQUE KEY `uk_tournament_standing_team` (`poolId`, `teamId`),
+    KEY                `idx_tournament_standing_order` (`poolId`, `tournamentPoints`, `pointsDifference`),
+
+    CONSTRAINT `fk_tournament_standing_tournament`
+        FOREIGN KEY (`tournamentId`) REFERENCES `tournament` (`tournamentId`)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE,
+
+    CONSTRAINT `fk_tournament_standing_pool`
+        FOREIGN KEY (`poolId`) REFERENCES `tournament_pool` (`poolId`)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE,
+
+    CONSTRAINT `fk_tournament_standing_team`
+        FOREIGN KEY (`teamId`) REFERENCES `fantasyTeam` (`teamId`)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE,
+
+    CONSTRAINT `chk_tournament_standing_counts`
+        CHECK (`played` = `won` + `drawn` + `lost`),
+
+    CONSTRAINT `chk_tournament_standing_points`
+        CHECK (`tournamentPoints` >= 0 AND `attackBonus` >= 0 AND `losingBonus` >= 0)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+/*
+    Tunable tournament rules. Mirrors Rugby World Cup pool scoring, with the
+    try-based attacking bonus re-expressed as a fantasy-points threshold.
+    Exactly one row is expected; unlike `pricing_settings`, the DAO has an
+    insert path so a missing row is recreated from these defaults rather than
+    permanently breaking tournament generation.
+*/
+CREATE TABLE `tournament_settings`
+(
+    `settingsId`             VARCHAR(36) NOT NULL,
+    `win_points`             INT         NOT NULL DEFAULT 4,
+    `draw_points`            INT         NOT NULL DEFAULT 2,
+    `loss_points`            INT         NOT NULL DEFAULT 0,
+    /*
+        Fantasy-points equivalent of RWC's "four or more tries" bonus.
+        Calibrated against simulated scoring (132-216, averaging 170):
+        a literal 75 was met in every innings and so awarded a flat +1
+        to everyone, whereas 190 is met about a quarter of the time.
+    */
+    `attack_bonus_threshold` INT         NOT NULL DEFAULT 190,
+    /* Fantasy-points equivalent of RWC's "lost by seven or fewer" bonus. */
+    `losing_bonus_margin`    INT         NOT NULL DEFAULT 7,
+    `third_place_playoff`    BOOLEAN     NOT NULL DEFAULT TRUE,
+    `updatedAt`              DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`settingsId`),
+
+    CONSTRAINT `chk_tournament_settings_points`
+        CHECK (
+            `win_points` >= `draw_points`
+                AND `draw_points` >= `loss_points`
+                AND `loss_points` >= 0
+            ),
+
+    CONSTRAINT `chk_tournament_settings_bonus`
+        CHECK (`attack_bonus_threshold` > 0 AND `losing_bonus_margin` >= 0)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+/* Baseline tournament rules: Rugby World Cup 4/2/0 plus both bonus points. */
+INSERT INTO `tournament_settings` (`settingsId`)
+VALUES (UUID());
 
 /* Each transfer is already a historical record; a duplicate transferHistory table is unnecessary. */
 CREATE TABLE `transfer`
@@ -590,6 +869,18 @@ CREATE TABLE `fixture`
     `fixtureTime`    TIME        NOT NULL,
     `status`         ENUM('UPCOMING', 'LOCKED', 'SIMULATING', 'COMPLETED', 'PROCESSED', 'CANCELLED') NOT NULL DEFAULT 'UPCOMING',
     `simulationDate` DATETIME             DEFAULT NULL,
+    /*
+        Tournament wiring. NULL on standalone/ad-hoc fixtures created directly
+        by an administrator, so the pre-tournament creation path keeps working
+        unchanged. Generated fixtures always carry tournamentId + stage;
+        poolId is set for POOL fixtures only, and bracketSlot orders the
+        knockout bracket so the winners of slots 2n and 2n+1 meet next round.
+    */
+    `tournamentId`   VARCHAR(36)          DEFAULT NULL,
+    `poolId`         VARCHAR(36)          DEFAULT NULL,
+    `stage`          ENUM('POOL', 'ROUND_OF_32', 'ROUND_OF_16', 'QUARTER_FINAL', 'SEMI_FINAL', 'THIRD_PLACE', 'FINAL') DEFAULT NULL,
+    `bracketSlot`    INT                  DEFAULT NULL,
+    `matchdayNumber` INT                  DEFAULT NULL,
     `first_team_id`  VARCHAR(36) GENERATED ALWAYS AS (LEAST(`team_a_id`, `team_b_id`)) STORED,
     `second_team_id` VARCHAR(36) GENERATED ALWAYS AS (GREATEST(`team_a_id`, `team_b_id`)) STORED,
     `createdAt`      DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -600,6 +891,8 @@ CREATE TABLE `fixture`
     KEY              `idx_fixture_team_a` (`team_a_id`),
     KEY              `idx_fixture_team_b` (`team_b_id`),
     KEY              `idx_fixture_status_date` (`status`, `fixtureDate`, `fixtureTime`),
+    KEY              `idx_fixture_tournament_stage` (`tournamentId`, `stage`, `bracketSlot`),
+    KEY              `idx_fixture_pool` (`poolId`),
 
     CONSTRAINT `fk_fixture_league`
         FOREIGN KEY (`leagueId`) REFERENCES `league` (`leagueId`)
@@ -623,8 +916,24 @@ CREATE TABLE `fixture`
             ON DELETE RESTRICT
             ON UPDATE RESTRICT,
 
+    CONSTRAINT `fk_fixture_tournament`
+        FOREIGN KEY (`tournamentId`) REFERENCES `tournament` (`tournamentId`)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE,
+
+    CONSTRAINT `fk_fixture_pool`
+        FOREIGN KEY (`poolId`) REFERENCES `tournament_pool` (`poolId`)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE,
+
     CONSTRAINT `chk_fixture_teams_different`
         CHECK (`team_a_id` <> `team_b_id`),
+
+    /*
+        The stage/pool/tournament consistency rules cannot be CHECK
+        constraints because MySQL forbids those over foreign key columns.
+        They are enforced by trg_fixture_tournament_integrity_insert instead.
+    */
 
     CONSTRAINT `chk_fixture_simulation_date`
         CHECK (
@@ -1309,6 +1618,120 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Assign a new league manager before deleting the current manager membership';
+END IF;
+END$$
+
+/*
+    The half of the completion rule that chk_tournament_completion cannot
+    express: crowning a tournament requires a champion, and a champion may
+    only be recorded on a tournament that is actually finished.
+*/
+CREATE TRIGGER `trg_tournament_completion_update`
+    BEFORE UPDATE
+    ON `tournament`
+    FOR EACH ROW
+BEGIN
+    IF NEW.`status` = 'COMPLETED' AND NEW.`champion_team_id` IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'A completed tournament must record a champion';
+END IF;
+
+    IF
+NEW.`status` <> 'COMPLETED' AND NEW.`champion_team_id` IS NOT NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Only a completed tournament may record a champion';
+END IF;
+END$$
+
+/*
+    A manager can only be drawn into a pool of a tournament belonging to a
+    league they are actively a member of, and the pool must belong to the
+    tournament the row claims. Guards the generator against ever producing a
+    bracket that includes someone who has left the league.
+*/
+CREATE TRIGGER `trg_tournament_member_integrity_insert`
+    BEFORE INSERT
+    ON `tournament_pool_member`
+    FOR EACH ROW
+BEGIN
+    DECLARE v_leagueId VARCHAR(36);
+
+    IF NOT EXISTS (
+        SELECT 1 FROM `tournament_pool`
+        WHERE `poolId` = NEW.`poolId`
+          AND `tournamentId` = NEW.`tournamentId`
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Pool does not belong to the stated tournament';
+END IF;
+
+SELECT `leagueId`
+INTO v_leagueId
+FROM `tournament`
+WHERE `tournamentId` = NEW.`tournamentId`;
+
+IF
+NOT EXISTS (
+        SELECT 1 FROM `leagueMembership`
+        WHERE `leagueId` = v_leagueId
+          AND `teamId` = NEW.`teamId`
+          AND `isActive` = TRUE
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'A tournament pool member must be an active league member';
+END IF;
+END$$
+
+/*
+    Tournament wiring rules for a fixture. These would be CHECK constraints
+    were `tournamentId`/`poolId` not foreign key columns:
+      - a tournament fixture always carries a stage, and vice versa;
+      - a POOL fixture belongs to a pool, a knockout fixture never does;
+      - the tournament must belong to the fixture's own league;
+      - the pool must belong to that same tournament.
+*/
+CREATE TRIGGER `trg_fixture_tournament_integrity_insert`
+    BEFORE INSERT
+    ON `fixture`
+    FOR EACH ROW
+BEGIN
+    IF (NEW.`tournamentId` IS NULL) <> (NEW.`stage` IS NULL) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'A tournament fixture must carry a stage, and a stage requires a tournament';
+END IF;
+
+    IF
+NEW.`stage` = 'POOL' AND NEW.`poolId` IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'A pool fixture must belong to a pool';
+END IF;
+
+    IF
+(NEW.`stage` IS NULL OR NEW.`stage` <> 'POOL') AND NEW.`poolId` IS NOT NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Only a pool fixture may belong to a pool';
+END IF;
+
+    IF
+NEW.`tournamentId` IS NOT NULL THEN
+        IF NOT EXISTS (
+            SELECT 1 FROM `tournament`
+            WHERE `tournamentId` = NEW.`tournamentId`
+              AND `leagueId` = NEW.`leagueId`
+        ) THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Fixture tournament belongs to a different league';
+END IF;
+
+        IF
+NEW.`poolId` IS NOT NULL AND NOT EXISTS (
+            SELECT 1 FROM `tournament_pool`
+            WHERE `poolId` = NEW.`poolId`
+              AND `tournamentId` = NEW.`tournamentId`
+        ) THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Fixture pool belongs to a different tournament';
+END IF;
 END IF;
 END$$
 

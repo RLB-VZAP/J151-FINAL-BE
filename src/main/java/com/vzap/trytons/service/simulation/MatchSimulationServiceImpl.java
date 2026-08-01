@@ -2,6 +2,7 @@ package com.vzap.trytons.service.simulation;
 
 import com.vzap.trytons.dao.admin.AdminDAO;
 import com.vzap.trytons.dao.catalog.PlayerDAO;
+import com.vzap.trytons.service.results.MatchPointsBreakdownService;
 import com.vzap.trytons.dao.catalog.PositionDAO;
 import com.vzap.trytons.dao.fantasyteam.FantasyTeamDAO;
 import com.vzap.trytons.dao.fantasyteam.FantasyTeamRoundSelectionDAO;
@@ -56,6 +57,9 @@ public class MatchSimulationServiceImpl implements MatchSimulationService {
 
     @Inject
     private PlayerDAO playerDAO;
+
+    @Inject
+    private MatchPointsBreakdownService matchPointsBreakdownService;
 
     @Inject
     private SimulationSettingService simulationSettingService;
@@ -300,6 +304,10 @@ public class MatchSimulationServiceImpl implements MatchSimulationService {
                 .simulationRunNumber(result.getSimulationRunNumber())
                 .teamAScore(result.getTeamAScore())
                 .teamBScore(result.getTeamBScore())
+                .teamABreakdown(matchPointsBreakdownService.breakdownFor(
+                        result.getResultId(), fixture.getTeamAId()))
+                .teamBBreakdown(matchPointsBreakdownService.breakdownFor(
+                        result.getResultId(), fixture.getTeamBId()))
                 .winnerSide(result.getWinnerSide())
                 .isDraw(result.isDraw())
                 .approved(result.isApproved())

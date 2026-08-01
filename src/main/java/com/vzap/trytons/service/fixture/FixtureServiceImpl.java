@@ -5,11 +5,12 @@ import com.vzap.trytons.dao.fantasyteam.FantasyTeamDAO;
 import com.vzap.trytons.dao.fixture.FixtureDAO;
 import com.vzap.trytons.dao.league.LeagueDAO;
 import com.vzap.trytons.dao.league.LeagueMembershipDAO;
+import com.vzap.trytons.dao.results.MatchResultDAO;
 import com.vzap.trytons.dao.auth.UserDAO;
-import com.vzap.trytons.dto.fixture.FixtureRequestDTO;
 import com.vzap.trytons.dto.fixture.FixtureResponseDTO;
 import com.vzap.trytons.enums.FantasyRoundStatus;
 import com.vzap.trytons.enums.FixtureStatus;
+import com.vzap.trytons.enums.LeagueType;
 import com.vzap.trytons.enums.UserRole;
 import com.vzap.trytons.exceptions.*;
 import com.vzap.trytons.model.fixture.FantasyRound;
@@ -17,13 +18,16 @@ import com.vzap.trytons.model.fantasyteam.FantasyTeam;
 import com.vzap.trytons.model.fixture.Fixture;
 import com.vzap.trytons.model.league.League;
 import com.vzap.trytons.model.league.LeagueMembership;
+import com.vzap.trytons.model.results.MatchResult;
 import com.vzap.trytons.model.auth.User;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 @ApplicationScoped
@@ -39,24 +43,87 @@ public class FixtureServiceImpl implements FixtureService {
     @Inject
     private LeagueMembershipDAO leagueMembershipDAO;
     @Inject
+    private MatchResultDAO matchResultDAO;
+    @Inject
     private UserDAO userDAO;
 
     @Override
-    public List<FixtureResponseDTO> listFixtures(FixtureStatus status) {
-        List<Fixture>fixtures;
-
-        if(status != null) {
-            fixtures = fixtureDAO.findByStatus(status);
-        }else{
-            fixtures = fixtureDAO.getAllFixtures();
+    public List<FixtureResponseDTO> listFixtures(UUID actorUserId, FixtureStatus status, UUID leagueId) {
+        if (actorUserId == null) {
+            throw new ValidationException("Current user ID is required.");
         }
+
+        List<Fixture> fixtures;
+
+        if (leagueId != null) {
+            assertCanViewLeagueFixtures(leagueId, actorUserId);
+            fixtures = fixtureDAO.findByLeagueId(leagueId);
+            if (status != null) {
+                fixtures = filterByStatus(fixtures, status);
+            }
+        } else if (isAdministrator(actorUserId)) {
+            // Administrators oversee every league, so the unscoped view stays
+            // exactly what it was before this endpoint learned to scope by
+            // membership.
+            fixtures = status != null ? fixtureDAO.findByStatus(status) : fixtureDAO.getAllFixtures();
+        } else {
+            // A plain SELECT * FROM fixture with no filter let every signed-in
+            // user see every league's fixtures, private ones included. Scoped
+            // to the leagues the caller actually belongs to instead.
+            fixtures = fixturesForMemberLeagues(actorUserId, status);
+        }
+
+        Map<UUID, Integer> roundNumberCache = new HashMap<>();
         List<FixtureResponseDTO> responseList = new ArrayList<>();
         for(Fixture fixture : fixtures){
-            FixtureResponseDTO response = mapToResponse(fixture);
+            FixtureResponseDTO response = mapToResponse(fixture, roundNumberCache);
             responseList.add(response);
         }
 
         return responseList;
+    }
+
+    private List<Fixture> filterByStatus(List<Fixture> fixtures, FixtureStatus status) {
+        List<Fixture> filtered = new ArrayList<>();
+        for (Fixture fixture : fixtures) {
+            if (fixture.getStatus() == status) {
+                filtered.add(fixture);
+            }
+        }
+        return filtered;
+    }
+
+    private List<Fixture> fixturesForMemberLeagues(UUID actorUserId, FixtureStatus status) {
+        List<Fixture> fixtures = new ArrayList<>();
+        for (LeagueMembership membership : leagueMembershipDAO.findActiveByUser(actorUserId)) {
+            for (Fixture fixture : fixtureDAO.findByLeagueId(membership.getLeagueId())) {
+                if (status == null || fixture.getStatus() == status) {
+                    fixtures.add(fixture);
+                }
+            }
+        }
+        return fixtures;
+    }
+
+    private void assertCanViewLeagueFixtures(UUID leagueId, UUID actorUserId) {
+        League league = leagueDAO.findLeagueById(leagueId)
+                .orElseThrow(() -> new ResourceNotFoundException("League not found."));
+
+        // Must mirror LeagueServiceImpl.getLeague's visibility check exactly: a caller
+        // who can open a league's detail page (public leagues are visible to anyone;
+        // private leagues need active membership or admin) must also be able to see
+        // its fixtures, otherwise the "View fixtures" link on a public league renders
+        // an empty/forbidden page for a non-member. Keep these two in sync.
+        if (league.getLeagueType() == LeagueType.PRIVATE
+                && !isAdministrator(actorUserId)
+                && !leagueMembershipDAO.existsActiveByLeagueAndUser(leagueId, actorUserId)) {
+            throw new AuthorisationException("You must be an active member of this league to view its fixtures.");
+        }
+    }
+
+    private boolean isAdministrator(UUID userId) {
+        Optional<User> user = userDAO.getUserById(userId);
+        return user.isPresent() && user.get().getRole() == UserRole.ADMINISTRATOR;
     }
 
     @Override
@@ -76,71 +143,12 @@ public class FixtureServiceImpl implements FixtureService {
         return mapToResponse(fix);
     }
 
-    @Override
-    public FixtureResponseDTO createFixture(UUID actorUserId, FixtureRequestDTO request) {
-        requireAdmin(actorUserId);
-        validateCreateRequest(request);
-
-        if(request.getTeamAId().equals(request.getTeamBId())){
-            throw new ValidationException("A fixture cannot pair a team against itself.");
-        }
-
-        Optional<League>leagueOptional = leagueDAO.findLeagueById(request.getLeagueId());
-
-        if(leagueOptional.isEmpty()){
-            throw new ResourceNotFoundException("League not found");
-        }
-
-        League league = leagueOptional.get();
-
-        Optional<FantasyRound>roundOptional = fantasyRoundDAO.getRoundById(request.getRoundId());
-
-        if(roundOptional.isEmpty()){
-            throw new ResourceNotFoundException("Round not found");
-        }
-
-        FantasyRound round = roundOptional.get();
-
-        if(round.getStatus() == FantasyRoundStatus.COMPLETED || round.getStatus() == FantasyRoundStatus.CANCELLED){
-            throw new ValidationException("Fixtures cannot be scheduled against a " + round.getStatus() + " round.");
-        }
-
-        Optional<FantasyTeam> optionalTeamA = fantasyTeamDAO.getTeamById(request.getTeamAId());
-
-        if(optionalTeamA.isEmpty()){
-            throw new ResourceNotFoundException("Team A not found");
-        }
-
-        FantasyTeam teamA = optionalTeamA.get();
-        Optional<FantasyTeam> optionalTeamB = fantasyTeamDAO.getTeamById(request.getTeamBId());
-
-        if(optionalTeamB.isEmpty()){
-            throw new ResourceNotFoundException("Team B not found");
-        }
-
-        FantasyTeam teamB = optionalTeamB.get();
-
-        assertActiveLeagueMember(league.getLeagueId(), teamA.getTeamId(),"Team A");
-        assertActiveLeagueMember(league.getLeagueId(), teamB.getTeamId(),"Team B");
-        assertNoDuplicatePairing(round.getRoundId(), teamA.getTeamId(), teamB.getTeamId());
-
-        Fixture fixture = new Fixture();
-        fixture.setFixtureId(UUID.randomUUID());
-        fixture.setLeagueId(league.getLeagueId());
-        fixture.setRoundId(round.getRoundId());
-        fixture.setTeamAId(teamA.getTeamId());
-        fixture.setTeamBId(teamB.getTeamId());
-        fixture.setFixtureDate(request.getFixtureDate());
-        fixture.setFixtureTime(request.getFixtureTime());
-        fixture.setStatus(FixtureStatus.UPCOMING);
-        Fixture createdFixture = fixtureDAO.create(fixture);
-        if(createdFixture == null){
-            throw new DataAccessException("Failed to create Fixture.",null);
-        }
-
-        return mapToResponse(createdFixture, teamA.getTeamName(),  teamB.getTeamName());
-
-    }
+    /*
+        createFixture was removed along with POST /fixtures. Fixtures are
+        generated by TournamentService when a league starts; creating them
+        by hand would violate the one-fixture-per-team-per-round rule the
+        generator relies on.
+    */
 
     @Override
     public FixtureResponseDTO updateFixtureStatus(UUID actorUserId, UUID fixtureId, FixtureStatus status) {
@@ -227,35 +235,6 @@ public class FixtureServiceImpl implements FixtureService {
         }
     }
 
-    private void validateCreateRequest(FixtureRequestDTO request) {
-        if(request == null){
-            throw new ValidationException("Fixture details are required.");
-        }
-
-        if(request.getLeagueId() == null){
-            throw new ValidationException("League ID is required.");
-        }
-
-        if(request.getRoundId() == null){
-            throw new ValidationException("Round ID is required.");
-        }
-
-        if(request.getTeamAId() == null){
-            throw new ValidationException("Team A is required.");
-        }
-
-        if(request.getTeamBId() == null){
-            throw new ValidationException("Team B is required.");
-        }
-
-        if(request.getFixtureDate() == null){
-            throw new ValidationException("Fixture date is required.");
-        }
-
-        if(request.getFixtureTime() == null){
-            throw new ValidationException("Fixture time is required.");
-        }
-    }
     private void assertActiveLeagueMember(UUID leagueId,UUID teamId, String teamName){
         List<LeagueMembership> memberships = leagueMembershipDAO.findActiveByLeague(leagueId);
         boolean found = false;
@@ -287,6 +266,13 @@ public class FixtureServiceImpl implements FixtureService {
     }
 
     private FixtureResponseDTO mapToResponse(Fixture fixture){
+        return mapToResponse(fixture, new HashMap<>());
+    }
+
+    // roundNumberCache dedupes the fantasyRound lookup across a list of
+    // fixtures that mostly share the same round; the matchResult lookup below
+    // stays one-per-fixture, mirroring TournamentServiceImpl.getTournamentFixtures.
+    private FixtureResponseDTO mapToResponse(Fixture fixture, Map<UUID, Integer> roundNumberCache){
         String teamAName = null;
         String teamBName = null;
 
@@ -302,18 +288,38 @@ public class FixtureServiceImpl implements FixtureService {
             teamBName = optionalTeamB.get().getTeamName();
         }
 
-        return mapToResponse(fixture,teamAName,teamBName);
+        Integer roundNumber;
+        if (roundNumberCache.containsKey(fixture.getRoundId())) {
+            roundNumber = roundNumberCache.get(fixture.getRoundId());
+        } else {
+            roundNumber = fantasyRoundDAO.getRoundById(fixture.getRoundId())
+                    .map(FantasyRound::getRoundNumber)
+                    .orElse(null);
+            roundNumberCache.put(fixture.getRoundId(), roundNumber);
+        }
+
+        Optional<MatchResult> result = matchResultDAO.findCurrentByFixtureId(fixture.getFixtureId());
+
+        return mapToResponse(fixture, teamAName, teamBName, roundNumber,
+                result.map(MatchResult::getTeamAScore).orElse(null),
+                result.map(MatchResult::getTeamBScore).orElse(null));
     }
 
-    private FixtureResponseDTO mapToResponse(Fixture fixture, String teamAName, String teamBName){
+    private FixtureResponseDTO mapToResponse(Fixture fixture, String teamAName, String teamBName,
+                                              Integer roundNumber, Integer teamAScore, Integer teamBScore){
         FixtureResponseDTO response = new FixtureResponseDTO();
         response.setFixtureId(fixture.getFixtureId());
         response.setLeagueId(fixture.getLeagueId());
         response.setRoundId(fixture.getRoundId());
+        response.setRoundNumber(roundNumber);
+        response.setStage(fixture.getStage());
+        response.setMatchdayNumber(fixture.getMatchdayNumber());
         response.setTeamAId(fixture.getTeamAId());
         response.setTeamAName(teamAName);
         response.setTeamBId(fixture.getTeamBId());
         response.setTeamBName(teamBName);
+        response.setTeamAScore(teamAScore);
+        response.setTeamBScore(teamBScore);
         response.setFixtureDate(fixture.getFixtureDate());
         response.setFixtureTime(fixture.getFixtureTime());
         response.setFixtureStatus(fixture.getStatus());

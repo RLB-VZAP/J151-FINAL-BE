@@ -2,6 +2,7 @@ package com.vzap.trytons.service.league;
 
 import com.vzap.trytons.dao.auth.UserDAO;
 import com.vzap.trytons.dao.fantasyteam.FantasyTeamDAO;
+import com.vzap.trytons.dao.leaderboard.LeaderboardDAO;
 import com.vzap.trytons.dao.league.LeagueDAO;
 import com.vzap.trytons.dao.league.LeagueMembershipDAO;
 import com.vzap.trytons.dto.league.JoinLeagueRequestDTO;
@@ -10,6 +11,7 @@ import com.vzap.trytons.dto.league.LeagueMemberResponseDTO;
 import com.vzap.trytons.dto.league.LeagueRequestDTO;
 import com.vzap.trytons.dto.league.LeagueResponseDTO;
 import com.vzap.trytons.dto.publicpreview.PublicLeaguePreviewDTO;
+import com.vzap.trytons.enums.LeaderboardScope;
 import com.vzap.trytons.enums.LeagueType;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.BusinessRuleException;
@@ -19,11 +21,15 @@ import com.vzap.trytons.exceptions.ValidationException;
 import com.vzap.trytons.enums.UserRole;
 import com.vzap.trytons.model.auth.User;
 import com.vzap.trytons.model.fantasyteam.FantasyTeam;
+import com.vzap.trytons.model.leaderboard.Leaderboard;
 import com.vzap.trytons.model.league.League;
 import com.vzap.trytons.model.league.LeagueMembership;
 import com.vzap.trytons.service.notification.NotificationService;
+import com.vzap.trytons.service.shared.SeasonResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
+import java.time.LocalDateTime;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +53,12 @@ public class LeagueServiceImpl implements LeagueService {
 
     @Inject
     private UserDAO userDAO;
+
+    @Inject
+    private LeaderboardDAO leaderboardDAO;
+
+    @Inject
+    private SeasonResolver seasonResolver;
 
     @Inject
     private NotificationService notificationService;
@@ -111,7 +123,34 @@ public class LeagueServiceImpl implements LeagueService {
             }
         }
 
+        createLeagueLeaderboard(savedLeague.getLeagueId());
+
         return toResponse(requireLeague(savedLeague.getLeagueId()));
+    }
+
+    /**
+     * Best-effort: a board's absence must never fail a league creation that
+     * otherwise succeeded (createLeague isn't one transaction, and the
+     * membership/manager-assignment steps above already accept that same
+     * risk). If the season calendar isn't configured yet, or the insert hits
+     * something unexpected, this league simply stays without a board until
+     * {@code LeaderboardServiceImpl.refreshLeagueLeaderboard}'s ensure-exists
+     * step creates one lazily on first refresh.
+     */
+    private void createLeagueLeaderboard(UUID leagueId) {
+        try {
+            String season = seasonResolver.resolveCurrentSeason();
+            Leaderboard board = Leaderboard.builder()
+                    .leaderboardId(UUID.randomUUID())
+                    .leagueId(leagueId)
+                    .season(season)
+                    .scope(LeaderboardScope.LEAGUE)
+                    .lastUpdated(LocalDateTime.now())
+                    .build();
+            leaderboardDAO.saveLeaderboard(board);
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Could not create a leaderboard for league " + leagueId, e);
+        }
     }
 
     @Override
@@ -126,7 +165,13 @@ public class LeagueServiceImpl implements LeagueService {
 
         League league = requireLeague(leagueId);
 
-        if (league.getLeagueType() == LeagueType.PRIVATE && !isLeagueMember(leagueId, currentUserId)) {
+        // Administrators oversee every league without competing in any, which is
+        // already how getAllLeagues lists them and how startLeague authorises them.
+        // Withholding the detail here left an admin able to see a private league in
+        // a list, and able to start it over the API, but unable to open its page.
+        if (league.getLeagueType() == LeagueType.PRIVATE
+                && !isAdmin(currentUserId)
+                && !isLeagueMember(leagueId, currentUserId)) {
             throw new AuthorisationException("You are not permitted to view this private league.");
         }
 
@@ -248,9 +293,15 @@ public class LeagueServiceImpl implements LeagueService {
         UUID actorId = parseUserId(actorUserId);
         UUID parsedLeagueId = parseLeagueId(leagueId);
 
-        requireLeague(parsedLeagueId);
+        League league = requireLeague(parsedLeagueId);
 
-        if (!isAdmin(actorId) && !isLeagueMember(parsedLeagueId, actorId)) {
+        // Must mirror LeagueServiceImpl.getLeague and FixtureServiceImpl.assertCanViewLeagueFixtures
+        // exactly: a caller who can open a public league's detail page and fixtures must also be
+        // able to see its member list, otherwise a public league's page contradicts itself (real
+        // fixtures/scores visible, membership hidden). Keep all three in sync.
+        if (league.getLeagueType() == LeagueType.PRIVATE
+                && !isAdmin(actorId)
+                && !isLeagueMember(parsedLeagueId, actorId)) {
             throw new AuthorisationException("You must be a league member to view its members.");
         }
 

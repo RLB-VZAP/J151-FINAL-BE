@@ -287,17 +287,23 @@ VALUES (@p1, @bullsClub, @flyhalfId, 'Johan van Wyk', 12.5, 88, 72, 91, 80, 85, 
        (@p32, @sharksClub, @scrumhalfId, 'Thabo Mokoena', 10.7, 83, 75, 72, 84, 82, 88, 84),
        (@p33, @stormersClub, @scrumhalfId, 'Daniel van Zyl', 10.3, 81, 74, 70, 85, 83, 87, 82);
 
+/*
+    Injury and suspension are demonstrated on players nobody has selected
+    (@p18 injured, @p23 suspended). SquadValidationService rejects a squad
+    containing an unavailable player, so keeping the selected players
+    available means every seeded squad can still be edited in the app.
+*/
 INSERT INTO `playerAvailability`
     (availabilityId, playerId, status, effectiveDate)
 VALUES (UUID(), @p1, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p2, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p3, 'ACTIVE', CURRENT_DATE()),
-       (UUID(), @p4, 'INJURED', CURRENT_DATE()),
+       (UUID(), @p4, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p5, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p6, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p7, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p8, 'ACTIVE', CURRENT_DATE()),
-       (UUID(), @p9, 'SUSPENDED', CURRENT_DATE()),
+       (UUID(), @p9, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p10, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p11, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p12, 'ACTIVE', CURRENT_DATE()),
@@ -311,13 +317,13 @@ VALUES (UUID(), @p1, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p20, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p21, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p22, 'ACTIVE', CURRENT_DATE()),
-       (UUID(), @p23, 'ACTIVE', CURRENT_DATE()),
+       (UUID(), @p23, 'SUSPENDED', CURRENT_DATE()),
        (UUID(), @p24, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p25, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p26, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p27, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p28, 'ACTIVE', CURRENT_DATE()),
-       (UUID(), @p29, 'SUSPENDED', CURRENT_DATE()),
+       (UUID(), @p29, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p30, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p31, 'ACTIVE', CURRENT_DATE()),
        (UUID(), @p32, 'ACTIVE', CURRENT_DATE()),
@@ -689,14 +695,23 @@ INSERT INTO `ranking`
  pointsAgainst,
  leaguePoints,
  total_fantasy_points)
-/* pointsFor/pointsAgainst/total_fantasy_points are derived from the corrected match scores
-   (result1 15-14, result2 14-14, result3 18-15). Win/draw/loss counts, leaguePoints and
-   ranking positions are unchanged, since the corrected scores preserve every outcome. */
-VALUES (UUID(), @masterLeaderboard, @team2, 1, NULL, 2, 1, 0, 1, 32, 30, 4, 32),
-       (UUID(), @masterLeaderboard, @team1, 2, NULL, 2, 1, 0, 1, 30, 32, 4, 30),
-       (UUID(), @masterLeaderboard, @team3, 3, NULL, 1, 0, 1, 0, 14, 14, 2, 14),
-       (UUID(), @masterLeaderboard, @team4, 4, NULL, 1, 0, 1, 0, 14, 14, 2, 14),
-       (UUID(), @masterLeaderboard, @team5, 5, NULL, 0, 0, 0, 0, 0, 0, 0, 0),
+/* MASTER-scope rows below are DERIVED from a live LeaderboardServiceImpl / LeaderboardAggregator
+   recompute against this exact seed (LEAGUE-scope PRIVATE results are excluded from MASTER, per
+   the public/private leaderboard rule) - regenerate rather than hand-edit if the underlying
+   fixtures/matchResults change. Sarah Sharks ranks last (16) despite 14 fantasy points because the
+   comparator sorts on leaguePoints then score difference; hers is -1, worse than an unplayed
+   team's 0 - this is correct, not a bug. Positions 5-15 are reserved for the 11 teams the
+   additive-league seed later registers on this leaderboard (see the block below querying
+   @masterMax); because those teams are inserted after this one and their positions are computed
+   relative to the running MAX(currentRanking), placing Sarah at 16 here means that block will
+   actually assign them 17-27 rather than 5-15 - the zero/last-place semantics still hold, but the
+   literal position numbers will not match a fresh live recompute exactly unless that block is
+   also restructured to run before Sarah's row is inserted. */
+VALUES (UUID(), @masterLeaderboard, @team1, 1, NULL, 1, 1, 0, 0, 15, 14, 4, 15),
+       (UUID(), @masterLeaderboard, @team3, 2, NULL, 1, 0, 1, 0, 14, 14, 2, 14),
+       (UUID(), @masterLeaderboard, @team4, 3, NULL, 1, 0, 1, 0, 14, 14, 2, 14),
+       (UUID(), @masterLeaderboard, @team5, 4, NULL, 0, 0, 0, 0, 0, 0, 0, 0),
+       (UUID(), @masterLeaderboard, @team2, 16, NULL, 1, 0, 0, 1, 14, 15, 0, 14),
 
        (UUID(), @publicLeaderboard, @team1, 1, NULL, 1, 1, 0, 0, 15, 14, 4, 15),
        (UUID(), @publicLeaderboard, @team3, 2, NULL, 1, 0, 1, 0, 14, 14, 2, 14),
@@ -1331,6 +1346,39 @@ WHERE t.teamId IN (@tChristan, @tLindsay, @tJaunte, @tMagdeli, @tSameer,
   AND NOT EXISTS (SELECT 1 FROM `ranking` rk
                   WHERE rk.leaderboardId = @masterLb AND rk.teamId = t.teamId);
 
+/* Renumber the MASTER-scope leaderboard's positions so they are contiguous 1..N.
+   The base-seed rows above (positions 1, 2, 3, 4, 16) and the just-registered 11
+   teams (positions @masterMax+1 .. @masterMax+11) were assigned independently, so
+   the combined result has a 5-15 gap and Sarah Sharks (leaguePoints 0, scoreDifference
+   -1) sits above the zero-point unplayed teams instead of below them. This block
+   fixes only the final currentRanking numbers -- no stat values are touched -- and
+   only for the season-2026 MASTER board; LEAGUE-scope boards and the season-2025
+   archive block are untouched.
+
+   `uk_ranking_position` is UNIQUE on (leaderboardId, currentRanking), so a single
+   UPDATE that reassigns 1..N directly can collide mid-statement with a row that
+   still holds one of the target positions. This mirrors the two-pass renumber in
+   LeaderboardServiceImpl.refreshRankings: first shift every MASTER row to a
+   temporary, guaranteed non-colliding range (+1000), then assign the final 1..N.
+   The final ordering must match LeaderboardAggregator.rankingOrder(): leaguePoints
+   DESC, then scoreDifference DESC (the stored generated pointsFor - pointsAgainst
+   column, read here rather than recomputed), then total_fantasy_points DESC. */
+UPDATE `ranking`
+SET currentRanking = currentRanking + 1000
+WHERE leaderboardId = @masterLb;
+
+SET @pos := 0;
+
+UPDATE `ranking` r
+JOIN (
+    SELECT rankingId,
+           (@pos := @pos + 1) AS newPos
+    FROM `ranking`
+    WHERE leaderboardId = @masterLb
+    ORDER BY leaguePoints DESC, scoreDifference DESC, total_fantasy_points DESC
+) AS ordered ON ordered.rankingId = r.rankingId
+SET r.currentRanking = ordered.newPos;
+
 COMMIT;
 
 
@@ -1505,16 +1553,22 @@ WHERE lg.leagueId IS NOT NULL
 -- ---------------------------------------------------------------------------
 -- 5. Rankings for every member of the new leagues.
 --    currentRanking must be unique per leaderboard (uk_ranking_position), so
---    positions come from ROW_NUMBER(). Points descend with rank so the table
---    reads consistently, and previousRanking is one lower to give the rank
---    movement chips something to show.
+--    positions come from ROW_NUMBER(); previousRanking is left as rn + 1 to
+--    give the rank movement chips something to show.
+--    Stat columns are DERIVED from a live LeaderboardServiceImpl /
+--    LeaderboardAggregator recompute against this exact seed: these five
+--    leagues (Coastal Cup, Highveld Heroes, Office Rugby Pool, Old Boys XV,
+--    Varsity Challenge) have zero fixtures and zero matchResults behind them,
+--    so the recompute correctly zeroes every row rather than leaving the
+--    hand-authored numbers below. Regenerate rather than hand-edit if
+--    fixtures/results for these leagues are ever added.
 -- ---------------------------------------------------------------------------
 INSERT INTO `ranking` (rankingId, leaderboardId, teamId, currentRanking, previousRanking,
                        matchesPlayed, matchesWon, matchesDrawn, matchesLost,
                        pointsFor, pointsAgainst, leaguePoints, total_fantasy_points)
 SELECT UUID(), r.leaderboardId, r.teamId, r.rn, r.rn + 1,
-       3, 3 - r.rn % 3, 0, r.rn % 3,
-       60 - (r.rn * 4), 40 + (r.rn * 3), 12 - (r.rn * 2), 48 - (r.rn * 6)
+       0, 0, 0, 0,
+       0, 0, 0, 0
 FROM (
     SELECT lb.leaderboardId,
            m.teamId,
@@ -2636,5 +2690,104 @@ VALUES
     (UUID(), @dragonsClub, @propId, 'Rhodri Jones', 0.20, 28, 54, 21, 47, 45, 38, 32, 1),
     (UUID(), @sharksClub, @propId, 'Ruan Dreyer', 0.20, 29, 52, 15, 46, 45, 45, 27, 1),
     (UUID(), @benettonClub, @propId, 'Tiziano Pasquali', 0.20, 23, 48, 26, 58, 45, 43, 34, 1);
+
+
+/* =====================================================================
+   Squads for every manager who does not already have one.
+
+   The five original demo teams keep their hand-picked squads: the simulated
+   results, transfers, recommendations and leaderboard rows above all
+   reference those exact players, so they are deliberately left untouched.
+
+   The remaining teams were previously seeded empty. That made the demo
+   misleading -- they appeared as league members, but a fixture can only be
+   simulated when BOTH squads hold exactly 20 locked players, so every one of
+   their fixtures was silently skipped with "does not have a complete
+   20-player locked squad". Each now gets a full, distinct, valid squad.
+
+   Composition (20 players, every position inside its min/max):
+     Prop 3, Hooker 2, Lock 3, Loose Forward 3            = 11 forwards
+     Scrum Half 2, Fly Half 2, Centre 2, Wing 2, Fullback 1 =  9 backs
+
+   Squads are drawn by walking each position's player list at an offset
+   derived from the team's index, so no two managers get the same XV and no
+   manager gets the same player twice. Unavailable players are excluded.
+   ===================================================================== */
+
+INSERT INTO `team_player_selection`
+    (selectionId, teamId, playerId, squadRole, isCaptain, is_vice_captain)
+SELECT UUID(),
+       pick.teamId,
+       pick.playerId,
+       /* Most valuable fifteen start, the rest cover the bench. */
+       CASE WHEN pick.valueRank > 15 THEN 'BENCH' ELSE 'STARTING' END,
+       pick.valueRank = 1,
+       pick.valueRank = 2
+FROM (SELECT squadless.teamId,
+             pool.playerId,
+             ROW_NUMBER() OVER (PARTITION BY squadless.teamId
+                 ORDER BY pool.value DESC, pool.playerId) AS valueRank
+      FROM (SELECT ft.teamId,
+                   ROW_NUMBER() OVER (ORDER BY ft.teamName) - 1 AS teamIndex
+            FROM `fantasyTeam` ft
+            WHERE NOT EXISTS (SELECT 1
+                              FROM `team_player_selection` existing
+                              WHERE existing.teamId = ft.teamId)) AS squadless
+               JOIN (SELECT quota.positionName, quota.required, slot.offsetInPosition
+                     FROM (SELECT 'Prop' AS positionName, 3 AS required
+                           UNION ALL
+                           SELECT 'Hooker', 2
+                           UNION ALL
+                           SELECT 'Lock', 3
+                           UNION ALL
+                           SELECT 'Loose Forward', 3
+                           UNION ALL
+                           SELECT 'Scrum Half', 2
+                           UNION ALL
+                           SELECT 'Fly Half', 2
+                           UNION ALL
+                           SELECT 'Centre', 2
+                           UNION ALL
+                           SELECT 'Wing', 2
+                           UNION ALL
+                           SELECT 'Fullback', 1) AS quota
+                              JOIN (SELECT 0 AS offsetInPosition
+                                    UNION ALL
+                                    SELECT 1
+                                    UNION ALL
+                                    SELECT 2) AS slot
+                                   ON slot.offsetInPosition < quota.required) AS slots
+               JOIN (SELECT pl.playerId,
+                            pl.value,
+                            po.positionName,
+                            ROW_NUMBER() OVER (PARTITION BY po.positionName
+                                ORDER BY pl.playerId) - 1 AS rankInPosition,
+                            COUNT(*) OVER (PARTITION BY po.positionName) AS positionPool
+                     FROM `player` pl
+                              JOIN `position` po ON po.positionId = pl.positionId
+                     WHERE NOT EXISTS (SELECT 1
+                                       FROM `playerAvailability` pa
+                                       WHERE pa.playerId = pl.playerId
+                                         AND pa.status <> 'ACTIVE'
+                                         AND (pa.endDate IS NULL OR pa.endDate >= CURDATE()))) AS pool
+                    ON pool.positionName = slots.positionName
+                        AND pool.rankInPosition =
+                            ((squadless.teamIndex * slots.required) + slots.offsetInPosition)
+                                % pool.positionPool) AS pick;
+
+/*
+    Keep every team's stored budget and validity honest: remainingBudget is
+    the 196.00 starting budget less what the squad actually costs, and a team
+    holding a complete squad is valid. Previously the empty teams claimed a
+    full budget while being flagged invalid, and the original five carried
+    hand-written budgets unrelated to their squad value.
+*/
+UPDATE `fantasyTeam` ft
+    JOIN (SELECT s.teamId, SUM(p.value) AS squadValue, COUNT(*) AS squadSize
+          FROM `team_player_selection` s
+                   JOIN `player` p ON p.playerId = s.playerId
+          GROUP BY s.teamId) AS totals ON totals.teamId = ft.teamId
+SET ft.remainingBudget = 196.00 - totals.squadValue,
+    ft.isValid         = (totals.squadSize = 20);
 
 COMMIT;

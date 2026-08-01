@@ -1,6 +1,7 @@
 package com.vzap.trytons.dao.market;
 
 import com.vzap.trytons.dao.shared.BaseDAO;
+import com.vzap.trytons.dao.shared.PublicLeagueScope;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.market.PlayerMarketMetrics;
 import jakarta.ejb.Singleton;
@@ -27,7 +28,8 @@ public class MarketDemandDAOImpl extends BaseDAO implements MarketDemandDAO {
             + "  (SELECT COUNT(*) FROM team_player_selection tps WHERE tps.playerId = p.playerId) AS ownershipCount, "
             + "  (SELECT COALESCE(SUM(fp.totalPoints), 0) FROM fantasyPoints fp "
             + "     JOIN playerStatistics ps ON ps.statId = fp.statId "
-            + "     WHERE ps.playerId = p.playerId AND fp.isFinal = TRUE) AS recentPoints, "
+            + "     WHERE ps.playerId = p.playerId AND fp.isFinal = TRUE "
+            + "       AND " + PublicLeagueScope.PLAYER_STATISTICS_FILTER + ") AS recentPoints, "
             + "  (SELECT COUNT(*) FROM team_player_selection tc WHERE tc.playerId = p.playerId AND tc.isCaptain = TRUE) AS captainCount "
             + "FROM player p "
             + "WHERE p.isActive = TRUE";

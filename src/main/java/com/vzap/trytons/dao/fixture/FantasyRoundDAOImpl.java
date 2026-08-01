@@ -1,6 +1,7 @@
 package com.vzap.trytons.dao.fixture;
 
 import com.vzap.trytons.enums.FantasyRoundStatus;
+import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.fixture.FantasyRound;
 
@@ -8,6 +9,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -247,5 +249,72 @@ public class FantasyRoundDAOImpl extends BaseDAO implements FantasyRoundDAO {
             throw new DataAccessException("Unable to check whether round exists for ID " + roundId, e);
         }
         return false;
+    }
+
+    @Override
+    public FantasyRound createRound(FantasyRound round) {
+        String query = "INSERT INTO fantasyRound (roundId, season, roundNumber, openDate, lockDeadline, endDate, status) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, round.getRoundId().toString());
+            ps.setString(2, round.getSeason());
+            ps.setInt(3, round.getRoundNumber());
+            ps.setObject(4, round.getOpenDate());
+            ps.setObject(5, round.getLockDeadline());
+            if (round.getEndDate() != null) {
+                ps.setObject(6, round.getEndDate());
+            } else {
+                ps.setNull(6, Types.TIMESTAMP);
+            }
+            ps.setString(7, round.getStatus().name());
+
+            if (ps.executeUpdate() == 1) {
+                return getRoundById(round.getRoundId())
+                        .orElseThrow(() -> new DataAccessException("Fantasy round was inserted, but cannot be retrieved.", null));
+            }
+
+        } catch (SQLException e) {
+            if ("45000".equals(e.getSQLState())) {
+                throw new ConflictException(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "The fantasy round could not be created because it conflicts with an existing record.");
+            }
+
+            String message = e.getMessage();
+            if (message != null && message.contains("uk_fantasyRound_season_round")) {
+                throw new ConflictException("A fantasy round already exists for this season and round number.");
+            }
+
+            LOG.log(Level.SEVERE, "Unable to create fantasy round", e);
+            throw new DataAccessException("Unable to create fantasy round", e);
+        }
+        return null;
+    }
+
+    @Override
+    public int getMaxRoundNumber(String season) {
+        String query = "SELECT MAX(roundNumber) FROM fantasyRound WHERE season = ?";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, season);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int max = rs.getInt(1);
+                    return rs.wasNull() ? 0 : max;
+                }
+            }
+
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to get max round number for season " + season, e);
+            throw new DataAccessException("Unable to get max round number for season " + season, e);
+        }
+        return 0;
     }
 }

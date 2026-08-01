@@ -3,6 +3,7 @@ package com.vzap.trytons.dao.results;
 import com.vzap.trytons.exceptions.ConflictException;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.results.PlayerStatistics;
+import com.vzap.trytons.model.results.PointsByEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.sql.Connection;
@@ -181,4 +182,46 @@ public class PlayerStatisticsDAOImpl extends BaseDAO implements PlayerStatistics
             throw new DataAccessException("Unable to retrieve player statistic by ID.", e);
         }
     }
+
+    @Override
+    public List<PointsByEvent> findPointsByEventForResultAndTeam(UUID resultId, UUID teamId) {
+        /*
+            Walks the scoring chain the simulation wrote: every player's
+            statistics for this result, the fantasy points calculated from
+            them, the per-rule breakdown of those points, and finally the rule
+            that describes the event. pointsEarned is already signed, so
+            deductions come back negative.
+        */
+        String query = "SELECT sr.eventType, sr.description, sr.isDeduction, "
+                + "SUM(b.eventCount) AS eventCount, SUM(b.pointsEarned) AS pointsEarned "
+                + "FROM playerStatistics ps "
+                + "JOIN fantasyPoints fp ON fp.statId = ps.statId "
+                + "JOIN fantasy_point_breakdown b ON b.pointsId = fp.pointsId "
+                + "JOIN scoringRule sr ON sr.ruleId = b.ruleId "
+                + "WHERE ps.resultId = ? AND ps.teamId = ? "
+                + "GROUP BY sr.eventType, sr.description, sr.isDeduction "
+                + "ORDER BY pointsEarned DESC";
+
+        List<PointsByEvent> breakdown = new ArrayList<>();
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setString(1, resultId.toString());
+            ps.setString(2, teamId.toString());
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                breakdown.add(PointsByEvent.builder()
+                        .eventType(rs.getString("eventType"))
+                        .description(rs.getString("description"))
+                        .eventCount(rs.getInt("eventCount"))
+                        .pointsEarned(rs.getInt("pointsEarned"))
+                        .deduction(rs.getBoolean("isDeduction"))
+                        .build());
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Unable to break down fantasy points for a match result", e);
+            throw new DataAccessException("Unable to break down fantasy points for a match result", e);
+        }
+        return breakdown;
+    }
+
 }
