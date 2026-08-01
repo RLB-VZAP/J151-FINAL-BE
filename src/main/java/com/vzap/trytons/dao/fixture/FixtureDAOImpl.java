@@ -19,8 +19,9 @@ public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
     private static final Logger LOG = Logger.getLogger(FixtureDAOImpl.class.getName());
     @Override
     public Fixture create(Fixture fixture) {
-        String query = "INSERT INTO fixture (fixtureId, leagueId, roundId, team_a_id, team_b_id, fixtureDate, fixtureTime, status, simulationDate) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String query = "INSERT INTO fixture (fixtureId, leagueId, roundId, team_a_id, team_b_id, fixtureDate, fixtureTime, status, simulationDate, " +
+                "tournamentId, poolId, stage, bracketSlot, matchdayNumber) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try(Connection con = getConnection();
             PreparedStatement ps = con.prepareStatement(query)){
             ps.setString(1,fixture.getFixtureId().toString());
@@ -35,6 +36,32 @@ public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
                 ps.setTimestamp(9,Timestamp.valueOf(fixture.getSimulationDate()));
             }else{
                 ps.setNull(9,Types.TIMESTAMP);
+            }
+            // Tournament wiring stays null for standalone administrator fixtures.
+            if(fixture.getTournamentId() != null){
+                ps.setString(10,fixture.getTournamentId().toString());
+            }else{
+                ps.setNull(10,Types.VARCHAR);
+            }
+            if(fixture.getPoolId() != null){
+                ps.setString(11,fixture.getPoolId().toString());
+            }else{
+                ps.setNull(11,Types.VARCHAR);
+            }
+            if(fixture.getStage() != null){
+                ps.setString(12,fixture.getStage().name());
+            }else{
+                ps.setNull(12,Types.VARCHAR);
+            }
+            if(fixture.getBracketSlot() != null){
+                ps.setInt(13,fixture.getBracketSlot());
+            }else{
+                ps.setNull(13,Types.INTEGER);
+            }
+            if(fixture.getMatchdayNumber() != null){
+                ps.setInt(14,fixture.getMatchdayNumber());
+            }else{
+                ps.setNull(14,Types.INTEGER);
             }
             if(ps.executeUpdate() == 1){
                 Optional<Fixture> createdFixture = findById(fixture.getFixtureId());
@@ -82,7 +109,14 @@ public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
 
     @Override
     public List<Fixture> findByLeagueId(UUID leagueId) {
-        String query = "SELECT * FROM fixture WHERE leagueId = ?";
+        // Joined to fantasyRound purely for a deterministic order: round number
+        // first (fixture.roundId alone doesn't sort chronologically), then
+        // kickoff, then stage/bracketSlot so pool and knockout fixtures within
+        // the same round still come out in a stable order.
+        String query = "SELECT f.* FROM fixture f "
+                + "JOIN fantasyRound r ON r.roundId = f.roundId "
+                + "WHERE f.leagueId = ? "
+                + "ORDER BY r.roundNumber, f.fixtureDate, f.fixtureTime, f.stage, f.bracketSlot";
         List<Fixture> fixtures = new ArrayList<>();
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query)){
@@ -112,6 +146,42 @@ public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
         }catch(SQLException e){
             LOG.log(Level.SEVERE, "Unable to find fixture", e);
             throw new DataAccessException("Unable to find fixture", e);
+        }
+        return fixtures;
+    }
+
+    @Override
+    public List<Fixture> findByTournamentId(UUID tournamentId) {
+        String query = "SELECT * FROM fixture WHERE tournamentId = ? ORDER BY matchdayNumber, stage, bracketSlot";
+        List<Fixture> fixtures = new ArrayList<>();
+        try(Connection con = getConnection();
+        PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1,tournamentId.toString());
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()){
+                fixtures.add(this.mapFixture(rs));
+            }
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE, "Unable to find tournament fixtures", e);
+            throw new DataAccessException("Unable to find tournament fixtures", e);
+        }
+        return fixtures;
+    }
+
+    @Override
+    public List<Fixture> findByPoolId(UUID poolId) {
+        String query = "SELECT * FROM fixture WHERE poolId = ? ORDER BY matchdayNumber";
+        List<Fixture> fixtures = new ArrayList<>();
+        try(Connection con = getConnection();
+        PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1,poolId.toString());
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()){
+                fixtures.add(this.mapFixture(rs));
+            }
+        }catch(SQLException e){
+            LOG.log(Level.SEVERE, "Unable to find pool fixtures", e);
+            throw new DataAccessException("Unable to find pool fixtures", e);
         }
         return fixtures;
     }
@@ -233,7 +303,22 @@ public class FixtureDAOImpl extends BaseDAO implements FixtureDAO {
         Timestamp simulationTimestamp = rs.getTimestamp("simulationDate");
         Timestamp createdAtTimestamp = rs.getTimestamp("createdAt");
 
+        String tournamentId = rs.getString("tournamentId");
+        String poolId = rs.getString("poolId");
+        String stage = rs.getString("stage");
+
+        int bracketSlot = rs.getInt("bracketSlot");
+        Integer resolvedBracketSlot = rs.wasNull() ? null : bracketSlot;
+
+        int matchdayNumber = rs.getInt("matchdayNumber");
+        Integer resolvedMatchdayNumber = rs.wasNull() ? null : matchdayNumber;
+
         return Fixture.builder()
+                .tournamentId(tournamentId == null ? null : UUID.fromString(tournamentId))
+                .poolId(poolId == null ? null : UUID.fromString(poolId))
+                .stage(stage == null ? null : com.vzap.trytons.enums.TournamentStage.valueOf(stage))
+                .bracketSlot(resolvedBracketSlot)
+                .matchdayNumber(resolvedMatchdayNumber)
                 .fixtureId(UUID.fromString(rs.getString("fixtureId")))
                 .leagueId(UUID.fromString(rs.getString("leagueId")))
                 .roundId(UUID.fromString(rs.getString("roundId")))

@@ -16,6 +16,11 @@ public interface FixtureDAO {
     }
     List<Fixture> findByLeagueId(UUID leagueId);
     List<Fixture> findByRoundId(UUID roundId);
+
+    /** Every generated fixture of a tournament, pool and knockout alike. */
+    List<Fixture> findByTournamentId(UUID tournamentId);
+
+    List<Fixture> findByPoolId(UUID poolId);
     List<Fixture> findByTeamId(UUID teamId);
     List<Fixture> findByStatus(FixtureStatus status);
     List<Fixture> getAllFixtures();

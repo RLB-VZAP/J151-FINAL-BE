@@ -1,5 +1,6 @@
 package com.vzap.trytons.dao.scoring;
 
+import com.vzap.trytons.dao.shared.PublicLeagueScope;
 import com.vzap.trytons.exceptions.DataAccessException;
 import com.vzap.trytons.model.scoring.FantasyPoints;
 import com.vzap.trytons.model.scoring.PlayerPointSummary;
@@ -152,7 +153,8 @@ public class FantasyPointsDAOImpl extends BaseDAO implements FantasyPointsDAO {
         String sql = "SELECT COALESCE(SUM(fp.totalPoints), 0) AS total "
                 + "FROM fantasyPoints fp "
                 + "JOIN playerStatistics ps ON fp.statId = ps.statId "
-                + "WHERE ps.playerId = ? AND fp.isFinal = TRUE";
+                + "WHERE ps.playerId = ? AND fp.isFinal = TRUE "
+                + "AND " + PublicLeagueScope.PLAYER_STATISTICS_FILTER;
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
@@ -170,6 +172,7 @@ public class FantasyPointsDAOImpl extends BaseDAO implements FantasyPointsDAO {
     public List<PlayerPointSummary> findTopPlayerByFinalPoints(int limit) {
         String query = "SELECT ps.playerId AS playerId, SUM(fp.totalPoints) AS totalPoints FROM fantasyPoints fp JOIN " +
                 "playerStatistics ps ON ps.statId = fp.statId WHERE fp.isFinal = TRUE" +
+                " AND " + PublicLeagueScope.PLAYER_STATISTICS_FILTER +
                 " GROUP BY ps.playerId ORDER BY totalPoints DESC LIMIT ?";
         try(Connection con = getConnection();
         PreparedStatement ps = con.prepareStatement(query)){

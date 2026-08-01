@@ -134,12 +134,10 @@ public class TransferServiceImpl implements TransferService {
         }
 
         BigDecimal oldTeamValue = totalValue;
-        BigDecimal newRemainingBudget = oldRemainingBudget.add(removedValue).subtract(addedValue);
+        BigDecimal newRemainingBudget = squadValidationService.checkRemainingBudget(
+                oldRemainingBudget.add(removedValue).subtract(addedValue),
+                "You cannot afford this transfer. Insufficient remaining budget.");
         BigDecimal newTeamValue = oldTeamValue.subtract(removedValue).add(addedValue);
-
-        if (newRemainingBudget.compareTo(BigDecimal.ZERO) < 0) {
-            throw new BusinessRuleException("You cannot afford this transfer. Insufficient remaining budget.");
-        }
 
         List<UUID> proposedPlayerIds = currentSquad.stream()
                 .filter(selection -> selection != null && selection.getPlayerId() != null)

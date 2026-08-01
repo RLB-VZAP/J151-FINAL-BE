@@ -15,6 +15,7 @@ import com.vzap.trytons.dto.pricing.PricingRunSummaryDTO;
 import com.vzap.trytons.service.fixture.DeadlineLockService;
 import com.vzap.trytons.service.leaderboard.LeaderboardService;
 import com.vzap.trytons.service.pricing.PricingService;
+import com.vzap.trytons.service.tournament.TournamentService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -48,6 +49,8 @@ public class CompetitionProcessingServiceImpl implements CompetitionProcessingSe
 
     @Inject
     private PricingService pricingService;
+    @Inject
+    private TournamentService tournamentService;
 
     @Override
     public CompetitionProcessingSummaryDTO processDueWork(UUID actorUserId) {
@@ -57,6 +60,7 @@ public class CompetitionProcessingServiceImpl implements CompetitionProcessingSe
         int fixturesSimulated = 0;
         int fixturesProcessed = 0;
         int leaderboardsRefreshed = 0;
+        int tournamentsAdvanced = 0;
         int playersRepriced = 0;
         int skipped = 0;
         int errors = 0;
@@ -123,6 +127,16 @@ public class CompetitionProcessingServiceImpl implements CompetitionProcessingSe
             errorMessages.add("Overall leaderboard refresh: " + e.getMessage());
         }
 
+        // Tournament progression: recompute pool tables, promote a finished
+        // pool stage into the knockout bracket, and play the bracket forward
+        // one round per fantasy round. Non-fatal, like pricing below.
+        try {
+            tournamentsAdvanced = tournamentService.advanceActiveTournaments();
+        } catch (Exception e) {
+            errors++;
+            errorMessages.add("Tournament progression: " + e.getMessage());
+        }
+
         // Dynamic player pricing: recalculate values from the latest form,
         // ownership, points, transfer demand and availability. Non-fatal.
         try {
@@ -142,6 +156,7 @@ public class CompetitionProcessingServiceImpl implements CompetitionProcessingSe
                 .fixturesProcessed(fixturesProcessed)
                 .leaderboardsRefreshed(leaderboardsRefreshed)
                 .playersRepriced(playersRepriced)
+                .tournamentsAdvanced(tournamentsAdvanced)
                 .skipped(skipped)
                 .errors(errors)
                 .errorMessages(errorMessages)

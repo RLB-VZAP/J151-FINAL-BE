@@ -35,24 +35,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class FantasyTeamServiceImpl implements FantasyTeamService {
-    /**
-     * Squad budget, on the same scale as player.value — millions of rands, so
-     * 196.00 means R196m. It has to match that scale because the budget is
-     * spent by subtracting player values from it; the previous 100000000.00
-     * was whole rands, which made every squad look free and overflowed
-     * fantasyTeam.remainingBudget DECIMAL(10,2) on insert.
-     *
-     * Sized against the seeded roster and the 20-player squad rule. Once the
-     * position minimums are applied, the cheapest legal squad costs about 185,
-     * an average one about 203, and the most expensive about 222.
-     *
-     * 196 sits deliberately below the average squad, so a manager cannot just
-     * take twenty players without thinking, while still leaving roughly 11
-     * above the floor for a few premium picks. Anything near 190 would pin the
-     * squad to the cheapest legal combination — the floor is high because the
-     * roster is only 33 players for 20 places.
-     */
-    private static final BigDecimal INITIAL_BUDGET = new BigDecimal("196.00");
+    // Squad budget lives on SquadValidationService now — see the doc comment
+    // there for the rationale. TransferServiceImpl needs the same figure, so
+    // it moved to the shared validator instead of staying private here.
 
     @Inject
     private FantasyTeamDAO fantasyTeamDAO;
@@ -132,10 +117,9 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
             String firstError = validationResult.getErrors().get(0).getMessage();
             throw new BusinessRuleException("Squad validation failed: " + firstError);
         }
-        BigDecimal remainingBudget = INITIAL_BUDGET.subtract(totalTeamValue);
-        if(remainingBudget.compareTo(BigDecimal.ZERO) < 0){
-            throw new BusinessRuleException("You cannot afford this squad.Isnufficient balance.");
-        }
+        BigDecimal remainingBudget = squadValidationService.checkRemainingBudget(
+                squadValidationService.getInitialBudget().subtract(totalTeamValue),
+                "You cannot afford this squad.Isnufficient balance.");
         FantasyTeam fantasyTeam = mapRequestToFantasyTeam(request);
         fantasyTeam.setTeamId(UUID.randomUUID());
         fantasyTeam.setOwnerUserId(registeredUserId);
@@ -360,10 +344,9 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         }
 
         BigDecimal totalTeamValue = totalTeamValue(fantasyTeamDTO);
-        BigDecimal remainingBudget = INITIAL_BUDGET.subtract(totalTeamValue);
-        if (remainingBudget.compareTo(BigDecimal.ZERO) < 0) {
-            throw new BusinessRuleException("You cannot afford this squad. Insufficient remaining budget.");
-        }
+        BigDecimal remainingBudget = squadValidationService.checkRemainingBudget(
+                squadValidationService.getInitialBudget().subtract(totalTeamValue),
+                "You cannot afford this squad. Insufficient remaining budget.");
 
         fantasyTeamPlayerDAO.replaceSquad(teamId, selections);
 

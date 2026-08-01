@@ -5,10 +5,12 @@ import com.vzap.trytons.dao.fixture.FantasyRoundDAO;
 import com.vzap.trytons.dao.fantasyteam.FantasyTeamDAO;
 import com.vzap.trytons.dao.fantasyteam.FantasyTeamRoundSelectionDAO;
 import com.vzap.trytons.dao.fixture.FixtureDAO;
+import com.vzap.trytons.dao.league.LeagueDAO;
 import com.vzap.trytons.dao.results.MatchResultDAO;
 import com.vzap.trytons.dao.results.MatchTeamScoreDAO;
 import com.vzap.trytons.dao.results.PlayerStatisticsDAO;
 import com.vzap.trytons.dto.results.TeamScoreUpdateResultDTO;
+import com.vzap.trytons.enums.LeagueType;
 import com.vzap.trytons.enums.MatchTeamSide;
 import com.vzap.trytons.exceptions.BusinessRuleException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
@@ -17,6 +19,7 @@ import com.vzap.trytons.model.fixture.FantasyRound;
 import com.vzap.trytons.model.fantasyteam.FantasyTeam;
 import com.vzap.trytons.model.fantasyteam.FantasyTeamRoundSelection;
 import com.vzap.trytons.model.fixture.Fixture;
+import com.vzap.trytons.model.league.League;
 import com.vzap.trytons.model.results.MatchResult;
 import com.vzap.trytons.model.results.MatchTeamScore;
 import com.vzap.trytons.model.results.PlayerStatistics;
@@ -53,6 +56,9 @@ public class TeamScoreServiceImpl implements TeamScoreService {
 
     @Inject
     FantasyRoundDAO fantasyRoundDAO;
+
+    @Inject
+    LeagueDAO leagueDAO;
 
     @Override
     public TeamScoreUpdateResultDTO updateTeamScoresForFixture(String fixtureId) {
@@ -202,6 +208,14 @@ public class TeamScoreServiceImpl implements TeamScoreService {
         for (Fixture fixture : allFixtures){
 
             FantasyRound currentRound = fantasyRoundDAO.getRoundById(fixture.getRoundId()).orElseThrow(() -> new ResourceNotFoundException("no round found"));
+
+            // Season totals follow the same public-leagues-only rule as the
+            // master leaderboard: a private league's friendlies stay inside
+            // that league's own table and must not inflate this total.
+            League league = leagueDAO.findLeagueById(fixture.getLeagueId()).orElse(null);
+            if (league == null || league.getLeagueType() != LeagueType.PUBLIC) {
+                continue;
+            }
 
             if (currentRound.getSeason().equals(season)){
                 currentSeasonFixtures.add(fixture);

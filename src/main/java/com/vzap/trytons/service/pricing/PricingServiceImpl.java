@@ -9,17 +9,16 @@ import com.vzap.trytons.dto.pricing.PlayerPriceHistoryDTO;
 import com.vzap.trytons.dto.pricing.PriceChangeDTO;
 import com.vzap.trytons.dto.pricing.PricingRunSummaryDTO;
 import com.vzap.trytons.dto.pricing.PricingSettingsDTO;
-import com.vzap.trytons.enums.AvailabilityStatus;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.exceptions.ValidationException;
 import com.vzap.trytons.model.pricing.PlayerPriceHistory;
 import com.vzap.trytons.model.pricing.PlayerPricingMetrics;
 import com.vzap.trytons.model.pricing.PricingSettings;
+import com.vzap.trytons.util.PricingCalculator;
 import jakarta.inject.Inject;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -154,7 +153,7 @@ public class PricingServiceImpl implements PricingService {
 
         for (PlayerPricingMetrics m : metrics) {
             BigDecimal oldValue = m.getCurrentValue();
-            BigDecimal newValue = computeNewValue(settings, m, maxOwnership, maxAbsDemand, maxPoints);
+            BigDecimal newValue = PricingCalculator.computeNewValue(settings, m, maxOwnership, maxAbsDemand, maxPoints);
             if (newValue.compareTo(oldValue) == 0) {
                 continue;
             }
@@ -190,35 +189,6 @@ public class PricingServiceImpl implements PricingService {
                 .build();
     }
 
-    private BigDecimal computeNewValue(PricingSettings s, PlayerPricingMetrics m,
-                                       int maxOwnership, int maxAbsDemand, int maxPoints) {
-        double form = (m.getCurrentForm() - 50) / 50.0;
-        double popularity = maxOwnership > 0 ? (2.0 * m.getOwnershipCount() / maxOwnership - 1.0) : 0.0;
-        double points = maxPoints > 0 ? (2.0 * m.getRecentFantasyPoints() / maxPoints - 1.0) : 0.0;
-        double demand = maxAbsDemand > 0 ? ((double) m.getNetTransferDemand() / maxAbsDemand) : 0.0;
-        double injury = m.getAvailabilityStatus() == AvailabilityStatus.INJURED ? -1.0 : 0.0;
-        double availability = (m.getAvailabilityStatus() == AvailabilityStatus.SUSPENDED
-                || m.getAvailabilityStatus() == AvailabilityStatus.UNAVAILABLE) ? -1.0 : 0.0;
-
-        double weighted = s.getWeightForm().doubleValue() * form
-                + s.getWeightPopularity().doubleValue() * popularity
-                + s.getWeightPoints().doubleValue() * points
-                + s.getWeightDemand().doubleValue() * demand
-                + s.getWeightInjury().doubleValue() * injury
-                + s.getWeightAvailability().doubleValue() * availability;
-
-        double current = m.getCurrentValue().doubleValue();
-        double rawDelta = current * weighted;
-        double maxDelta = current * s.getMaxDeltaPct().doubleValue();
-        double cappedDelta = Math.max(-maxDelta, Math.min(maxDelta, rawDelta));
-
-        double proposed = current + cappedDelta;
-        double clamped = Math.max(s.getMinValue().doubleValue(),
-                Math.min(s.getMaxValue().doubleValue(), proposed));
-
-        return BigDecimal.valueOf(clamped).setScale(2, RoundingMode.HALF_UP);
-    }
-
     private void persistChange(UUID playerId, BigDecimal oldValue, BigDecimal newValue, String reason) {
         try {
             playerDAO.updateValue(playerId, newValue);
@@ -236,6 +206,34 @@ public class PricingServiceImpl implements PricingService {
     // ----- helpers -----
 
     private PricingSettings loadSettings() {
+        return pricingSettingsDAO.findSettings()
+                .orElseGet(this::createDefaultSettings);
+    }
+
+    /**
+     * Recovers from the seeded pricing_settings row being missing (schema.sql
+     * expects exactly one row, but nothing guarantees it stays that way).
+     * Without this, both the admin pricing screen and the automatic
+     * per-round reprice would throw forever - the latter silently, since the
+     * caller in CompetitionProcessingServiceImpl swallows pricing failures.
+     * Defaults mirror the column DEFAULTs in schema.sql exactly.
+     */
+    private PricingSettings createDefaultSettings() {
+        PricingSettings defaults = PricingSettings.builder()
+                .settingsId(UUID.randomUUID())
+                .weightForm(new BigDecimal("0.1000"))
+                .weightPopularity(new BigDecimal("0.0500"))
+                .weightPoints(new BigDecimal("0.1000"))
+                .weightInjury(new BigDecimal("0.1500"))
+                .weightDemand(new BigDecimal("0.0800"))
+                .weightAvailability(new BigDecimal("0.2000"))
+                .maxDeltaPct(new BigDecimal("0.1500"))
+                .minValue(new BigDecimal("1.00"))
+                .maxValue(new BigDecimal("300.00"))
+                .build();
+
+        pricingSettingsDAO.insertSettings(defaults);
+
         return pricingSettingsDAO.findSettings()
                 .orElseThrow(() -> new ResourceNotFoundException("Pricing settings have not been configured."));
     }

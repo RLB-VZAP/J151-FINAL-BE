@@ -4,10 +4,12 @@ import com.vzap.trytons.dao.fantasyteam.FantasyTeamDAO;
 import com.vzap.trytons.dao.fixture.FantasyRoundDAO;
 import com.vzap.trytons.dao.fixture.FixtureDAO;
 import com.vzap.trytons.dao.leaderboard.LeaderboardDAO;
+import com.vzap.trytons.dao.league.LeagueDAO;
 import com.vzap.trytons.dao.results.MatchResultDAO;
 import com.vzap.trytons.dao.results.MatchTeamScoreDAO;
 import com.vzap.trytons.dto.history.UserPointsHistoryResponseDTO;
 import com.vzap.trytons.dto.history.WeeklyPerformanceResponseDTO;
+import com.vzap.trytons.enums.LeagueType;
 import com.vzap.trytons.enums.MatchTeamSide;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
@@ -15,6 +17,7 @@ import com.vzap.trytons.model.fantasyteam.FantasyTeam;
 import com.vzap.trytons.model.fixture.FantasyRound;
 import com.vzap.trytons.model.fixture.Fixture;
 import com.vzap.trytons.model.leaderboard.Ranking;
+import com.vzap.trytons.model.league.League;
 import com.vzap.trytons.model.results.MatchResult;
 import com.vzap.trytons.model.results.MatchTeamScore;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -38,6 +41,9 @@ public class UserHistoryServiceImpl implements UserHistoryService {
 
     @Inject
     private LeaderboardDAO leaderboardDAO;
+
+    @Inject
+    private LeagueDAO leagueDAO;
 
     @Inject
     private FantasyRoundDAO fantasyRoundDAO;
@@ -112,6 +118,14 @@ public class UserHistoryServiceImpl implements UserHistoryService {
         List<WeeklyPerformanceResponseDTO> weeklyPerformance = new ArrayList<>();
 
         for (Fixture fixture : fixtures) {
+
+            // A manager's history/season total is the same "public leagues only"
+            // rule as the master leaderboard: a private league's friendlies
+            // still show in that league's own table, not here.
+            Optional<League> league = leagueDAO.findLeagueById(fixture.getLeagueId());
+            if (league.isEmpty() || league.get().getLeagueType() != LeagueType.PUBLIC) {
+                continue;
+            }
 
             Optional<MatchResult> resultOptional = matchResultDAO.findCurrentByFixtureId(fixture.getFixtureId());
             if (resultOptional.isPresent()) {

@@ -1,5 +1,7 @@
 package com.vzap.trytons.dao.league;
+import com.vzap.trytons.enums.LeagueStatus;
 import com.vzap.trytons.model.league.League;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,4 +19,7 @@ public interface LeagueDAO {
     boolean updateLeague(League league);
     boolean deleteLeague(UUID leagueId);
     boolean assignManager(UUID leagueId, UUID managerUserId);
+
+    /** Moves a league through its tournament lifecycle. startedAt is required for any non-FORMING status. */
+    boolean updateStatus(UUID leagueId, LeagueStatus status, LocalDateTime startedAt);
 }

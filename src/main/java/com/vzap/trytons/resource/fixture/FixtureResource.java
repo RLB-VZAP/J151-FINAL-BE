@@ -2,22 +2,18 @@ package com.vzap.trytons.resource.fixture;
 
 import com.vzap.trytons.annotations.AdminOnly;
 import com.vzap.trytons.annotations.Authenticated;
-import com.vzap.trytons.dto.fixture.FixtureRequestDTO;
 import com.vzap.trytons.dto.fixture.FixtureResponseDTO;
 import com.vzap.trytons.enums.FixtureStatus;
 import com.vzap.trytons.filter.AuthFilter;
 import com.vzap.trytons.security.AuthPrincipal;
 import com.vzap.trytons.service.fixture.FixtureService;
 import jakarta.inject.Inject;
-import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.UriInfo;
 
-import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,8 +33,8 @@ public class FixtureResource {
     }
 
     @GET
-    public Response listFixtures(@QueryParam("status")FixtureStatus status){
-        List<FixtureResponseDTO>fixtures = fixtureService.listFixtures(status);
+    public Response listFixtures(@QueryParam("status") FixtureStatus status, @QueryParam("leagueId") UUID leagueId){
+        List<FixtureResponseDTO>fixtures = fixtureService.listFixtures(getCurrentUserId(), status, leagueId);
         return Response.ok(fixtures)
                 .build();
     }
@@ -50,15 +46,13 @@ public class FixtureResource {
         return Response.ok(fixture).build();
     }
 
-    @POST
-    @AdminOnly
-    public Response createFixture(@Valid FixtureRequestDTO request, @Context UriInfo uriInfo){
-        FixtureResponseDTO created = fixtureService.createFixture(getCurrentUserId(),request);
-        URI location = uriInfo.getAbsolutePathBuilder().path(created.getFixtureId().toString()).build();
-        return Response.created(location)
-                .entity(created)
-                .build();
-    }
+    /*
+        Fixtures are no longer created by hand. Every fixture now comes from
+        tournament generation, which draws the pools and schedules the whole
+        competition, so an administrator may view and update a fixture but not
+        create one. Creating fixtures outside a tournament would also break the
+        one-fixture-per-team-per-round rule the generator depends on.
+    */
 
     @PUT
     @Path("/{fixtureId}/status")

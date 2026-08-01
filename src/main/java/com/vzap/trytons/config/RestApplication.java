@@ -16,6 +16,7 @@ import com.vzap.trytons.resource.catalog.PlayerResource;
 import com.vzap.trytons.resource.catalog.PositionResource;
 import com.vzap.trytons.resource.fantasyteam.FantasyTeamResource;
 import com.vzap.trytons.resource.fixture.FixtureResource;
+import com.vzap.trytons.resource.tournament.TournamentResource;
 import com.vzap.trytons.resource.fixture.LockStatusResource;
 import com.vzap.trytons.resource.fixture.RoundResource;
 import com.vzap.trytons.resource.history.UserHistoryResource;
@@ -65,6 +66,7 @@ public class RestApplication extends Application {
                 FantasyPointsResource.class,
                 FantasyTeamResource.class,
                 FixtureResource.class,
+                TournamentResource.class,
                 LeaderboardResource.class,
                 LeagueResource.class,
                 LeagueMessageResource.class,

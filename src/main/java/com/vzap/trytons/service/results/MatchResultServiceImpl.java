@@ -33,13 +33,15 @@ public class MatchResultServiceImpl implements MatchResultService {
     private final FixtureDAO fixtureDAO;
     private final UserDAO userDAO;
     private final SimulationSettingsDAO simulationSettingsDAO;
+    private final MatchPointsBreakdownService matchPointsBreakdownService;
 
     @Inject
-    public MatchResultServiceImpl(MatchResultDAO matchResultDAO, FixtureDAO fixtureDAO, UserDAO userDAO, SimulationSettingsDAO simulationSettingsDAO) {
+    public MatchResultServiceImpl(MatchResultDAO matchResultDAO, FixtureDAO fixtureDAO, UserDAO userDAO, SimulationSettingsDAO simulationSettingsDAO, MatchPointsBreakdownService matchPointsBreakdownService) {
         this.matchResultDAO = matchResultDAO;
         this.fixtureDAO = fixtureDAO;
         this.userDAO = userDAO;
         this.simulationSettingsDAO = simulationSettingsDAO;
+        this.matchPointsBreakdownService = matchPointsBreakdownService;
     }
 
     @Override
@@ -129,20 +131,26 @@ public class MatchResultServiceImpl implements MatchResultService {
     }
 
     private MatchResultResponseDTO mapToResponse(MatchResult result, Fixture fixture) {
-        return new MatchResultResponseDTO(
-                result.getResultId(),
-                result.getFixtureId(),
-                fixture.getTeamAId(),
-                fixture.getTeamBId(),
-                result.getSimulationRunNumber(),
-                result.getTeamAScore(),
-                result.getTeamBScore(),
-                result.getWinnerSide(),
-                result.isDraw(),
-                result.isApproved(),
-                result.isCurrent(),
-                result.getResultDate(),
-                result.getApprovedByAdminUserId()
-        );
+        // Built with the builder rather than the all-args constructor so that
+        // adding a field to the DTO cannot silently shift these arguments.
+        return MatchResultResponseDTO.builder()
+                .resultId(result.getResultId())
+                .fixtureId(result.getFixtureId())
+                .teamAId(fixture.getTeamAId())
+                .teamBId(fixture.getTeamBId())
+                .simulationRunNumber(result.getSimulationRunNumber())
+                .teamAScore(result.getTeamAScore())
+                .teamBScore(result.getTeamBScore())
+                .teamABreakdown(matchPointsBreakdownService.breakdownFor(
+                        result.getResultId(), fixture.getTeamAId()))
+                .teamBBreakdown(matchPointsBreakdownService.breakdownFor(
+                        result.getResultId(), fixture.getTeamBId()))
+                .winnerSide(result.getWinnerSide())
+                .isDraw(result.isDraw())
+                .approved(result.isApproved())
+                .isCurrent(result.isCurrent())
+                .resultDate(result.getResultDate())
+                .approvedByAdminUserId(result.getApprovedByAdminUserId())
+                .build();
     }
 }

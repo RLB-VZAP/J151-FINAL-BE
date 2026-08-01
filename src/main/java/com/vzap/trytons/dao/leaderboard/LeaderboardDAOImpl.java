@@ -49,6 +49,37 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
     }
 
     @Override
+    public Optional<Leaderboard> getLeaderboardByLeagueAndSeason(UUID leagueId, String season) {
+        // leaderboard is unique on (scopeKey, season), so a league that has
+        // survived into a second season has two rows; getLeaderboardByLeagueId
+        // alone can't tell them apart. This is what the ensure-exists check in
+        // LeaderboardServiceImpl needs before deciding whether to insert.
+        String query = "SELECT * FROM leaderboard WHERE leagueId = ? AND season = ?";
+        try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
+            ps.setString(1, leagueId.toString());
+            ps.setString(2, season);
+
+            try(ResultSet rs = ps.executeQuery()){
+                if (rs.next()){
+                    Leaderboard lb = Leaderboard.builder()
+                            .leaderboardId(UUID.fromString(rs.getString("leaderboardId")))
+                            .leagueId(UUID.fromString(rs.getString("leagueId")))
+                            .season(rs.getString("season"))
+                            .scope(LeaderboardScope.valueOf(rs.getString("scope")))
+                            .lastUpdated(rs.getObject("lastUpdated", LocalDateTime.class))
+                            .build();
+
+                    return Optional.of(lb);
+                }
+            }
+        }catch (SQLException e){
+            LOG.log(Level.SEVERE, "Unable to get leaderboard by league id " + leagueId + " and season " + season, e);
+            throw new DataAccessException("Unable to get leaderboard by league id " + leagueId + " and season " + season, e);
+        }
+        return Optional.empty();
+    }
+
+    @Override
     public List<Ranking> getRankingsByLeaderboardId(UUID leaderboardId) {
         String query = "SELECT * FROM ranking WHERE leaderboardId = ?";
         List<Ranking> rankings = new ArrayList<>();
@@ -262,6 +293,15 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
             ps.executeUpdate();
 
         }catch (SQLException e){
+            // uk_leaderboard_scope_season: two concurrent ensure-exists checks
+            // (a league creation racing a refresh, or two refreshes) can both
+            // see "no board yet" and both try to insert. The loser gets this,
+            // and the caller re-reads instead of failing the request.
+            String message = e.getMessage();
+            if (message != null && message.contains("uk_leaderboard_scope_season")) {
+                throw new ConflictException("A leaderboard already exists for this league and season.");
+            }
+
             LOG.log(Level.SEVERE, "Unable to save leaderboard.", e);
             throw new DataAccessException("Unable to save leaderboard.", e);
         }

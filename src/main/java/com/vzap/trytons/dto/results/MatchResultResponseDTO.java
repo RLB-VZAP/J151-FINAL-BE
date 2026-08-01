@@ -26,6 +26,14 @@ public class MatchResultResponseDTO {
     private int teamAScore;
     private int teamBScore;
 
+    /*
+        How each side's score was earned: the points contributed by tries,
+        conversions, tackles and every other event, plus the captain bonus and
+        transfer penalty. Null until the fixture has been simulated.
+    */
+    private TeamPointsBreakdownDTO teamABreakdown;
+    private TeamPointsBreakdownDTO teamBBreakdown;
+
     private MatchTeamSide winnerSide;
 
     @JsonProperty("isDraw")

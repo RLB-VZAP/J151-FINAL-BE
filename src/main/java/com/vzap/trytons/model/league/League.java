@@ -1,5 +1,6 @@
 package com.vzap.trytons.model.league;
 
+import com.vzap.trytons.enums.LeagueStatus;
 import com.vzap.trytons.enums.LeagueType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,4 +29,7 @@ public class League {
     private int maxMembers;
 
     private UUID managerUserId;
+
+    private LeagueStatus status;
+    private LocalDateTime startedAt;
 }
