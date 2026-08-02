@@ -1,5 +1,6 @@
 package com.vzap.trytons.dto.league;
 
+import com.vzap.trytons.enums.LeagueStatus;
 import com.vzap.trytons.enums.LeagueType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,4 +31,11 @@ public class LeagueResponseDTO {
     private int maxMembers;
 
     private String leagueCode;
+
+    // League.status/startedAt existed on the model and in the database but never
+    // reached the client, so every league looked FORMING to the UI -- "start league"
+    // showed on leagues already running and the tournament link never appeared.
+    private LeagueStatus status;
+
+    private LocalDateTime startedAt;
 }

@@ -10,8 +10,8 @@ import com.vzap.trytons.dao.auth.UserDAO;
 import com.vzap.trytons.dto.fixture.FixtureResponseDTO;
 import com.vzap.trytons.enums.FantasyRoundStatus;
 import com.vzap.trytons.enums.FixtureStatus;
-import com.vzap.trytons.enums.LeagueType;
 import com.vzap.trytons.enums.UserRole;
+import com.vzap.trytons.util.LeagueVisibility;
 import com.vzap.trytons.exceptions.*;
 import com.vzap.trytons.model.fixture.FantasyRound;
 import com.vzap.trytons.model.fantasyteam.FantasyTeam;
@@ -23,7 +23,6 @@ import com.vzap.trytons.model.auth.User;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -113,10 +112,10 @@ public class FixtureServiceImpl implements FixtureService {
         // who can open a league's detail page (public leagues are visible to anyone;
         // private leagues need active membership or admin) must also be able to see
         // its fixtures, otherwise the "View fixtures" link on a public league renders
-        // an empty/forbidden page for a non-member. Keep these two in sync.
-        if (league.getLeagueType() == LeagueType.PRIVATE
-                && !isAdministrator(actorUserId)
-                && !leagueMembershipDAO.existsActiveByLeagueAndUser(leagueId, actorUserId)) {
+        // an empty/forbidden page for a non-member. Expressed through the shared
+        // LeagueVisibility.canView predicate so the sites cannot drift apart again.
+        boolean isActiveMember = leagueMembershipDAO.existsActiveByLeagueAndUser(leagueId, actorUserId);
+        if (!LeagueVisibility.canView(league.getLeagueType(), isAdministrator(actorUserId), isActiveMember)) {
             throw new AuthorisationException("You must be an active member of this league to view its fixtures.");
         }
     }
@@ -176,9 +175,21 @@ public class FixtureServiceImpl implements FixtureService {
 
         fixture.setStatus(status);
 
-        if (status == FixtureStatus.COMPLETED) {
-            fixture.setSimulationDate(LocalDateTime.now());
-        }
+        /*
+            Deliberately NOT stamping simulationDate here.
+
+            simulationDate is evidence that a simulation actually ran; only
+            MatchSimulationServiceImpl.simulateFixture may write it. This method
+            used to stamp it whenever an administrator selected COMPLETED, which
+            defused chk_fixture_simulation_date (the CHECK that a COMPLETED or
+            PROCESSED fixture must carry a simulationDate) and let a hollow
+            fixture — no matchResult, no playerStatistics, no match_team_score —
+            pass for a played one. The triggers could not catch it either: they
+            fire on INSERT/UPDATE of matchResult and match_team_score, and this
+            path writes neither.
+
+            Do not re-add it.
+        */
 
         boolean updated = fixtureDAO.updateFixture(fixture);
 
@@ -190,6 +201,45 @@ public class FixtureServiceImpl implements FixtureService {
 
     }
 
+    /*
+        The administrative transition table.
+
+        This endpoint is a bare persistence setter — it writes fixture.status and
+        nothing else. So it may only own transitions that are purely
+        administrative, i.e. ones that assert no outcome and leave no other table
+        needing rows.
+
+            UPCOMING  -> LOCKED, CANCELLED
+            LOCKED    -> CANCELLED
+            SIMULATING-> CANCELLED     (recovery only; nothing sets SIMULATING)
+            COMPLETED -> (none)
+            PROCESSED -> (none)
+            CANCELLED -> (none)
+
+        The transitions that are NOT here, and why:
+
+          LOCKED -> SIMULATING     Removed. MatchSimulationServiceImpl.simulateFixture
+                                   only accepts a LOCKED fixture, so parking one in
+                                   SIMULATING made it permanently unsimulatable — a
+                                   dead end whose only exit was CANCELLED. SIMULATING
+                                   is kept in the enum for existing rows, but nothing
+                                   moves a fixture into it.
+
+          SIMULATING -> COMPLETED  Removed. COMPLETED means "this match was played".
+          LOCKED     -> COMPLETED  It is set by MatchSimulationServiceImpl.simulateFixture,
+                                   which writes the matchResult and playerStatistics that
+                                   make it true. Use POST /simulations/fixtures/{id}.
+
+          COMPLETED -> PROCESSED   Removed. PROCESSED means "fantasyPoints,
+                                   match_team_score and the leaderboard have been
+                                   brought up to date". It is set by
+                                   MatchProcessingServiceImpl.processCompletedFixture,
+                                   which does that work. Use
+                                   POST /match-processing/fixtures/{id}.
+
+        Letting an administrator select COMPLETED or PROCESSED here walked a
+        fixture to "played and scored" in a few clicks with zero rows behind it.
+    */
     private boolean isValidStatusTransition(
             FixtureStatus currentStatus,
             FixtureStatus newStatus) {
@@ -203,15 +253,11 @@ public class FixtureServiceImpl implements FixtureService {
         }
 
         if (currentStatus == FixtureStatus.LOCKED) {
-            return ((newStatus == FixtureStatus.SIMULATING) || (newStatus == FixtureStatus.CANCELLED));
+            return newStatus == FixtureStatus.CANCELLED;
         }
 
         if (currentStatus == FixtureStatus.SIMULATING) {
-            return ((newStatus == FixtureStatus.COMPLETED) || (newStatus == FixtureStatus.CANCELLED));
-        }
-
-        if (currentStatus == FixtureStatus.COMPLETED) {
-            return newStatus == FixtureStatus.PROCESSED;
+            return newStatus == FixtureStatus.CANCELLED;
         }
 
         return false;
@@ -313,6 +359,9 @@ public class FixtureServiceImpl implements FixtureService {
         response.setRoundId(fixture.getRoundId());
         response.setRoundNumber(roundNumber);
         response.setStage(fixture.getStage());
+        // Jackson writes the enum by name(), so the label has to travel as its
+        // own field or the frontend is left reinventing it.
+        response.setStageLabel(fixture.getStage() == null ? null : fixture.getStage().getLabel());
         response.setMatchdayNumber(fixture.getMatchdayNumber());
         response.setTeamAId(fixture.getTeamAId());
         response.setTeamAName(teamAName);

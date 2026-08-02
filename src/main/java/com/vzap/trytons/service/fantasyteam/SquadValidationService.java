@@ -1,14 +1,25 @@
 package com.vzap.trytons.service.fantasyteam;
 
 import com.vzap.trytons.dto.fantasyteam.SquadValidationResultDTO;
+import com.vzap.trytons.enums.SquadRole;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
 public interface SquadValidationService {
     SquadValidationResultDTO validateSquad(List<UUID> proposedPlayerIds);
     SquadValidationResultDTO validateSquad(List<UUID> proposedPlayerIds, List<UUID> playersRequiringAvailabilityCheck);
+
+    /**
+     * Rejects a squad whose STARTING/BENCH split is not exactly 15 STARTING
+     * and 5 BENCH. A valid 20-player squad (per validateSquad's size and
+     * position checks) always resolves to this split via SquadRoleAssigner,
+     * so this is the final guard against a broken split reaching the
+     * database rather than a routine part of every save.
+     */
+    SquadValidationResultDTO validateSquadRoles(Collection<SquadRole> squadRoles);
 
     /**
      * The fixed squad budget, on the same scale as player.value (millions of

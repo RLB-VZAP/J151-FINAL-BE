@@ -35,6 +35,19 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
         UUID newId = UUID.randomUUID();
         LocalDateTime joinDate = LocalDateTime.now();
 
+        // Removal is a soft delete (isActive = FALSE, see deactivateMembership), but
+        // uk_leagueMembership_user is a plain UNIQUE on (leagueId, registered_user_id)
+        // and MySQL has no filtered indexes -- so the dead row keeps occupying the
+        // slot forever. A straight INSERT therefore failed for anyone who had been
+        // removed, and the duplicate-key handler below reported "already a member",
+        // flatly contradicting the isActive-aware check the caller had just passed.
+        // Reactivating the existing row is the fix: it reuses the slot instead of
+        // fighting the constraint, and keeps the membership's history.
+        UUID reactivatedId = reactivateMembership(leagueId, userId, teamId, joinDate);
+        if (reactivatedId != null) {
+            return buildMembership(reactivatedId, leagueId, userId, teamId, joinDate);
+        }
+
         String sql = "INSERT INTO leagueMembership (membershipId, leagueId, registered_user_id, teamId, isActive, " +
                 "joinDate)" + " VALUES (?, ?, ?, ?, TRUE, ?)";
 
@@ -69,6 +82,55 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
                     + " team" + teamId, e);
         }
 
+        return buildMembership(newId, leagueId, userId, teamId, joinDate);
+    }
+
+    /**
+     * Revives the soft-deleted membership left behind by {@code deactivateMembership},
+     * returning its id, or {@code null} when the user has never been in this league.
+     *
+     * <p>The team is re-stamped because a returning manager may have a different
+     * squad than when they left, and the join date is refreshed so the row reads
+     * as the current spell rather than the original one.
+     */
+    private UUID reactivateMembership(UUID leagueId, UUID userId, UUID teamId, LocalDateTime joinDate) {
+        String select = "SELECT membershipId FROM leagueMembership "
+                + "WHERE leagueId = ? AND registered_user_id = ? AND isActive = FALSE";
+        String update = "UPDATE leagueMembership SET isActive = TRUE, teamId = ?, joinDate = ? "
+                + "WHERE membershipId = ?";
+
+        try (Connection con = getConnection();
+             PreparedStatement find = con.prepareStatement(select)) {
+            find.setString(1, leagueId.toString());
+            find.setString(2, userId.toString());
+
+            UUID existingId;
+            try (ResultSet rs = find.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+                existingId = UUID.fromString(rs.getString("membershipId"));
+            }
+
+            try (PreparedStatement revive = con.prepareStatement(update)) {
+                revive.setString(1, teamId.toString());
+                revive.setTimestamp(2, Timestamp.valueOf(joinDate));
+                revive.setString(3, existingId.toString());
+                return revive.executeUpdate() == 1 ? existingId : null;
+            }
+        } catch (SQLException e) {
+            String message = e.getMessage();
+            if (message != null && message.contains("uk_leagueMembership_team")) {
+                throw new ConflictException("This team is already a member of this league.");
+            }
+            LOGGER.log(Level.SEVERE, "Failed to reactivate membership for league " + leagueId
+                    + " user " + userId, e);
+            throw new DataAccessException("Failed to rejoin league " + leagueId, e);
+        }
+    }
+
+    private LeagueMembership buildMembership(UUID membershipId, UUID leagueId, UUID userId,
+                                             UUID teamId, LocalDateTime joinDate) {
         League league = new League();
         league.setLeagueId(leagueId);
 
@@ -79,7 +141,7 @@ public class LeagueMembershipDAOImpl extends BaseDAO implements LeagueMembership
         fantasyTeam.setTeamId(teamId);
 
         LeagueMembership membership = new LeagueMembership();
-        membership.setMembershipId(newId);
+        membership.setMembershipId(membershipId);
         membership.setIsActive(true);
         membership.setJoinDate(joinDate);
         membership.setLeagueId(leagueId);

@@ -1111,9 +1111,9 @@ SET @tSulaimaan = UUID();
 
 INSERT INTO `fantasyTeam` (teamId, owner_user_id, teamName, remainingBudget, isValid)
 VALUES
-    (@tUser1,  @uUser1,  'User One XV',   196.00, FALSE),
-    (@tUser2,  @uUser2,  'User Two XV',   196.00, FALSE),
-    (@tUser3,  @uUser3,  'User Three XV', 196.00, FALSE),
+    (@tUser1,  @uUser1,  'Wanderers XV',   196.00, FALSE),
+    (@tUser2,  @uUser2,  'Kingsmead XV',   196.00, FALSE),
+    (@tUser3,  @uUser3,  'Ellis Park XV', 196.00, FALSE),
     (@tChristan,  @uChristan,  'Christan XV',  196.00, FALSE),
     (@tLindsay,   @uLindsay,   'Lindsay XV',   196.00, FALSE),
     (@tJaunte,    @uJaunte,    'Jaunte XV',    196.00, FALSE),

@@ -2,6 +2,8 @@ package com.vzap.trytons.resource.tournament;
 
 import com.vzap.trytons.annotations.AdminOnly;
 import com.vzap.trytons.annotations.Authenticated;
+import com.vzap.trytons.dto.tournament.MatchDayResponseDTO;
+import com.vzap.trytons.dto.tournament.MatchDayUpdateRequestDTO;
 import com.vzap.trytons.dto.tournament.StartLeagueResponseDTO;
 import com.vzap.trytons.dto.tournament.TournamentFixtureResponseDTO;
 import com.vzap.trytons.dto.tournament.TournamentResponseDTO;
@@ -17,6 +19,7 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -81,6 +84,40 @@ public class TournamentResource {
         return Response.ok(tournamentService.getTournament(tournamentId))
                 .header("X-Tournament-Advanced", advanced)
                 .build();
+    }
+
+    /**
+     * Moves a round -- and every fixture in it -- to another match day.
+     *
+     * <p>Deliberately NOT {@code @AdminOnly}: a private league's own manager
+     * schedules their own friendlies. The service decides who may edit (see
+     * {@code requireMatchDayEditor}); this method only carries the request.
+     */
+    @PUT
+    @Path("/leagues/{leagueId}/rounds/{roundId}/match-day")
+    public Response updateMatchDay(@PathParam("leagueId") UUID leagueId,
+                                   @PathParam("roundId") UUID roundId,
+                                   MatchDayUpdateRequestDTO request) {
+        LocalDate matchDay = request == null ? null : request.getMatchDay();
+        MatchDayResponseDTO moved =
+                tournamentService.updateMatchDay(getCurrentUserId(), leagueId, roundId, matchDay);
+        return Response.ok(moved).build();
+    }
+
+    /**
+     * Administrator override: pulls a round's window back to now so the next
+     * {@code POST /competition-processing/due-work} opens, locks and plays it.
+     *
+     * <p>Kept apart from the match-day editor above precisely because the two
+     * authorisation rules are different -- one is admin-or-private-manager, this
+     * one is admin only, and blurring them would hand every private manager the
+     * ability to force their own results.
+     */
+    @POST
+    @Path("/rounds/{roundId}/play-now")
+    @AdminOnly
+    public Response playRoundNow(@PathParam("roundId") UUID roundId) {
+        return Response.ok(tournamentService.playRoundNow(getCurrentUserId(), roundId)).build();
     }
 
     @GET

@@ -22,6 +22,12 @@ public class TournamentFixtureResponseDTO {
     private UUID tournamentId;
 
     private TournamentStage stage;
+    /**
+     * Human readable stage, e.g. "Quarter-Finals". Carried explicitly because
+     * Jackson serialises the enum above by name(), so TournamentStage.getLabel
+     * never reaches the wire on its own.
+     */
+    private String stageLabel;
 
     private UUID poolId;
     private String poolName;

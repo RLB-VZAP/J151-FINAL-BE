@@ -1,7 +1,9 @@
 package com.vzap.trytons.service.fantasyteam;
 
 import com.vzap.trytons.dao.catalog.PlayerDAO;
+import com.vzap.trytons.dto.fantasyteam.SquadValidationResultDTO;
 import com.vzap.trytons.enums.AvailabilityStatus;
+import com.vzap.trytons.enums.SquadRole;
 import com.vzap.trytons.exceptions.BusinessRuleException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.model.catalog.Player;
@@ -190,5 +192,47 @@ class SquadValidationServiceImplTest {
         BigDecimal remaining = service.checkRemainingBudget(BigDecimal.ZERO, "You cannot afford this squad.");
 
         assertTrue(remaining.compareTo(BigDecimal.ZERO) == 0);
+    }
+
+    /**
+     * Covers the bench bug's other half: SquadValidationServiceImpl only
+     * checked squad size (== 20), never the STARTING/BENCH split, so a
+     * 20-STARTING/0-BENCH squad (every UI-created team, before the
+     * FantasyTeamServlet fix) reported "Valid squad". These tests exercise
+     * validateSquadRoles directly, which needs no DAO/DB.
+     */
+    @Test
+    void fifteenStartingFiveBenchIsValid() {
+        List<SquadRole> roles = new ArrayList<>();
+        for (int i = 0; i < 15; i++) roles.add(SquadRole.STARTING);
+        for (int i = 0; i < 5; i++) roles.add(SquadRole.BENCH);
+
+        SquadValidationResultDTO result = service.validateSquadRoles(roles);
+
+        assertTrue(result.isValid());
+    }
+
+    @Test
+    void twentyStartingZeroBenchIsRejected() {
+        // Exactly the shape Jarryd XV and Test 1 were found in: every player
+        // hardcoded STARTING because FantasyTeamServlet never set a bench.
+        List<SquadRole> roles = new ArrayList<>();
+        for (int i = 0; i < 20; i++) roles.add(SquadRole.STARTING);
+
+        SquadValidationResultDTO result = service.validateSquadRoles(roles);
+
+        assertTrue(!result.isValid());
+        assertEquals("INVALID_SQUAD_ROLE_SPLIT", result.getErrors().get(0).getCode());
+    }
+
+    @Test
+    void seededFourteenSixSplitIsAlsoRejected() {
+        List<SquadRole> roles = new ArrayList<>();
+        for (int i = 0; i < 14; i++) roles.add(SquadRole.STARTING);
+        for (int i = 0; i < 6; i++) roles.add(SquadRole.BENCH);
+
+        SquadValidationResultDTO result = service.validateSquadRoles(roles);
+
+        assertTrue(!result.isValid());
     }
 }

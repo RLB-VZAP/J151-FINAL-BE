@@ -40,6 +40,7 @@ import com.vzap.trytons.resource.scoring.FantasyPointsResource;
 import com.vzap.trytons.resource.scoring.ScoringRuleResource;
 import com.vzap.trytons.resource.simulation.CompetitionProcessingResource;
 import com.vzap.trytons.resource.simulation.ControlledResimulationResource;
+import com.vzap.trytons.resource.simulation.MatchProcessingResource;
 import com.vzap.trytons.resource.simulation.SimulationResource;
 import com.vzap.trytons.resource.simulation.SimulationSettingResource;
 import com.vzap.trytons.resource.transfer.TransferRecommendationResource;
@@ -76,6 +77,7 @@ public class RestApplication extends Application {
                 LockStatusResource.class,
                 LogResource.class,
                 MarketDashboardResource.class,
+                MatchProcessingResource.class,
                 MatchResultResource.class,
                 MatchTeamScoreResource.class,
                 NotificationResource.class,

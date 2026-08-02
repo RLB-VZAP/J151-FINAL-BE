@@ -26,7 +26,7 @@ public class LeaderboardEntryResponseDTO {
     private int matchesLost;
     private int pointsFor;
     private int pointsAgainst;
-    private int pointsDifference;
+    private int scoreDifference;
     private int leaguePoints;
     private int totalFantasyPoints;
 }

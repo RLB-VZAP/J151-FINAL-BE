@@ -230,6 +230,88 @@ public class FantasyRoundDAOImpl extends BaseDAO implements FantasyRoundDAO {
     }
 
     @Override
+    public boolean updateRoundSchedule(UUID roundId,
+                                       LocalDateTime openDate,
+                                       LocalDateTime lockDeadline,
+                                       LocalDateTime endDate) {
+
+        // One statement, all three columns: chk_fantasyRound_dates spans them,
+        // so a piecemeal update would be rejected on the intermediate state.
+        // The status guard is part of the WHERE rather than a separate read so
+        // a round that opened between the check and the write cannot be moved.
+        String query = "UPDATE fantasyRound SET openDate = ?, lockDeadline = ?, endDate = ? "
+                + "WHERE roundId = ? AND status = 'UPCOMING'";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setObject(1, openDate);
+            ps.setObject(2, lockDeadline);
+            if (endDate != null) {
+                ps.setObject(3, endDate);
+            } else {
+                ps.setNull(3, Types.TIMESTAMP);
+            }
+            ps.setString(4, roundId.toString());
+
+            return ps.executeUpdate() == 1;
+
+        } catch (SQLException e) {
+            if ("45000".equals(e.getSQLState())) {
+                throw new ConflictException(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "The fantasy round could not be rescheduled.");
+            }
+
+            LOG.log(Level.SEVERE, "Unable to reschedule fantasy round " + roundId, e);
+            throw new DataAccessException("Unable to reschedule fantasy round " + roundId, e);
+        }
+    }
+
+    @Override
+    public boolean forceRoundSchedule(UUID roundId,
+                                      LocalDateTime openDate,
+                                      LocalDateTime lockDeadline,
+                                      LocalDateTime endDate) {
+
+        // Same one-statement, three-column write as updateRoundSchedule, but a
+        // wider status guard: an administrator pulling a round forward has to
+        // be able to reach a round whose transfer window is already OPEN. A
+        // round that has locked, been played or been cancelled is still off
+        // limits, and the guard lives in the WHERE so a round that locks
+        // between the service check and this write cannot be dragged back.
+        String query = "UPDATE fantasyRound SET openDate = ?, lockDeadline = ?, endDate = ? "
+                + "WHERE roundId = ? AND status IN ('UPCOMING', 'OPEN')";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setObject(1, openDate);
+            ps.setObject(2, lockDeadline);
+            if (endDate != null) {
+                ps.setObject(3, endDate);
+            } else {
+                ps.setNull(3, Types.TIMESTAMP);
+            }
+            ps.setString(4, roundId.toString());
+
+            return ps.executeUpdate() == 1;
+
+        } catch (SQLException e) {
+            if ("45000".equals(e.getSQLState())) {
+                throw new ConflictException(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "The fantasy round could not be rescheduled.");
+            }
+
+            LOG.log(Level.SEVERE, "Unable to force-reschedule fantasy round " + roundId, e);
+            throw new DataAccessException("Unable to force-reschedule fantasy round " + roundId, e);
+        }
+    }
+
+    @Override
     public boolean roundExists(UUID roundId) {
         String query = "SELECT * FROM fantasyRound WHERE roundId = ?";
 
