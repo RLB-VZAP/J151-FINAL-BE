@@ -1190,8 +1190,8 @@ VALUES
     (@lgSunrise, NULL, 'TryTons Sunrise Sevens',
      'Fun quick-fire sunrise league for the group. One morning round.',
      'PUBLIC', NULL, 30),
-    (@lgTest, NULL, 'Quick Test League',
-     'Simple test league that closes at midnight tonight.',
+    (@lgTest, NULL, 'Cape Town Classic',
+     'Open eight-team league for new managers finding their feet.',
      'PUBLIC', NULL, 30);
 
 /* Memberships. Showcase carries the 8 named players plus the 3 demo users;
