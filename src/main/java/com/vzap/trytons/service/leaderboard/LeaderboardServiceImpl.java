@@ -129,20 +129,46 @@ public class LeaderboardServiceImpl implements LeaderboardService{
         }
     }
 
+    /**
+     * Get-or-create for the season's master leaderboard, mirroring
+     * {@link #ensureLeagueLeaderboard}.
+     *
+     * <p>This used to be a plain lookup that gave up with "No master
+     * leaderboard exists" when the row was missing. Nothing anywhere else
+     * created it, so the master board existed only because the seed inserted
+     * one by hand: on any database that had not been seeded — or had its
+     * competition data cleared — the overall standings could never be built at
+     * all, and the failure surfaced as a polite message rather than an error.
+     */
+    private Leaderboard ensureMasterLeaderboard(String season) {
+        Optional<Leaderboard> existing = leaderboardDAO.getMasterLeaderboard(season);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        // leagueId stays null: the master board spans every public league
+        // rather than belonging to one.
+        Leaderboard board = Leaderboard.builder()
+                .leaderboardId(UUID.randomUUID())
+                .leagueId(null)
+                .season(season)
+                .scope(LeaderboardScope.MASTER)
+                .lastUpdated(LocalDateTime.now())
+                .build();
+        try {
+            leaderboardDAO.saveLeaderboard(board);
+            return board;
+        } catch (ConflictException e) {
+            // uk_leaderboard_scope_season: another request created it first.
+            return leaderboardDAO.getMasterLeaderboard(season).orElseThrow(() -> e);
+        }
+    }
+
     @Override
     public LeaderboardRefreshResultDTO refreshOverallLeaderboard(UUID actorUserId) {
         requireAdmin(actorUserId);
         String season = seasonResolver.resolveCurrentSeason();
-        Optional<Leaderboard> master = leaderboardDAO.getMasterLeaderboard(season);
-        if (master.isEmpty()) {
-            return LeaderboardRefreshResultDTO.builder()
-                    .success(false)
-                    .message("No master leaderboard exists for season " + season + ".")
-                    .teamsProcessed(0)
-                    .rankingsUpdated(0)
-                    .build();
-        }
-        Leaderboard board = master.get();
+        Leaderboard board = ensureMasterLeaderboard(season);
         List<LeaderboardAggregator.FixtureScoreRow> rows = leaderboardAggregationDAO.findMasterScoreRows(season);
         applyAggregation(board, LeaderboardAggregator.aggregate(rows, LeaderboardAggregator.Scope.MASTER));
         return refreshRankings(board);
