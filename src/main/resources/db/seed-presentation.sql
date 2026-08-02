@@ -984,16 +984,6 @@ VALUES (UUID(), @points1, @ruleTry, 1, 5),
        (UUID(), @points6, @ruleConversion, 2, 4),
        (UUID(), @points6, @ruleTackle, 6, 6);
 
-INSERT INTO `systemReport`
-(reportId,
- generated_by_admin_user_id,
- reportType,
- reportTitle)
-VALUES (UUID(),
-        @adminId,
-        'ACTIVE_USERS',
-        'Active Users Report');
-
 INSERT INTO `log`
 (logId,
  userId,
@@ -1135,6 +1125,36 @@ VALUES
 
 COMMIT;
 
+/* ----------------------------------------------------------------------------
+   Active Users Report snapshot -- recorded here, once every presentation
+   account above exists, so it captures the real active-user list. (It was
+   previously inserted right after Section 1's ~10 users with no resultJson
+   at all, which rendered as "This report contains no data" even though the
+   ACTIVE_USERS report logic itself -- SystemReportServiceImpl.buildActiveUsersReport()
+   / UserDAOImpl.getActiveUsers() -- works correctly.) The JSON shape here
+   mirrors buildActiveUsersReport() exactly: {"activeUserCount", "users":[{
+   "userId","username","role"}]}, with an empty-object parametersJson to match
+   what generateReport() stores when no parameters are supplied.
+   ---------------------------------------------------------------------------- */
+START TRANSACTION;
+
+INSERT INTO `systemReport`
+(reportId, generated_by_admin_user_id, reportType, reportTitle, parametersJson, resultJson)
+SELECT
+    UUID(),
+    @adminId,
+    'ACTIVE_USERS',
+    'Active Users Report',
+    JSON_OBJECT(),
+    JSON_OBJECT(
+        'activeUserCount', COUNT(*),
+        'users', JSON_ARRAYAGG(JSON_OBJECT('userId', userId, 'username', username, 'role', role))
+    )
+FROM `user`
+WHERE isActive = TRUE;
+
+COMMIT;
+
 
 /* ============================================================================
    SECTION 4 -- Presentation leagues, fantasy rounds and fixtures
@@ -1190,8 +1210,8 @@ VALUES
     (@lgSunrise, NULL, 'TryTons Sunrise Sevens',
      'Fun quick-fire sunrise league for the group. One morning round.',
      'PUBLIC', NULL, 30),
-    (@lgTest, NULL, 'Quick Test League',
-     'Simple test league that closes at midnight tonight.',
+    (@lgTest, NULL, 'Cape Town Classic',
+     'Open eight-team league for new managers finding their feet.',
      'PUBLIC', NULL, 30);
 
 /* Memberships. Showcase carries the 8 named players plus the 3 demo users;
