@@ -984,16 +984,6 @@ VALUES (UUID(), @points1, @ruleTry, 1, 5),
        (UUID(), @points6, @ruleConversion, 2, 4),
        (UUID(), @points6, @ruleTackle, 6, 6);
 
-INSERT INTO `systemReport`
-(reportId,
- generated_by_admin_user_id,
- reportType,
- reportTitle)
-VALUES (UUID(),
-        @adminId,
-        'ACTIVE_USERS',
-        'Active Users Report');
-
 INSERT INTO `log`
 (logId,
  userId,
@@ -1132,6 +1122,36 @@ VALUES
     (@tTimothy,   @uTimothy,   'Timothy XV',   196.00, FALSE),
     (@tJarryd,    @uJarryd,    'Jarryd XV',    196.00, FALSE),
     (@tSulaimaan, @uSulaimaan, 'Sulaimaan XV', 196.00, FALSE);
+
+COMMIT;
+
+/* ----------------------------------------------------------------------------
+   Active Users Report snapshot -- recorded here, once every presentation
+   account above exists, so it captures the real active-user list. (It was
+   previously inserted right after Section 1's ~10 users with no resultJson
+   at all, which rendered as "This report contains no data" even though the
+   ACTIVE_USERS report logic itself -- SystemReportServiceImpl.buildActiveUsersReport()
+   / UserDAOImpl.getActiveUsers() -- works correctly.) The JSON shape here
+   mirrors buildActiveUsersReport() exactly: {"activeUserCount", "users":[{
+   "userId","username","role"}]}, with an empty-object parametersJson to match
+   what generateReport() stores when no parameters are supplied.
+   ---------------------------------------------------------------------------- */
+START TRANSACTION;
+
+INSERT INTO `systemReport`
+(reportId, generated_by_admin_user_id, reportType, reportTitle, parametersJson, resultJson)
+SELECT
+    UUID(),
+    @adminId,
+    'ACTIVE_USERS',
+    'Active Users Report',
+    JSON_OBJECT(),
+    JSON_OBJECT(
+        'activeUserCount', COUNT(*),
+        'users', JSON_ARRAYAGG(JSON_OBJECT('userId', userId, 'username', username, 'role', role))
+    )
+FROM `user`
+WHERE isActive = TRUE;
 
 COMMIT;
 
