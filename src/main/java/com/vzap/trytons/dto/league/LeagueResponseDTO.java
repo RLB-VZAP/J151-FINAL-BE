@@ -19,6 +19,14 @@ public class LeagueResponseDTO {
     private UUID leagueId;
     private UUID managerUserId;
 
+    /**
+     * The manager's username, or null for a public league — those are run by
+     * the administrators and have no manager. The frontend has always declared
+     * this field; nothing ever populated it, so every league rendered as
+     * "Managed by the league".
+     */
+    private String managerDisplayName;
+
     private String leagueName;
     private String description;
 

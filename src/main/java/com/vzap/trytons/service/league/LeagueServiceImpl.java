@@ -539,11 +539,24 @@ public class LeagueServiceImpl implements LeagueService {
         }
     }
 
+    /**
+     * The manager's username, or null when there is no manager. A public league
+     * never has one: it is run by the administrators, so nobody owns it.
+     */
+    private String managerDisplayName(League league) {
+        UUID managerId = league.getManagerUserId();
+        if (managerId == null) {
+            return null;
+        }
+        return userDAO.getUserById(managerId).map(User::getUsername).orElse(null);
+    }
+
     private LeagueResponseDTO toResponse(League league) {
 
         return LeagueResponseDTO.builder()
                 .leagueId(league.getLeagueId())
                 .managerUserId(league.getManagerUserId())
+                .managerDisplayName(managerDisplayName(league))
                 .leagueName(league.getLeagueName())
                 .description(league.getDescription())
                 .leagueType(league.getLeagueType())

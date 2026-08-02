@@ -1392,17 +1392,27 @@ public class TournamentServiceImpl implements TournamentService {
         User user = userDAO.getUserById(actorUserId)
                 .orElseThrow(() -> new AuthorisationException("An authenticated user is required."));
 
+        // League type decides first, deliberately. A public league has no
+        // manager -- it is run by the administrators -- so checking
+        // managerUserId before the type would let a legacy public league that
+        // still carries one be started by that non-admin, which is exactly the
+        // rule this method exists to enforce.
+        if (league.getLeagueType() == LeagueType.PUBLIC) {
+            if (user.getRole() == UserRole.ADMINISTRATOR) {
+                return;
+            }
+            throw new AuthorisationException(
+                    "Public leagues are run by administrators; only an administrator can start one.");
+        }
+
         if (actorUserId.equals(league.getManagerUserId())) {
             return;
         }
         if (user.getRole() == UserRole.ADMINISTRATOR) {
-            if (league.getLeagueType() == LeagueType.PUBLIC) {
-                return;
-            }
             throw new AuthorisationException(
                     "Administrators can only start public leagues. A private league is started by its own manager.");
         }
-        throw new AuthorisationException("Only the league manager or an administrator can start this league.");
+        throw new AuthorisationException("Only the league manager can start this league.");
     }
 
     /**
