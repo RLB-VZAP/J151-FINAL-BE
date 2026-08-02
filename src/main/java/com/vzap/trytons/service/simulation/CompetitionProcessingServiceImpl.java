@@ -56,6 +56,7 @@ public class CompetitionProcessingServiceImpl implements CompetitionProcessingSe
     public CompetitionProcessingSummaryDTO processDueWork(UUID actorUserId) {
         requireAdmin(actorUserId);
 
+        int roundsOpened = 0;
         int roundsLocked = 0;
         int fixturesSimulated = 0;
         int fixturesProcessed = 0;
@@ -69,6 +70,28 @@ public class CompetitionProcessingServiceImpl implements CompetitionProcessingSe
         List<String> skippedMessages = new ArrayList<>();
 
         LocalDateTime now = LocalDateTime.now();
+
+        // Rounds are minted UPCOMING and dated forward, so something has to open them
+        // when their openDate arrives. Nothing else in the codebase ever writes OPEN --
+        // updateRoundStatus is otherwise only called with LOCKED, by DeadlineLockService.
+        // Without this step a minted round never opens, never locks and never simulates,
+        // and every tournament stalls permanently.
+        for (FantasyRound round : fantasyRoundDAO.getRoundsByStatus(FantasyRoundStatus.UPCOMING)) {
+            if (round.getOpenDate() != null && !now.isBefore(round.getOpenDate())) {
+                try {
+                    fantasyRoundDAO.updateRoundStatus(round.getRoundId(), FantasyRoundStatus.OPEN);
+                    roundsOpened++;
+                } catch (ApplicationException e) {
+                    skipped++;
+                    skippedMessages.add("Open round " + round.getRoundId() + " [" + e.getErrorCode() + "]: " + e.getMessage());
+                } catch (Exception e) {
+                    errors++;
+                    errorMessages.add("Open round " + round.getRoundId() + ": " + e.getMessage());
+                }
+            }
+        }
+
+        // Re-read: a round opened a moment ago may already be past its lock deadline.
         List<FantasyRound> openRounds = fantasyRoundDAO.getRoundsByStatus(FantasyRoundStatus.OPEN);
         for (FantasyRound round : openRounds) {
             if (round.getLockDeadline() != null && !now.isBefore(round.getLockDeadline())) {
@@ -151,6 +174,7 @@ public class CompetitionProcessingServiceImpl implements CompetitionProcessingSe
 
         return CompetitionProcessingSummaryDTO.builder()
                 .processedAt(now)
+                .roundsOpened(roundsOpened)
                 .roundsLocked(roundsLocked)
                 .fixturesSimulated(fixturesSimulated)
                 .fixturesProcessed(fixturesProcessed)

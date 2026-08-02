@@ -25,12 +25,17 @@ import com.vzap.trytons.model.catalog.Player;
 import com.vzap.trytons.model.catalog.Position;
 import com.vzap.trytons.model.auth.RegisteredUser;
 import com.vzap.trytons.model.fantasyteam.TeamPlayerSelection;
+import com.vzap.trytons.enums.SquadRole;
+import com.vzap.trytons.util.fantasyteam.SquadRoleAssigner;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
@@ -69,6 +74,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         List<UUID> playerIds = new ArrayList<>();
         List<TeamPlayerSelection> selections = new ArrayList<>();
         List<FantasyTeamPlayerSelectionResponseDTO> selectedPlayers = new ArrayList<>();
+        Map<UUID, String> positionNameByPlayer = new HashMap<>();
 
         BigDecimal totalTeamValue = BigDecimal.ZERO;
         int totalPoints = 0;
@@ -92,6 +98,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                     selections.add(selection);
             Club club = clubDAO.findByClubId(player.getClubId()).orElseThrow(() -> new ResourceNotFoundException("Club Not Found."));
             Position position = positionDAO.findById(player.getPositionId()).orElseThrow(() -> new ResourceNotFoundException("Position Not Found."));
+            positionNameByPlayer.put(player.getPlayerId(), position.getPositionName());
 
 
 
@@ -117,6 +124,9 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
             String firstError = validationResult.getErrors().get(0).getMessage();
             throw new BusinessRuleException("Squad validation failed: " + firstError);
         }
+
+        normaliseSquadRoles(playerIds, positionNameByPlayer, selections);
+
         BigDecimal remainingBudget = squadValidationService.checkRemainingBudget(
                 squadValidationService.getInitialBudget().subtract(totalTeamValue),
                 "You cannot afford this squad.Isnufficient balance.");
@@ -301,6 +311,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
         List<UUID> selectedPlayerIds = new ArrayList<>();
         List<TeamPlayerSelection> selections = new ArrayList<>();
         List<FantasyTeamPlayerSelectionResponseDTO> selectedResponsePlayers = new ArrayList<>();
+        Map<UUID, String> positionNameByPlayer = new HashMap<>();
 
         int totalPoints = 0;
 
@@ -308,6 +319,7 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
             Player player = playerDAO.getPlayerById(requestPlayers.getPlayerId()).orElseThrow(() -> new ResourceNotFoundException("Player not found."));
             Club club = clubDAO.findByClubId(player.getClubId()).orElseThrow(() -> new ResourceNotFoundException("Club Not Found."));
             Position position = positionDAO.findById(player.getPositionId()).orElseThrow(() -> new ResourceNotFoundException("Position Not Found."));
+            positionNameByPlayer.put(player.getPlayerId(), position.getPositionName());
             selectedPlayerIds.add(player.getPlayerId());
             TeamPlayerSelection selection = TeamPlayerSelection.builder()
                     .selectionId(UUID.randomUUID())
@@ -343,6 +355,8 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
             throw new BusinessRuleException("Squad validation failed: " + firstError);
         }
 
+        normaliseSquadRoles(selectedPlayerIds, positionNameByPlayer, selections);
+
         BigDecimal totalTeamValue = totalTeamValue(fantasyTeamDTO);
         BigDecimal remainingBudget = squadValidationService.checkRemainingBudget(
                 squadValidationService.getInitialBudget().subtract(totalTeamValue),
@@ -371,6 +385,44 @@ public class FantasyTeamServiceImpl implements FantasyTeamService {
                 .valid(fantasyTeam.getIsValid())
                 .selectedPlayers(selectedResponsePlayers)
                 .build();
+    }
+
+    /**
+     * Repairs the STARTING/BENCH split so it always ends up 15/5 by position
+     * quota, regardless of what the client sent. FantasyTeamServlet used to
+     * hardcode every player to STARTING (see buildFantasyTeamRequest), so
+     * every UI-created team had a 20/0 split and no bench at all. Runs after
+     * squadValidationService.validateSquad has already confirmed the player
+     * set is a legal 20-player squad with valid per-position min/max counts
+     * — that guarantee is what makes SquadRoleAssigner's quotas always sum
+     * to exactly 15 STARTING here.
+     *
+     * <p>If the incoming selections are already exactly 15/5, they are left
+     * untouched so a manager's own bench choice within a legal split is
+     * respected; only a broken split gets rewritten.
+     */
+    private void normaliseSquadRoles(List<UUID> playerIds, Map<UUID, String> positionNameByPlayer,
+                                      List<TeamPlayerSelection> selections) {
+        long startingCount = selections.stream().filter(s -> s.getSquadRole() == SquadRole.STARTING).count();
+        long benchCount = selections.stream().filter(s -> s.getSquadRole() == SquadRole.BENCH).count();
+
+        if (startingCount != SquadRoleAssigner.STARTING_SIZE || benchCount != SquadRoleAssigner.BENCH_SIZE) {
+            Map<UUID, SquadRole> assignedRoles = SquadRoleAssigner.assignRoles(playerIds, positionNameByPlayer::get);
+            for (TeamPlayerSelection selection : selections) {
+                selection.setSquadRole(assignedRoles.get(selection.getPlayerId()));
+            }
+        }
+
+        // Defence in depth: even after normalisation, confirm the split that
+        // is about to be persisted is exactly 15/5 and fail loudly rather
+        // than silently writing a broken squad if that invariant is ever
+        // violated (e.g. by a future change to position quotas).
+        SquadValidationResultDTO roleValidation = squadValidationService.validateSquadRoles(
+                selections.stream().map(TeamPlayerSelection::getSquadRole).collect(Collectors.toList()));
+        if (!roleValidation.isValid()) {
+            String firstError = roleValidation.getErrors().get(0).getMessage();
+            throw new BusinessRuleException("Squad validation failed: " + firstError);
+        }
     }
 
     private FantasyTeam mapRequestToFantasyTeam(FantasyTeamRequestDTO request) {

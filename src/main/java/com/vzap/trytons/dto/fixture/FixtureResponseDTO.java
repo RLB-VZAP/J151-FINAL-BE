@@ -24,6 +24,12 @@ public class FixtureResponseDTO {
     private UUID roundId;
     private Integer roundNumber;
     private TournamentStage stage;
+    /**
+     * Human readable stage, e.g. "Quarter-Finals". Carried explicitly because
+     * Jackson serialises the enum above by name(), so TournamentStage.getLabel
+     * never reaches the wire on its own.
+     */
+    private String stageLabel;
     private Integer matchdayNumber;
 
     private UUID teamAId;

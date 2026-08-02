@@ -12,6 +12,7 @@ import com.vzap.trytons.dto.league.LeagueRequestDTO;
 import com.vzap.trytons.dto.league.LeagueResponseDTO;
 import com.vzap.trytons.dto.publicpreview.PublicLeaguePreviewDTO;
 import com.vzap.trytons.enums.LeaderboardScope;
+import com.vzap.trytons.enums.LeagueStatus;
 import com.vzap.trytons.enums.LeagueType;
 import com.vzap.trytons.exceptions.AuthorisationException;
 import com.vzap.trytons.exceptions.BusinessRuleException;
@@ -26,6 +27,7 @@ import com.vzap.trytons.model.league.League;
 import com.vzap.trytons.model.league.LeagueMembership;
 import com.vzap.trytons.service.notification.NotificationService;
 import com.vzap.trytons.service.shared.SeasonResolver;
+import com.vzap.trytons.util.LeagueVisibility;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -84,6 +86,16 @@ public class LeagueServiceImpl implements LeagueService {
                     "Administrators can only create public leagues. A private league needs a manager who plays in it.");
         }
 
+        // The mirror of the rule above. A public league is part of the competition
+        // proper -- it feeds the master leaderboard, tournament seeding, pricing and
+        // market demand -- so it is run by an administrator, not by whoever happened
+        // to click "create". A registered user's own league is a friendly: private,
+        // joined with its league code, and scored only within itself.
+        if (!actorIsAdmin && request.getLeagueType() != LeagueType.PRIVATE) {
+            throw new BusinessRuleException(
+                    "Registered users can only create private leagues. Public leagues are run by administrators.");
+        }
+
         FantasyTeam team = actorIsAdmin
                 ? null
                 : fantasyTeamDAO.getTeamByOwner(currentUserId).orElseThrow(() -> new BusinessRuleException("You must create a fantasy team before creating a league."));
@@ -95,6 +107,9 @@ public class LeagueServiceImpl implements LeagueService {
         league.setLeagueType(request.getLeagueType());
         league.setMaxMembers(request.getMaxMembers());
         league.setIsActive(true);
+        // The DAO defaults a null status to FORMING on insert; setting it here as well
+        // means the DTO returned from this call reports the same status a later read would.
+        league.setStatus(LeagueStatus.FORMING);
 
         if (request.getLeagueType() == LeagueType.PRIVATE) {
             league.setLeagueCode(generateLeagueCode());
@@ -169,9 +184,11 @@ public class LeagueServiceImpl implements LeagueService {
         // already how getAllLeagues lists them and how startLeague authorises them.
         // Withholding the detail here left an admin able to see a private league in
         // a list, and able to start it over the API, but unable to open its page.
-        if (league.getLeagueType() == LeagueType.PRIVATE
-                && !isAdmin(currentUserId)
-                && !isLeagueMember(leagueId, currentUserId)) {
+        // The rule itself lives in LeagueVisibility.canView so this site, listMembers,
+        // FixtureServiceImpl.assertCanViewLeagueFixtures and the leaderboard cannot
+        // drift apart again -- they have done so twice.
+        boolean isActiveMember = isLeagueMember(leagueId, currentUserId);
+        if (!LeagueVisibility.canView(league.getLeagueType(), isAdmin(currentUserId), isActiveMember)) {
             throw new AuthorisationException("You are not permitted to view this private league.");
         }
 
@@ -298,10 +315,10 @@ public class LeagueServiceImpl implements LeagueService {
         // Must mirror LeagueServiceImpl.getLeague and FixtureServiceImpl.assertCanViewLeagueFixtures
         // exactly: a caller who can open a public league's detail page and fixtures must also be
         // able to see its member list, otherwise a public league's page contradicts itself (real
-        // fixtures/scores visible, membership hidden). Keep all three in sync.
-        if (league.getLeagueType() == LeagueType.PRIVATE
-                && !isAdmin(actorId)
-                && !isLeagueMember(parsedLeagueId, actorId)) {
+        // fixtures/scores visible, membership hidden). The rule is the shared
+        // LeagueVisibility.canView predicate rather than a hand-copied if.
+        boolean isActiveMember = isLeagueMember(parsedLeagueId, actorId);
+        if (!LeagueVisibility.canView(league.getLeagueType(), isAdmin(actorId), isActiveMember)) {
             throw new AuthorisationException("You must be a league member to view its members.");
         }
 
@@ -522,11 +539,24 @@ public class LeagueServiceImpl implements LeagueService {
         }
     }
 
+    /**
+     * The manager's username, or null when there is no manager. A public league
+     * never has one: it is run by the administrators, so nobody owns it.
+     */
+    private String managerDisplayName(League league) {
+        UUID managerId = league.getManagerUserId();
+        if (managerId == null) {
+            return null;
+        }
+        return userDAO.getUserById(managerId).map(User::getUsername).orElse(null);
+    }
+
     private LeagueResponseDTO toResponse(League league) {
 
         return LeagueResponseDTO.builder()
                 .leagueId(league.getLeagueId())
                 .managerUserId(league.getManagerUserId())
+                .managerDisplayName(managerDisplayName(league))
                 .leagueName(league.getLeagueName())
                 .description(league.getDescription())
                 .leagueType(league.getLeagueType())
@@ -534,6 +564,8 @@ public class LeagueServiceImpl implements LeagueService {
                 .isActive(league.getIsActive())
                 .maxMembers(league.getMaxMembers())
                 .leagueCode(league.getLeagueCode())
+                .status(league.getStatus())
+                .startedAt(league.getStartedAt())
                 .build();
     }
 }

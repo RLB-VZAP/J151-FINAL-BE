@@ -17,6 +17,7 @@ import java.util.List;
 public class CompetitionProcessingSummaryDTO {
     private LocalDateTime processedAt;
 
+    private int roundsOpened;
     private int roundsLocked;
     private int fixturesSimulated;
     private int fixturesProcessed;

@@ -24,7 +24,12 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
 
     @Override
     public Optional<Leaderboard> getLeaderboardByLeagueId(UUID leagueId) {
-        String query = "SELECT * FROM leaderboard WHERE leagueId = ?";
+        // A league that has survived into a second season has two rows here
+        // (leaderboard is unique on (scopeKey, season), not on leagueId alone).
+        // ORDER BY + LIMIT makes the arbitrary-row bug impossible: this always
+        // returns the league's own most recent leaderboard season, never
+        // whichever row the storage engine happens to hand back first.
+        String query = "SELECT * FROM leaderboard WHERE leagueId = ? ORDER BY season DESC LIMIT 1";
         try(Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)){
             ps.setString(1, leagueId.toString());
 
@@ -81,7 +86,11 @@ public class LeaderboardDAOImpl extends BaseDAO implements LeaderboardDAO {
 
     @Override
     public List<Ranking> getRankingsByLeaderboardId(UUID leaderboardId) {
-        String query = "SELECT * FROM ranking WHERE leaderboardId = ?";
+        // ORDER BY is load-bearing: an unordered read here is what scrambled the
+        // leaderboard table and podium. Callers (e.g. the public preview podium)
+        // select list positions 0/1/2 directly, so row order IS the podium -- MySQL
+        // makes no ordering guarantee without ORDER BY, even for a simple WHERE.
+        String query = "SELECT * FROM ranking WHERE leaderboardId = ? ORDER BY currentRanking ASC";
         List<Ranking> rankings = new ArrayList<>();
         try (Connection con = getConnection(); PreparedStatement ps = con.prepareStatement(query)) {
             ps.setString(1, leaderboardId.toString());

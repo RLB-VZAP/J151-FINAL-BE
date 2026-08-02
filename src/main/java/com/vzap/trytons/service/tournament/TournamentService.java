@@ -5,6 +5,10 @@ import com.vzap.trytons.dto.tournament.TournamentFixtureResponseDTO;
 import com.vzap.trytons.dto.tournament.TournamentResponseDTO;
 import com.vzap.trytons.dto.tournament.TournamentSettingsDTO;
 
+import com.vzap.trytons.dto.tournament.MatchDayResponseDTO;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,6 +46,29 @@ public interface TournamentService {
      * @return how many tournaments were advanced
      */
     int advanceActiveTournaments();
+
+    /**
+     * Moves one fantasy round -- and every fixture in it -- to another match
+     * day. The editable unit is the round rather than the fixture, so "all the
+     * fixtures of a round are played on the same day" holds by construction.
+     *
+     * <p>Administrators may move any league's rounds; a PRIVATE league's own
+     * manager may move theirs. A round may only be moved while it is still
+     * UPCOMING, nothing in it has been played, the new day is a legal match day
+     * still in the future, and the move keeps the tournament in the order it
+     * was drawn.
+     */
+    MatchDayResponseDTO updateMatchDay(UUID actorUserId, UUID leagueId, UUID roundId,
+                                       LocalDate matchDay, LocalTime kickoff);
+
+    /**
+     * The administrator "play this round now" override: drags a round's window
+     * back to the present so the next {@code POST /competition-processing/due-work}
+     * opens, locks and plays it. Presentation and testing tool -- deliberately
+     * admin only, and deliberately separate from {@link #updateMatchDay} so the
+     * two authorisation rules never blur into one.
+     */
+    MatchDayResponseDTO playRoundNow(UUID actorUserId, UUID roundId);
 
     TournamentSettingsDTO getSettings();
 

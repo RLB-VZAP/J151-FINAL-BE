@@ -39,6 +39,28 @@ public final class RoundRobinScheduler {
     }
 
     /**
+     * One matchday of a pool's round robin, derived on demand.
+     *
+     * <p>{@link #schedule(List)} is pure and deterministic, so matchday
+     * {@code n} of a pool can be recomputed at any time from the same team
+     * order. That is what lets the pool stage be generated progressively --
+     * one matchday per fantasy round -- instead of being written out in full
+     * at league start.
+     *
+     * @param matchdayIndex zero based
+     * @return the fixtures of that matchday, empty when the pool has fewer
+     * matchdays than the tournament (an odd pool is a matchday shorter than
+     * the largest pool)
+     */
+    public static <T> List<Pairing<T>> matchday(List<T> teamIds, int matchdayIndex) {
+        if (matchdayIndex < 0) {
+            return List.of();
+        }
+        List<List<Pairing<T>>> schedule = schedule(teamIds);
+        return matchdayIndex < schedule.size() ? schedule.get(matchdayIndex) : List.of();
+    }
+
+    /**
      * Round robin schedule for one pool, outer list indexed by matchday.
      * A matchday may hold fewer fixtures than others when the pool is odd,
      * because the manager drawn against the bye does not play.

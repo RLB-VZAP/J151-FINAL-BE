@@ -4,11 +4,13 @@ import com.vzap.trytons.dao.catalog.PlayerDAO;
 import com.vzap.trytons.dao.catalog.PositionDAO;
 import com.vzap.trytons.dto.fantasyteam.SquadValidationResultDTO;
 import com.vzap.trytons.enums.AvailabilityStatus;
+import com.vzap.trytons.enums.SquadRole;
 import com.vzap.trytons.exceptions.BusinessRuleException;
 import com.vzap.trytons.exceptions.ResourceNotFoundException;
 import com.vzap.trytons.model.catalog.Player;
 import com.vzap.trytons.model.catalog.PlayerAvailability;
 import com.vzap.trytons.model.catalog.Position;
+import com.vzap.trytons.util.fantasyteam.SquadRoleAssigner;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -86,6 +88,22 @@ public class SquadValidationServiceImpl implements SquadValidationService {
         validatePlayerAvailability(playersToCheck, result);
 
         validatePositionRules(players, result);
+        return result;
+    }
+
+    @Override
+    public SquadValidationResultDTO validateSquadRoles(Collection<SquadRole> squadRoles) {
+        SquadValidationResultDTO result = new SquadValidationResultDTO();
+        long startingCount = squadRoles.stream().filter(role -> role == SquadRole.STARTING).count();
+        long benchCount = squadRoles.stream().filter(role -> role == SquadRole.BENCH).count();
+
+        if (startingCount != SquadRoleAssigner.STARTING_SIZE || benchCount != SquadRoleAssigner.BENCH_SIZE) {
+            result.addError("INVALID_SQUAD_ROLE_SPLIT",
+                    "Squad must have exactly " + SquadRoleAssigner.STARTING_SIZE + " starting players and "
+                            + SquadRoleAssigner.BENCH_SIZE + " bench players, but found " + startingCount
+                            + " starting and " + benchCount + " bench.",
+                    "List<FantasyTeamPlayerSelectionRequestDTO> selectedPlayers");
+        }
         return result;
     }
 

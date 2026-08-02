@@ -141,8 +141,8 @@ class LeaderboardAggregatorTest {
     }
 
     @Test
-    @DisplayName("ranking order mirrors refreshRankings: league points, then score difference, then total fantasy points")
-    void rankingOrderMirrorsRefreshRankings() {
+    @DisplayName("LEAGUE ranking order mirrors refreshRankings' LEAGUE branch: league points, then score difference, then total fantasy points")
+    void rankingOrderMirrorsRefreshRankingsLeagueScope() {
         List<LeaderboardAggregator.FixtureScoreRow> rows = List.of(
                 // TEAM_A: one win, big margin -- highest league points.
                 row(TEAM_A, LeagueType.PUBLIC, 40, 10),
@@ -152,14 +152,14 @@ class LeaderboardAggregatorTest {
 
         List<LeaderboardAggregator.TeamTotals> totals =
                 LeaderboardAggregator.aggregate(rows, LeaderboardAggregator.Scope.MASTER);
-        totals.sort(LeaderboardAggregator.rankingOrder());
+        totals.sort(LeaderboardAggregator.rankingOrder(LeaderboardAggregator.Scope.LEAGUE));
 
         assertEquals(TEAM_A, totals.get(0).getTeamId());
         assertEquals(TEAM_B, totals.get(1).getTeamId());
     }
 
     @Test
-    @DisplayName("when league points tie, score difference breaks the tie")
+    @DisplayName("LEAGUE scope: when league points tie, score difference breaks the tie")
     void scoreDifferenceBreaksLeaguePointsTie() {
         List<LeaderboardAggregator.FixtureScoreRow> rows = List.of(
                 row(TEAM_A, LeagueType.PUBLIC, 30, 10),  // win, difference +20
@@ -167,10 +167,40 @@ class LeaderboardAggregatorTest {
 
         List<LeaderboardAggregator.TeamTotals> totals =
                 LeaderboardAggregator.aggregate(rows, LeaderboardAggregator.Scope.MASTER);
-        totals.sort(LeaderboardAggregator.rankingOrder());
+        totals.sort(LeaderboardAggregator.rankingOrder(LeaderboardAggregator.Scope.LEAGUE));
 
         assertEquals(TEAM_A, totals.get(0).getTeamId());
         assertEquals(TEAM_B, totals.get(1).getTeamId());
+    }
+
+    @Test
+    @DisplayName("MASTER and LEAGUE scopes rank the same two teams in OPPOSITE order: "
+            + "a team with fewer league points but far more fantasy points tops MASTER, not LEAGUE")
+    void masterAndLeagueScopesDisagreeOnOrder() {
+        List<LeaderboardAggregator.FixtureScoreRow> rows = List.of(
+                // TEAM_A: a heavy loss on fantasy points -- zero league points, but a
+                // massive fantasy haul (100).
+                row(TEAM_A, LeagueType.PUBLIC, 100, 120),
+                // TEAM_B: a modest win -- full league points (4), but a small fantasy
+                // haul (50).
+                row(TEAM_B, LeagueType.PUBLIC, 50, 10));
+
+        List<LeaderboardAggregator.TeamTotals> totals =
+                LeaderboardAggregator.aggregate(rows, LeaderboardAggregator.Scope.MASTER);
+
+        // MASTER ranks on total fantasy points first: TEAM_A (100) beats TEAM_B (50)
+        // despite having lost its match.
+        List<LeaderboardAggregator.TeamTotals> masterOrdered = new java.util.ArrayList<>(totals);
+        masterOrdered.sort(LeaderboardAggregator.rankingOrder(LeaderboardAggregator.Scope.MASTER));
+        assertEquals(TEAM_A, masterOrdered.get(0).getTeamId());
+        assertEquals(TEAM_B, masterOrdered.get(1).getTeamId());
+
+        // LEAGUE ranks on league points first: TEAM_B (4, a win) beats TEAM_A (0, a
+        // loss) regardless of fantasy points scored -- the opposite order.
+        List<LeaderboardAggregator.TeamTotals> leagueOrdered = new java.util.ArrayList<>(totals);
+        leagueOrdered.sort(LeaderboardAggregator.rankingOrder(LeaderboardAggregator.Scope.LEAGUE));
+        assertEquals(TEAM_B, leagueOrdered.get(0).getTeamId());
+        assertEquals(TEAM_A, leagueOrdered.get(1).getTeamId());
     }
 
     @Test
@@ -205,7 +235,7 @@ class LeaderboardAggregatorTest {
     }
 
     @Test
-    @DisplayName("when league points and score difference tie, total fantasy points breaks the tie")
+    @DisplayName("LEAGUE scope: when league points and score difference tie, total fantasy points breaks the tie")
     void totalFantasyPointsBreaksRemainingTie() {
         List<LeaderboardAggregator.FixtureScoreRow> rows = List.of(
                 row(TEAM_A, LeagueType.PUBLIC, 40, 20),  // win, difference +20, 40 points for
@@ -213,7 +243,7 @@ class LeaderboardAggregatorTest {
 
         List<LeaderboardAggregator.TeamTotals> totals =
                 LeaderboardAggregator.aggregate(rows, LeaderboardAggregator.Scope.MASTER);
-        totals.sort(LeaderboardAggregator.rankingOrder());
+        totals.sort(LeaderboardAggregator.rankingOrder(LeaderboardAggregator.Scope.LEAGUE));
 
         assertEquals(TEAM_A, totals.get(0).getTeamId());
         assertEquals(TEAM_B, totals.get(1).getTeamId());

@@ -125,7 +125,7 @@ public final class LeaderboardAggregator {
     /**
      * Rolls the given rows up by team, applying the scope's inclusion rule.
      * Team order in the result follows first appearance in {@code rows}; use
-     * {@link #rankingOrder()} to sort for display.
+     * {@link #rankingOrder(Scope)} to sort for display.
      */
     public static List<TeamTotals> aggregate(List<FixtureScoreRow> rows, Scope scope) {
         Map<UUID, TeamTotals> byTeam = new LinkedHashMap<>();
@@ -142,10 +142,18 @@ public final class LeaderboardAggregator {
 
     /**
      * Mirrors {@code LeaderboardServiceImpl.refreshRankings}' comparator
-     * chain: league points, then score difference, then total fantasy
-     * points, all best-first.
+     * choice, which now differs by scope: MASTER ranks on total fantasy
+     * points (the master leaderboard is a fantasy-points competition), while
+     * LEAGUE keeps the original league-table ordering (league points from
+     * win/draw/loss, then score difference, then total fantasy points).
+     * Keep this in sync with {@code refreshRankings} -- the two must agree.
      */
-    public static Comparator<TeamTotals> rankingOrder() {
+    public static Comparator<TeamTotals> rankingOrder(Scope scope) {
+        if (scope == Scope.MASTER) {
+            return Comparator.comparingInt(TeamTotals::getTotalFantasyPoints).reversed()
+                    .thenComparing(Comparator.comparingInt(TeamTotals::getLeaguePoints).reversed())
+                    .thenComparing(Comparator.comparingInt(TeamTotals::getScoreDifference).reversed());
+        }
         return Comparator.comparingInt(TeamTotals::getLeaguePoints).reversed()
                 .thenComparing(Comparator.comparingInt(TeamTotals::getScoreDifference).reversed())
                 .thenComparing(Comparator.comparingInt(TeamTotals::getTotalFantasyPoints).reversed());

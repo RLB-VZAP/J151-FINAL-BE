@@ -26,13 +26,17 @@ import com.vzap.trytons.model.league.LeagueMembership;
 import com.vzap.trytons.model.results.MatchResult;
 import com.vzap.trytons.model.tournament.*;
 import com.vzap.trytons.service.shared.SeasonResolver;
+import com.vzap.trytons.util.LeagueVisibility;
 import com.vzap.trytons.util.tournament.KnockoutBracket;
+import com.vzap.trytons.util.tournament.MatchDayEditRules;
+import com.vzap.trytons.util.tournament.MatchdayCalendar;
 import com.vzap.trytons.util.tournament.PoolAllocator;
 import com.vzap.trytons.util.tournament.PoolStandingsCalculator;
 import com.vzap.trytons.util.tournament.RoundRobinScheduler;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
@@ -57,9 +61,13 @@ public class TournamentServiceImpl implements TournamentService {
 
     private static final Logger LOG = Logger.getLogger(TournamentServiceImpl.class.getName());
 
-    /** Fantasy fixtures are notional, so every generated fixture kicks off at the same time. */
-    private static final LocalTime DEFAULT_KICKOFF = LocalTime.of(15, 0);
-    private static final int ROUND_SPACING_DAYS = 7;
+    /**
+     * How many times a round insert may re-read the season's highest round
+     * number and try again. Rounds are minted per league now, so two leagues
+     * starting at the same moment genuinely race for the next number where
+     * before they simply shared a round.
+     */
+    private static final int ROUND_NUMBER_ATTEMPTS = 5;
 
     @Inject
     private TournamentDAO tournamentDAO;
@@ -101,7 +109,7 @@ public class TournamentServiceImpl implements TournamentService {
         League league = leagueDAO.findLeagueById(leagueId)
                 .orElseThrow(() -> new ResourceNotFoundException("League not found"));
 
-        requireManagerOrAdmin(actorUserId, league);
+        requireCanStartLeague(actorUserId, league);
 
         if (league.getStatus() != null && league.getStatus() != LeagueStatus.FORMING) {
             throw new BusinessRuleException("This league has already been started.");
@@ -155,7 +163,7 @@ public class TournamentServiceImpl implements TournamentService {
 
         int fixturesGenerated;
         try {
-            fixturesGenerated = generatePoolStage(league, tournament, seededTeams, draw, season, poolMatchdays);
+            fixturesGenerated = generatePoolStage(league, tournament, seededTeams, draw);
             leagueDAO.updateStatus(leagueId, LeagueStatus.IN_PROGRESS, LocalDateTime.now());
         } catch (RuntimeException e) {
             // Generation spans many independent statements rather than one
@@ -184,35 +192,39 @@ public class TournamentServiceImpl implements TournamentService {
                 .poolMatchdays(poolMatchdays)
                 .bracketSize(bracketSize)
                 .totalMatchdays(totalMatchdays)
+                // Matchday one only. The pool stage is generated a matchday at
+                // a time now, so this is not the whole tournament's fixture
+                // count and must not be reported as one.
                 .fixturesGenerated(fixturesGenerated)
                 .message(managerCount + " managers drawn into " + poolSizes.size()
-                        + " pool(s), " + fixturesGenerated + " pool fixtures generated over "
-                        + poolMatchdays + " rounds, followed by a "
-                        + bracketSize + "-team knockout stage.")
+                        + " pool(s). " + fixturesGenerated + " fixtures scheduled for matchday 1 of "
+                        + poolMatchdays + "; each following matchday is scheduled once the previous "
+                        + "one has been played, then a " + bracketSize + "-team knockout stage.")
                 .build();
     }
 
     /**
-     * Writes the pools, their members, empty standings rows and every pool
-     * fixture. Split out from {@link #startLeague} so a failure can be undone
-     * as a unit.
+     * Writes the pools, their members and empty standings rows, then schedules
+     * the first pool matchday. Split out from {@link #startLeague} so a failure
+     * can be undone as a unit.
      *
-     * @return how many fixtures were generated
+     * <p>Only matchday one is written. The rest of the pool stage is generated
+     * a matchday at a time from {@link #advanceTournament}, exactly as the
+     * knockout bracket already was, so a league that is never played does not
+     * leave a run of dated-but-dead fixtures behind it and every matchday is
+     * scheduled relative to when the previous one actually finished.
+     *
+     * @return how many fixtures were generated for matchday one
      */
     private int generatePoolStage(League league,
                                   Tournament tournament,
                                   List<UUID> seededTeams,
-                                  List<List<UUID>> draw,
-                                  String season,
-                                  int poolMatchdays) {
-        List<FantasyRound> rounds = allocateRounds(league.getLeagueId(), season, poolMatchdays);
-
+                                  List<List<UUID>> draw) {
         Map<UUID, Integer> seedByTeam = new HashMap<>();
         for (int i = 0; i < seededTeams.size(); i++) {
             seedByTeam.put(seededTeams.get(i), i + 1);
         }
 
-        int fixturesGenerated = 0;
         for (int poolIndex = 0; poolIndex < draw.size(); poolIndex++) {
             List<UUID> poolTeams = draw.get(poolIndex);
 
@@ -241,24 +253,82 @@ public class TournamentServiceImpl implements TournamentService {
                         .teamId(teamId)
                         .build());
             }
-
-            List<List<RoundRobinScheduler.Pairing<UUID>>> schedule = RoundRobinScheduler.schedule(poolTeams);
-            for (int matchday = 0; matchday < schedule.size(); matchday++) {
-                FantasyRound round = rounds.get(matchday);
-                for (RoundRobinScheduler.Pairing<UUID> pairing : schedule.get(matchday)) {
-                    createFixture(league, tournament, round, pairing,
-                            TournamentStage.POOL, pool.getPoolId(), null, matchday + 1);
-                    fixturesGenerated++;
-                }
-            }
         }
 
+        // A league is started now, so the first matchday is measured from now
+        // -- or from startedAt if that is somehow later. The old code took
+        // whichever UPCOMING round had the lowest number regardless of date,
+        // which is how a league started on 2026-08-02 acquired a fixture dated
+        // 2026-07-24.
+        LocalDateTime anchor = latest(LocalDateTime.now(), league.getStartedAt());
+        int fixturesGenerated = generatePoolMatchday(tournament, 1, anchor);
 
         // Seed the tables so a freshly drawn pool reads as a proper standings
         // table -- everyone on nothing, ordered by draw seed -- rather than an
         // unordered list with no positions until the first result lands.
         refreshStandings(tournament);
 
+        return fixturesGenerated;
+    }
+
+    /**
+     * Schedules one pool matchday: a freshly minted fantasy round, and the
+     * fixtures every pool plays on it.
+     *
+     * <p>The draw order within a pool is recoverable from the stored seeds --
+     * {@link PoolAllocator#draw} fills each pool in seed order -- and
+     * {@link RoundRobinScheduler} is pure, so matchday {@code n} can be
+     * rederived on demand rather than having to be written out up front.
+     *
+     * @param matchdayNumber one based
+     * @param anchor         nothing is scheduled at or before this instant
+     * @return how many fixtures were created
+     */
+    private int generatePoolMatchday(Tournament tournament, int matchdayNumber, LocalDateTime anchor) {
+        List<TournamentPool> pools = tournamentPoolDAO.findByTournament(tournament.getTournamentId());
+        if (pools.isEmpty()) {
+            return 0;
+        }
+
+        // Work the pairings out before minting the round, so a pool that
+        // cannot be scheduled does not leave an empty fantasy round behind.
+        Map<UUID, List<RoundRobinScheduler.Pairing<UUID>>> pairingsByPool = new LinkedHashMap<>();
+        int expected = 0;
+        for (TournamentPool pool : pools) {
+            List<TournamentPoolMember> members =
+                    new ArrayList<>(tournamentPoolDAO.findMembersByPool(pool.getPoolId()));
+            members.sort(Comparator.comparingInt(TournamentPoolMember::getSeed));
+
+            List<UUID> poolTeams = new ArrayList<>();
+            for (TournamentPoolMember member : members) {
+                poolTeams.add(member.getTeamId());
+            }
+            if (poolTeams.size() < 2) {
+                continue;
+            }
+
+            // A pool of three plays as many matchdays as a pool of four, but an
+            // out-of-range index simply yields no fixtures rather than throwing.
+            List<RoundRobinScheduler.Pairing<UUID>> pairings =
+                    RoundRobinScheduler.matchday(poolTeams, matchdayNumber - 1);
+            pairingsByPool.put(pool.getPoolId(), pairings);
+            expected += pairings.size();
+        }
+
+        if (expected == 0) {
+            return 0;
+        }
+
+        FantasyRound round = mintRounds(tournament.getSeason(), anchor, 1).get(0);
+
+        int fixturesGenerated = 0;
+        for (Map.Entry<UUID, List<RoundRobinScheduler.Pairing<UUID>>> entry : pairingsByPool.entrySet()) {
+            for (RoundRobinScheduler.Pairing<UUID> pairing : entry.getValue()) {
+                createFixture(tournament.getLeagueId(), tournament, round, pairing,
+                        TournamentStage.POOL, entry.getKey(), null, matchdayNumber);
+                fixturesGenerated++;
+            }
+        }
         return fixturesGenerated;
     }
 
@@ -294,75 +364,130 @@ public class TournamentServiceImpl implements TournamentService {
     }
 
     /**
-     * Claims the next upcoming fantasy rounds, creating extra ones only when
-     * the season does not already stretch far enough. One matchday maps onto
-     * one round, so a fixture is decided by the fantasy points its two squads
-     * score over that round's real rugby matches.
+     * Creates {@code count} brand new fantasy rounds, the first kicking off
+     * strictly after {@code from}.
      *
-     * <p>Rounds in which the league already holds a fixture are skipped. A
-     * fantasy team may only appear once per league round -- the database
-     * enforces this in {@code trg_fixture_integrity_insert} -- so a league
-     * carrying pre-existing fixtures would otherwise have its generated
-     * tournament rejected mid-write.
+     * <p>This deliberately does not look at existing rounds. The old
+     * {@code allocateRounds} claimed whichever UPCOMING round had the lowest
+     * number, with no check that its date was in the future -- which is how a
+     * league started on 2026-08-02 was handed a fixture dated 2026-07-24. A
+     * round's dates, not its number, decide when it is played, so scheduling
+     * now mints its own rounds from {@link MatchdayCalendar} and never reuses
+     * one.
+     *
+     * <p>A second benefit: every minted round is used by exactly one league on
+     * exactly one matchday, so {@code trg_fixture_integrity_insert}'s rule that
+     * a fantasy team may appear only once per league round cannot fire during
+     * generation.
+     *
+     * <p>roundNumber remains the season-wide sequence, and that is now a
+     * genuinely contended value -- two leagues starting at the same instant
+     * both want the next number, where before they simply shared a round. Each
+     * insert therefore re-reads the maximum and retries on the
+     * {@code uk_fantasyRound_season_round} conflict.
      */
-    private List<FantasyRound> allocateRounds(UUID leagueId, String season, int required) {
-        List<FantasyRound> seasonRounds = new ArrayList<>();
-        for (FantasyRound round : fantasyRoundDAO.getAllRounds()) {
-            if (season.equals(round.getSeason())) {
-                seasonRounds.add(round);
+    private List<FantasyRound> mintRounds(String season, LocalDateTime from, int count) {
+        List<MatchdayCalendar.Window> windows = MatchdayCalendar.schedule(from, count);
+
+        List<FantasyRound> minted = new ArrayList<>(windows.size());
+        int nextNumber = fantasyRoundDAO.getMaxRoundNumber(season) + 1;
+
+        for (MatchdayCalendar.Window window : windows) {
+            FantasyRound created = null;
+            ConflictException lastConflict = null;
+
+            for (int attempt = 0; attempt < ROUND_NUMBER_ATTEMPTS && created == null; attempt++) {
+                try {
+                    created = fantasyRoundDAO.createRound(FantasyRound.builder()
+                            .roundId(UUID.randomUUID())
+                            .season(season)
+                            .roundNumber(nextNumber)
+                            .openDate(window.openDate())
+                            .lockDeadline(window.lockDeadline())
+                            .endDate(window.endDate())
+                            .status(FantasyRoundStatus.UPCOMING)
+                            .build());
+                } catch (ConflictException e) {
+                    lastConflict = e;
+                    nextNumber = fantasyRoundDAO.getMaxRoundNumber(season) + 1;
+                    LOG.log(Level.INFO,
+                            "Round number for season {0} was taken; retrying at {1}",
+                            new Object[]{season, nextNumber});
+                }
             }
+
+            if (created == null) {
+                throw lastConflict != null ? lastConflict
+                        : new ConflictException("Unable to reserve a fantasy round number for " + season + ".");
+            }
+
+            minted.add(created);
+            nextNumber++;
         }
 
-        Set<UUID> roundsAlreadyUsedByLeague = new HashSet<>();
-        for (Fixture fixture : fixtureDAO.findByLeagueId(leagueId)) {
-            if (fixture.getStatus() != FixtureStatus.CANCELLED) {
-                roundsAlreadyUsedByLeague.add(fixture.getRoundId());
-            }
-        }
-
-        List<FantasyRound> available = new ArrayList<>();
-        for (FantasyRound round : seasonRounds) {
-            if (round.getStatus() == FantasyRoundStatus.UPCOMING
-                    && !roundsAlreadyUsedByLeague.contains(round.getRoundId())) {
-                available.add(round);
-            }
-        }
-        available.sort(Comparator.comparingInt(FantasyRound::getRoundNumber));
-
-        List<FantasyRound> claimed = new ArrayList<>(
-                available.subList(0, Math.min(required, available.size())));
-
-        if (claimed.size() < required) {
-            int nextNumber = fantasyRoundDAO.getMaxRoundNumber(season) + 1;
-
-            LocalDateTime cursor = seasonRounds.stream()
-                    .map(round -> round.getEndDate() != null ? round.getEndDate() : round.getOpenDate())
-                    .filter(Objects::nonNull)
-                    .max(Comparator.naturalOrder())
-                    .orElse(LocalDateTime.now())
-                    .plusDays(ROUND_SPACING_DAYS);
-
-            while (claimed.size() < required) {
-                FantasyRound created = fantasyRoundDAO.createRound(FantasyRound.builder()
-                        .roundId(UUID.randomUUID())
-                        .season(season)
-                        .roundNumber(nextNumber)
-                        .openDate(cursor)
-                        .lockDeadline(cursor.plusDays(ROUND_SPACING_DAYS - 1))
-                        .endDate(cursor.plusDays(ROUND_SPACING_DAYS))
-                        .status(FantasyRoundStatus.UPCOMING)
-                        .build());
-                claimed.add(created);
-
-                nextNumber++;
-                cursor = cursor.plusDays(ROUND_SPACING_DAYS);
-            }
-        }
-
-        return claimed;
+        return minted;
     }
 
-    private Fixture createFixture(League league,
+    /**
+     * The day a round is played on. A round's lock deadline is its kickoff, so
+     * this is the single source of a fixture's date -- used both when a fixture
+     * is created and when a round is moved, so the two can never disagree.
+     */
+    private LocalDate matchDayOf(FantasyRound round) {
+        return round.getLockDeadline().toLocalDate();
+    }
+
+    /** The kickoff a round is played at -- the time half of the same timestamp. */
+    private LocalTime matchDayTimeOf(FantasyRound round) {
+        return round.getLockDeadline().toLocalTime();
+    }
+
+    /**
+     * The anchor for a tournament's next matchday: the moment its latest
+     * scheduled round closes, so each new matchday lands strictly after the
+     * previous one.
+     *
+     * <p>Taken from the rounds rather than from {@code now} because processing
+     * usually happens on the matchday itself -- a round locking at 15:00 and
+     * being simulated at 16:00 would otherwise anchor the next matchday on the
+     * same day. {@code now} is still the floor, so a tournament left dormant
+     * for a month does not schedule its next matchday into the past.
+     */
+    private LocalDateTime nextMatchdayAnchor(Tournament tournament) {
+        Set<UUID> roundIds = new HashSet<>();
+        for (Fixture fixture : fixtureDAO.findByTournamentId(tournament.getTournamentId())) {
+            if (fixture.getRoundId() != null) {
+                roundIds.add(fixture.getRoundId());
+            }
+        }
+
+        LocalDateTime latest = null;
+        for (UUID roundId : roundIds) {
+            Optional<FantasyRound> round = fantasyRoundDAO.getRoundById(roundId);
+            if (round.isEmpty()) {
+                continue;
+            }
+            LocalDateTime closes = round.get().getEndDate() != null
+                    ? round.get().getEndDate()
+                    : round.get().getLockDeadline();
+            latest = latest(latest, closes);
+        }
+
+        return latest(LocalDateTime.now(), latest);
+    }
+
+    /** The later of two instants, either of which may be null. */
+    private LocalDateTime latest(LocalDateTime a, LocalDateTime b) {
+        if (a == null) {
+            return b;
+        }
+        if (b == null) {
+            return a;
+        }
+        return a.isAfter(b) ? a : b;
+    }
+
+    private Fixture createFixture(UUID leagueId,
                                   Tournament tournament,
                                   FantasyRound round,
                                   RoundRobinScheduler.Pairing<UUID> pairing,
@@ -372,12 +497,14 @@ public class TournamentServiceImpl implements TournamentService {
                                   int matchdayNumber) {
         return fixtureDAO.create(Fixture.builder()
                 .fixtureId(UUID.randomUUID())
-                .leagueId(league.getLeagueId())
+                .leagueId(leagueId)
                 .roundId(round.getRoundId())
                 .teamAId(pairing.homeTeamId())
                 .teamBId(pairing.awayTeamId())
-                .fixtureDate(round.getOpenDate().toLocalDate())
-                .fixtureTime(DEFAULT_KICKOFF)
+                // The round's lock deadline is the kickoff, so it -- not the
+                // opening of the transfer window -- is the fixture's date.
+                .fixtureDate(matchDayOf(round))
+                .fixtureTime(MatchdayCalendar.DEFAULT_KICKOFF)
                 .status(FixtureStatus.UPCOMING)
                 .tournamentId(tournament.getTournamentId())
                 .poolId(poolId)
@@ -427,7 +554,18 @@ public class TournamentServiceImpl implements TournamentService {
         if (tournament.getStatus() == TournamentStatus.POOL_STAGE) {
             List<Fixture> poolFixtures = poolFixtures(tournament);
             if (!poolFixtures.isEmpty() && allDecided(poolFixtures)) {
-                startKnockoutStage(tournament);
+                int matchdaysGenerated = matchdaysGenerated(poolFixtures);
+
+                // Both conditions matter. "Every pool fixture is decided" is
+                // true after matchday one as well, because matchday two has not
+                // been written yet -- promoting to the knockout on that alone
+                // would end the pool stage after a single round.
+                if (matchdaysGenerated < tournament.getPoolMatchdays()) {
+                    generatePoolMatchday(tournament, matchdaysGenerated + 1,
+                            nextMatchdayAnchor(tournament));
+                } else {
+                    startKnockoutStage(tournament);
+                }
                 changed = true;
             }
         } else {
@@ -496,6 +634,8 @@ public class TournamentServiceImpl implements TournamentService {
      * quarter-finals.
      */
     private void startKnockoutStage(Tournament tournament) {
+        // Loaded only to fail fast on a league that has gone missing; the
+        // fixtures themselves need nothing but its id.
         League league = leagueDAO.findLeagueById(tournament.getLeagueId())
                 .orElseThrow(() -> new ResourceNotFoundException("League not found"));
 
@@ -527,10 +667,11 @@ public class TournamentServiceImpl implements TournamentService {
         List<RoundRobinScheduler.Pairing<UUID>> pairings = KnockoutBracket.firstRound(qualifiers);
 
         int matchday = tournament.getPoolMatchdays() + 1;
-        FantasyRound round = allocateRounds(tournament.getLeagueId(), tournament.getSeason(), 1).get(0);
+        FantasyRound round = mintRounds(tournament.getSeason(), nextMatchdayAnchor(tournament), 1).get(0);
 
         for (int slot = 0; slot < pairings.size(); slot++) {
-            createFixture(league, tournament, round, pairings.get(slot), stage, null, slot, matchday);
+            createFixture(league.getLeagueId(), tournament, round, pairings.get(slot),
+                    stage, null, slot, matchday);
         }
 
         tournamentDAO.updateStatus(tournament.getTournamentId(), TournamentStatus.KNOCKOUT_STAGE);
@@ -591,17 +732,19 @@ public class TournamentServiceImpl implements TournamentService {
         int matchday = (currentFixtures.get(0).getMatchdayNumber() == null
                 ? tournament.getPoolMatchdays() + 1
                 : currentFixtures.get(0).getMatchdayNumber()) + 1;
-        FantasyRound round = allocateRounds(tournament.getLeagueId(), tournament.getSeason(), 1).get(0);
+        // Anchored off the last played round's end, not "now", so each knockout
+        // matchday lands on the next valid match day strictly after the previous one.
+        FantasyRound round = mintRounds(tournament.getSeason(), nextMatchdayAnchor(tournament), 1).get(0);
 
         TournamentStage nextStage = TournamentStage.forTeamsRemaining(winners.size());
         List<RoundRobinScheduler.Pairing<UUID>> nextPairings = KnockoutBracket.nextRound(winners);
         for (int slot = 0; slot < nextPairings.size(); slot++) {
-            createFixture(league, tournament, round, nextPairings.get(slot), nextStage, null, slot, matchday);
+            createFixture(league.getLeagueId(), tournament, round, nextPairings.get(slot), nextStage, null, slot, matchday);
         }
 
         // The two beaten semi-finalists meet on the same matchday as the final.
         if (nextStage == TournamentStage.FINAL && tournament.isThirdPlacePlayoff() && losers.size() == 2) {
-            createFixture(league, tournament, round,
+            createFixture(league.getLeagueId(), tournament, round,
                     new RoundRobinScheduler.Pairing<>(losers.get(0), losers.get(1)),
                     TournamentStage.THIRD_PLACE, null, 0, matchday);
         }
@@ -685,6 +828,21 @@ public class TournamentServiceImpl implements TournamentService {
         return fixtures;
     }
 
+    /**
+     * How many pool matchdays have actually been written. Compared against
+     * {@code tournament.poolMatchdays} to tell "the pool stage is over" apart
+     * from "the matchdays scheduled so far are over".
+     */
+    private int matchdaysGenerated(List<Fixture> fixtures) {
+        int highest = 0;
+        for (Fixture fixture : fixtures) {
+            if (fixture.getMatchdayNumber() != null && fixture.getMatchdayNumber() > highest) {
+                highest = fixture.getMatchdayNumber();
+            }
+        }
+        return highest;
+    }
+
     private boolean allDecided(List<Fixture> fixtures) {
         for (Fixture fixture : fixtures) {
             if (fixture.getStatus() == FixtureStatus.CANCELLED) {
@@ -760,6 +918,10 @@ public class TournamentServiceImpl implements TournamentService {
                     .fixtureId(fixture.getFixtureId())
                     .tournamentId(fixture.getTournamentId())
                     .stage(fixture.getStage())
+                    // Jackson writes the enum by name(), so the label has to
+                    // travel as its own field or the frontend is left
+                    // reinventing it (as it used to).
+                    .stageLabel(stageLabel(fixture.getStage()))
                     .poolId(fixture.getPoolId())
                     .poolName(poolNames.get(fixture.getPoolId()))
                     .bracketSlot(fixture.getBracketSlot())
@@ -869,6 +1031,273 @@ public class TournamentServiceImpl implements TournamentService {
     }
 
     // ------------------------------------------------------------------
+    // Rescheduling
+    // ------------------------------------------------------------------
+
+    @Override
+    public MatchDayResponseDTO updateMatchDay(UUID actorUserId, UUID leagueId, UUID roundId,
+                                              LocalDate matchDay, LocalTime requestedKickoff) {
+        // 1. Nothing may be missing. Checked before anything is read so a
+        //    malformed request never reaches the database.
+        if (actorUserId == null || leagueId == null || roundId == null || matchDay == null) {
+            throw new ValidationException("A league, a round and a match day are all required.");
+        }
+
+        // 2. Both must exist.
+        League league = leagueDAO.findLeagueById(leagueId)
+                .orElseThrow(() -> new ResourceNotFoundException("League not found"));
+        FantasyRound round = fantasyRoundDAO.getRoundById(roundId)
+                .orElseThrow(() -> new ResourceNotFoundException("Fantasy round not found"));
+
+        // 3. Who may move it.
+        requireMatchDayEditor(actorUserId, league);
+
+        // 4. The round has to be this league's round. A fantasyRound row is
+        //    global, so without this a manager could pass any roundId and move
+        //    someone else's competition -- including the archived 2025 leagues,
+        //    whose hand-written finals are meant to stay exactly where they are.
+        //    Rounds are minted per league (see mintRounds), so "every fixture in
+        //    this round belongs to this league" is the honest expression of
+        //    ownership; do not weaken it to "at least one".
+        List<Fixture> fixtures = fixtureDAO.findByRoundId(roundId);
+        if (fixtures.isEmpty()) {
+            throw new BusinessRuleException("This round has no fixtures, so there is nothing to move.");
+        }
+        for (Fixture fixture : fixtures) {
+            if (!leagueId.equals(fixture.getLeagueId())) {
+                throw new BusinessRuleException(
+                        "This round is shared with another league and cannot be rescheduled from here.");
+            }
+        }
+
+        // 5. Only a round that has not opened yet.
+        if (round.getStatus() != FantasyRoundStatus.UPCOMING) {
+            throw new BusinessRuleException("This round has already opened and cannot be moved.");
+        }
+
+        // 6. And nothing in it may have been played. Belt and braces with (5):
+        //    the round status is the gate, a played fixture is the evidence.
+        for (Fixture fixture : fixtures) {
+            if (fixture.getStatus() != FixtureStatus.UPCOMING
+                    || matchResultDAO.findCurrentByFixtureId(fixture.getFixtureId()).isPresent()) {
+                throw new BusinessRuleException(
+                        "A fixture in this round has already been played, so the round cannot be moved.");
+            }
+        }
+
+        // 7. The same matchday predicate the generator uses, so a date one
+        //    accepts the other can never reject.
+        if (!MatchdayCalendar.isMatchDay(matchDay)) {
+            throw new ValidationException(
+                    "Match days must fall on a Monday, Wednesday, Friday, Saturday or Sunday.");
+        }
+
+        // 7b. A round keeps its current kickoff unless a new one is given.
+        LocalTime newKickoff = requestedKickoff != null
+                ? requestedKickoff
+                : matchDayTimeOf(round);
+
+        // 8. Still in the future -- measured at the chosen kickoff, so moving a
+        //    round to later today is legal while moving it to an hour ago is not.
+        LocalDateTime kickoff = matchDay.atTime(newKickoff);
+        if (!kickoff.isAfter(LocalDateTime.now())) {
+            throw new ValidationException("A match day must be in the future.");
+        }
+
+        // 9. And it must not reorder the competition.
+        UUID tournamentId = tournamentIdOf(fixtures);
+        FantasyRound previous = neighbourRound(tournamentId, round, true);
+        FantasyRound next = neighbourRound(tournamentId, round, false);
+        LocalDateTime previousEnd = previous == null ? null : roundCloses(previous);
+        LocalDateTime nextOpen = next == null ? null : next.getOpenDate();
+
+        if (!MatchDayEditRules.fitsBetween(kickoff, previousEnd, nextOpen)) {
+            throw new BusinessRuleException(
+                    "A match day has to stay between the matchday before it and the matchday after it, "
+                            + "so the tournament is played in the order it was drawn.");
+        }
+
+        // One window, three timestamps, one statement: chk_fantasyRound_dates
+        // spans all three, so a column-by-column update would be rejected on an
+        // intermediate state. The transfer window opens where the previous
+        // matchday closed, exactly as MatchdayCalendar.schedule tiles them.
+        LocalDateTime openDate = previousEnd != null ? previousEnd.plusSeconds(1) : round.getOpenDate();
+        MatchdayCalendar.Window window = MatchdayCalendar.windowFor(matchDay, openDate, newKickoff);
+
+        if (!fantasyRoundDAO.updateRoundSchedule(roundId,
+                window.openDate(), window.lockDeadline(), window.endDate())) {
+            // The DAO's own WHERE carries the UPCOMING guard, so this is the
+            // round having opened between check (5) and the write.
+            throw new BusinessRuleException("This round has already opened and cannot be moved.");
+        }
+
+        round.setOpenDate(window.openDate());
+        round.setLockDeadline(window.lockDeadline());
+        round.setEndDate(window.endDate());
+
+        int fixturesMoved = moveFixturesTo(fixtures, matchDayOf(round), matchDayTimeOf(round));
+
+        Fixture sample = fixtures.get(0);
+        return MatchDayResponseDTO.builder()
+                .roundId(roundId)
+                .matchdayNumber(sample.getMatchdayNumber())
+                .stage(sample.getStage())
+                .stageLabel(stageLabel(sample.getStage()))
+                .matchDay(matchDayOf(round))
+                .kickoff(matchDayTimeOf(round))
+                .fixturesMoved(fixturesMoved)
+                .build();
+    }
+
+    @Override
+    public MatchDayResponseDTO playRoundNow(UUID actorUserId, UUID roundId) {
+        requireAdmin(actorUserId);
+
+        if (roundId == null) {
+            throw new ValidationException("A round is required.");
+        }
+
+        FantasyRound round = fantasyRoundDAO.getRoundById(roundId)
+                .orElseThrow(() -> new ResourceNotFoundException("Fantasy round not found"));
+
+        if (round.getStatus() != FantasyRoundStatus.UPCOMING
+                && round.getStatus() != FantasyRoundStatus.OPEN) {
+            throw new BusinessRuleException(
+                    "Only a round that has not locked yet can be played early; this one is "
+                            + round.getStatus() + ".");
+        }
+
+        // Pull the whole window back to the present. Not built from
+        // MatchdayCalendar.windowFor, which pins the lock deadline to the 15:00
+        // kickoff -- an override run at 10:00 would then set a deadline five
+        // hours away and nothing would happen. Built as one Window all the same,
+        // so the three timestamps are still written together and
+        // chk_fantasyRound_dates (lockDeadline >= openDate, endDate >=
+        // lockDeadline) holds by construction.
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime openDate = now.minusMinutes(1);
+        LocalDateTime lockDeadline = now.minusSeconds(1);
+        LocalDateTime endDate = latest(now.toLocalDate().atTime(23, 59, 59), lockDeadline);
+        MatchdayCalendar.Window window =
+                new MatchdayCalendar.Window(now.toLocalDate(), openDate, lockDeadline, endDate);
+
+        // forceRoundSchedule, not updateRoundSchedule: the latter's WHERE is
+        // pinned to status = 'UPCOMING' and would silently no-op on the OPEN
+        // round this override exists to reach.
+        if (!fantasyRoundDAO.forceRoundSchedule(roundId,
+                window.openDate(), window.lockDeadline(), window.endDate())) {
+            throw new BusinessRuleException("This round has already locked and cannot be played early.");
+        }
+
+        round.setOpenDate(window.openDate());
+        round.setLockDeadline(window.lockDeadline());
+        round.setEndDate(window.endDate());
+
+        // Keep the invariant the whole calendar rests on: a fixture's date is
+        // its round's lock deadline. Leaving the fixtures dated next Saturday
+        // while the round is being played today would put the two out of step.
+        List<Fixture> fixtures = fixtureDAO.findByRoundId(roundId);
+        int fixturesMoved = moveFixturesTo(fixtures, matchDayOf(round), window.lockDeadline().toLocalTime());
+
+        Fixture sample = fixtures.isEmpty() ? null : fixtures.get(0);
+        return MatchDayResponseDTO.builder()
+                .roundId(roundId)
+                .matchdayNumber(sample == null ? null : sample.getMatchdayNumber())
+                .stage(sample == null ? null : sample.getStage())
+                .stageLabel(sample == null ? null : stageLabel(sample.getStage()))
+                .matchDay(matchDayOf(round))
+                .kickoff(window.lockDeadline().toLocalTime())
+                .fixturesMoved(fixturesMoved)
+                .build();
+    }
+
+    /** Re-dates every fixture of a round, leaving status and simulationDate alone. */
+    private int moveFixturesTo(List<Fixture> fixtures, LocalDate matchDay) {
+        return moveFixturesTo(fixtures, matchDay, MatchdayCalendar.DEFAULT_KICKOFF);
+    }
+
+    private int moveFixturesTo(List<Fixture> fixtures, LocalDate matchDay, LocalTime kickoff) {
+        int moved = 0;
+        for (Fixture fixture : fixtures) {
+            // Reloaded so the write carries the fixture's current status and
+            // simulationDate rather than a stale copy -- updateFixture writes
+            // all four columns, so only date and time must actually change.
+            Optional<Fixture> stored = fixtureDAO.findById(fixture.getFixtureId());
+            if (stored.isEmpty()) {
+                continue;
+            }
+            Fixture toMove = stored.get();
+            toMove.setFixtureDate(matchDay);
+            toMove.setFixtureTime(kickoff);
+            if (fixtureDAO.updateFixture(toMove)) {
+                moved++;
+            }
+        }
+        return moved;
+    }
+
+    /** The tournament a round's fixtures belong to, or null for a non-tournament round. */
+    private UUID tournamentIdOf(List<Fixture> fixtures) {
+        for (Fixture fixture : fixtures) {
+            if (fixture.getTournamentId() != null) {
+                return fixture.getTournamentId();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * The round played immediately before (or after) {@code round} within the
+     * same tournament, ordered by lock deadline -- the kickoff, and so the only
+     * ordering a manager can see. Null when there is nothing on that side, or
+     * when the round belongs to no tournament at all.
+     */
+    private FantasyRound neighbourRound(UUID tournamentId, FantasyRound round, boolean before) {
+        if (tournamentId == null) {
+            return null;
+        }
+
+        Set<UUID> roundIds = new HashSet<>();
+        for (Fixture fixture : fixtureDAO.findByTournamentId(tournamentId)) {
+            if (fixture.getRoundId() != null && !fixture.getRoundId().equals(round.getRoundId())) {
+                roundIds.add(fixture.getRoundId());
+            }
+        }
+
+        FantasyRound best = null;
+        for (UUID roundId : roundIds) {
+            Optional<FantasyRound> candidate = fantasyRoundDAO.getRoundById(roundId);
+            if (candidate.isEmpty() || candidate.get().getLockDeadline() == null) {
+                continue;
+            }
+            LocalDateTime deadline = candidate.get().getLockDeadline();
+
+            if (before) {
+                if (deadline.isBefore(round.getLockDeadline())
+                        && (best == null || deadline.isAfter(best.getLockDeadline()))) {
+                    best = candidate.get();
+                }
+            } else {
+                if (deadline.isAfter(round.getLockDeadline())
+                        && (best == null || deadline.isBefore(best.getLockDeadline()))) {
+                    best = candidate.get();
+                }
+            }
+        }
+        return best;
+    }
+
+    /** When a round's window closes; endDate, falling back to the lock deadline. */
+    private LocalDateTime roundCloses(FantasyRound round) {
+        return round.getEndDate() != null ? round.getEndDate() : round.getLockDeadline();
+    }
+
+    /** The manager-facing name of a stage; null-safe, and the one place it is read. */
+    private String stageLabel(TournamentStage stage) {
+        return stage == null ? null : stage.getLabel();
+    }
+
+    // ------------------------------------------------------------------
     // Settings
     // ------------------------------------------------------------------
 
@@ -956,7 +1385,63 @@ public class TournamentServiceImpl implements TournamentService {
     // Authorisation
     // ------------------------------------------------------------------
 
-    private void requireManagerOrAdmin(UUID actorUserId, League league) {
+    /**
+     * Who may start a league. The league manager may always start their own league,
+     * whatever its type. An administrator runs the competition proper, so they may
+     * start a PUBLIC league -- but a PRIVATE league is a group of friends around
+     * their own manager, and it is that manager's call when it kicks off. Admins
+     * keep full VIEW access to private leagues (see LeagueVisibility.canView); only
+     * starting one is withheld.
+     *
+     * <p>startLeague is the only caller, so this stays a single start-specific check
+     * rather than a shared manager-or-admin predicate that would quietly acquire the
+     * league-type rule for some other call site.
+     */
+    private void requireCanStartLeague(UUID actorUserId, League league) {
+        if (actorUserId == null) {
+            throw new ValidationException("An authenticated user is required.");
+        }
+
+        User user = userDAO.getUserById(actorUserId)
+                .orElseThrow(() -> new AuthorisationException("An authenticated user is required."));
+
+        // League type decides first, deliberately. A public league has no
+        // manager -- it is run by the administrators -- so checking
+        // managerUserId before the type would let a legacy public league that
+        // still carries one be started by that non-admin, which is exactly the
+        // rule this method exists to enforce.
+        if (league.getLeagueType() == LeagueType.PUBLIC) {
+            if (user.getRole() == UserRole.ADMINISTRATOR) {
+                return;
+            }
+            throw new AuthorisationException(
+                    "Public leagues are run by administrators; only an administrator can start one.");
+        }
+
+        if (actorUserId.equals(league.getManagerUserId())) {
+            return;
+        }
+        if (user.getRole() == UserRole.ADMINISTRATOR) {
+            throw new AuthorisationException(
+                    "Administrators can only start public leagues. A private league is started by its own manager.");
+        }
+        throw new AuthorisationException("Only the league manager can start this league.");
+    }
+
+    /**
+     * Who may move a league's match days. The one expression of the rule, in
+     * one method, called from one place -- this codebase has broken repeatedly
+     * by inlining copies of a league rule until the copies disagreed (see
+     * {@link LeagueVisibility} and CLAUDE.md). {@code TournamentServlet}'s
+     * {@code canEditMatchDays} mirrors it for display only; the decision is
+     * here.
+     *
+     * <p>An administrator runs the competition and may reschedule any league. A
+     * PRIVATE league is a group of friends around their own manager, so that
+     * manager may move their own match days. A PUBLIC league is the competition
+     * proper: its calendar is not a manager's to move, even their own.
+     */
+    private void requireMatchDayEditor(UUID actorUserId, League league) {
         if (actorUserId == null) {
             throw new ValidationException("An authenticated user is required.");
         }
@@ -967,10 +1452,16 @@ public class TournamentServiceImpl implements TournamentService {
         if (user.getRole() == UserRole.ADMINISTRATOR) {
             return;
         }
-        if (actorUserId.equals(league.getManagerUserId())) {
+        if (league.getLeagueType() == LeagueType.PRIVATE
+                && actorUserId.equals(league.getManagerUserId())) {
             return;
         }
-        throw new AuthorisationException("Only the league manager or an administrator can start this league.");
+        if (league.getLeagueType() == LeagueType.PUBLIC) {
+            throw new AuthorisationException(
+                    "Only an administrator can reschedule a public league's match days.");
+        }
+        throw new AuthorisationException(
+                "Only this league's own manager can reschedule its match days.");
     }
 
     private void requireAdmin(UUID actorUserId) {

@@ -478,9 +478,8 @@ VALUES (UUID(), @publicLeague, @johnId, @team1),
        (UUID(), @privateLeague, @johnId, @team1),
        (UUID(), @privateLeague, @mikeId, @team3);
 
-UPDATE `league`
-SET manager_user_id = @johnId
-WHERE leagueId = @publicLeague;
+/* Only a PRIVATE league has a manager. A public league is run by the
+   administrators, so manager_user_id stays NULL on Global Fantasy Rugby. */
 UPDATE `league`
 SET manager_user_id = @sarahId
 WHERE leagueId = @privateLeague;
@@ -1111,9 +1110,9 @@ SET @tSulaimaan = UUID();
 
 INSERT INTO `fantasyTeam` (teamId, owner_user_id, teamName, remainingBudget, isValid)
 VALUES
-    (@tUser1,  @uUser1,  'User One XV',   196.00, FALSE),
-    (@tUser2,  @uUser2,  'User Two XV',   196.00, FALSE),
-    (@tUser3,  @uUser3,  'User Three XV', 196.00, FALSE),
+    (@tUser1,  @uUser1,  'Wanderers XV',   196.00, FALSE),
+    (@tUser2,  @uUser2,  'Kingsmead XV',   196.00, FALSE),
+    (@tUser3,  @uUser3,  'Ellis Park XV', 196.00, FALSE),
     (@tChristan,  @uChristan,  'Christan XV',  196.00, FALSE),
     (@tLindsay,   @uLindsay,   'Lindsay XV',   196.00, FALSE),
     (@tJaunte,    @uJaunte,    'Jaunte XV',    196.00, FALSE),
@@ -1248,10 +1247,11 @@ VALUES
     (UUID(), @lgTest, @uJarryd,    @tJarryd),
     (UUID(), @lgTest, @uSulaimaan, @tSulaimaan);
 
-/* Managers can only be assigned once the membership exists (trg_league_manager_update). */
-UPDATE `league` SET manager_user_id = @uChristan WHERE leagueId = @lgShowcase;
-UPDATE `league` SET manager_user_id = @uJarryd   WHERE leagueId = @lgSunrise;
-UPDATE `league` SET manager_user_id = @uTimothy  WHERE leagueId = @lgTest;
+/* Fantasy TryTons Showcase, TryTons Sunrise Sevens and Cape Town Classic are
+   all PUBLIC, so none of them gets a manager: public leagues are run by the
+   administrators and have no manager who plays in them. (Managers can only be
+   assigned once the membership exists -- trg_league_manager_update -- which is
+   why any private-league assignment has to come after its memberships.) */
 
 /* Showcase fixtures: 8-team round-robin.
    T1=Christan T2=Lindsay T3=Jaunte T4=Magdeli T5=Sameer T6=Timothy T7=Jarryd T8=Sulaimaan */
@@ -1547,7 +1547,7 @@ WHERE lg.leagueId IS NOT NULL
 --     succeeds for leagues you actually joined above.
 UPDATE `league` l
 SET l.manager_user_id = @meId
-WHERE l.leagueName IN ('Highveld Heroes', 'Office Rugby Pool')
+WHERE l.leagueName = 'Office Rugby Pool'   -- PRIVATE; Highveld Heroes is public and has no manager
   AND l.manager_user_id IS NULL
   AND @meId IS NOT NULL
   AND EXISTS (SELECT 1 FROM `leagueMembership` m
@@ -1726,7 +1726,7 @@ VALUES
     (UUID(), @lgLegends, @cuMike,  @ctMike),
     (UUID(), @lgLegends, @cuEmma,  @ctEmma);
 
-UPDATE `league` SET manager_user_id = @cuJohn  WHERE leagueId = @lgAutumn;
+/* Autumn Classic 2025 is PUBLIC and therefore has no manager. */
 UPDATE `league` SET manager_user_id = @cuSarah WHERE leagueId = @lgLegends;
 
 SET @lbAutumn  = UUID();
