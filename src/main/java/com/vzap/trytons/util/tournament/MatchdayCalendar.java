@@ -12,11 +12,12 @@ import java.util.Set;
 /**
  * The one place that decides when a fantasy round is played.
  *
- * <p>Rugby is played midweek and at the weekend, so a matchday is always a
- * Wednesday, a Saturday or a Sunday, kicking off at 15:00. Every generated
- * round and every hand-edited round is measured against
- * {@link #isMatchDay(LocalDate)}, so the generate path and the edit path
- * cannot disagree about what a legal matchday is.
+ * <p>Rugby is played midweek and at the weekend, so a matchday is a Monday,
+ * Wednesday, Friday, Saturday or Sunday. Generated rounds kick off at
+ * {@link #DEFAULT_KICKOFF}; a round's own kickoff can then be moved by whoever
+ * runs the league. Every generated round and every hand-edited round is
+ * measured against {@link #isMatchDay(LocalDate)}, so the generate path and the
+ * edit path cannot disagree about what a legal matchday is.
  *
  * <p>Pure and side-effect free, in the same spirit as {@link PoolAllocator}
  * and {@link KnockoutBracket}: the test suite has no database, so all of the
@@ -41,11 +42,20 @@ import java.util.Set;
 public final class MatchdayCalendar {
 
     /** The days rugby is played on. */
-    public static final Set<DayOfWeek> MATCH_DAYS =
-            EnumSet.of(DayOfWeek.WEDNESDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY);
+    public static final Set<DayOfWeek> MATCH_DAYS = EnumSet.of(
+            DayOfWeek.MONDAY,
+            DayOfWeek.WEDNESDAY,
+            DayOfWeek.FRIDAY,
+            DayOfWeek.SATURDAY,
+            DayOfWeek.SUNDAY);
 
-    /** Every generated fixture kicks off at the same notional time. */
-    public static final LocalTime KICKOFF = LocalTime.of(15, 0);
+    /**
+     * What a generated fixture kicks off at until somebody moves it. A round's
+     * actual kickoff is whatever its {@code lockDeadline} says, which is why
+     * every read of a fixture's time goes through the round rather than this
+     * constant.
+     */
+    public static final LocalTime DEFAULT_KICKOFF = LocalTime.of(15, 0);
 
     /** The last instant of a matchday; {@code endDate} of that matchday's window. */
     private static final LocalTime DAY_END = LocalTime.of(23, 59, 59);
@@ -70,11 +80,17 @@ public final class MatchdayCalendar {
      * kill.
      */
     public static LocalDate firstMatchDayAfter(LocalDateTime from) {
+        return firstMatchDayAfter(from, DEFAULT_KICKOFF);
+    }
+
+    /** As {@link #firstMatchDayAfter(LocalDateTime)}, for a chosen kickoff. */
+    public static LocalDate firstMatchDayAfter(LocalDateTime from, LocalTime kickoff) {
         if (from == null) {
             throw new IllegalArgumentException("An anchor is required to find the next matchday");
         }
+        LocalTime start = kickoff == null ? DEFAULT_KICKOFF : kickoff;
         LocalDate day = from.toLocalDate();
-        while (!isMatchDay(day) || !day.atTime(KICKOFF).isAfter(from)) {
+        while (!isMatchDay(day) || !day.atTime(start).isAfter(from)) {
             day = day.plusDays(1);
         }
         return day;
@@ -120,7 +136,7 @@ public final class MatchdayCalendar {
         LocalDateTime openDate = from;
 
         for (int i = 0; i < count; i++) {
-            LocalDateTime lockDeadline = matchDay.atTime(KICKOFF);
+            LocalDateTime lockDeadline = matchDay.atTime(DEFAULT_KICKOFF);
             LocalDateTime endDate = matchDay.atTime(DAY_END);
 
             windows.add(new Window(matchDay, openDate, lockDeadline, endDate));
@@ -144,10 +160,20 @@ public final class MatchdayCalendar {
      * than its own opening still satisfies {@code chk_fantasyRound_dates}.
      */
     public static Window windowFor(LocalDate matchDay, LocalDateTime openDate) {
+        return windowFor(matchDay, openDate, DEFAULT_KICKOFF);
+    }
+
+    /**
+     * As {@link #windowFor(LocalDate, LocalDateTime)}, for a chosen kickoff.
+     * The kickoff becomes the round's {@code lockDeadline}, which is what every
+     * fixture in the round reads its date and time from -- so moving the time
+     * here moves the whole round, and the two can never drift apart.
+     */
+    public static Window windowFor(LocalDate matchDay, LocalDateTime openDate, LocalTime kickoff) {
         if (matchDay == null) {
             throw new IllegalArgumentException("A matchday is required to build a window");
         }
-        LocalDateTime lockDeadline = matchDay.atTime(KICKOFF);
+        LocalDateTime lockDeadline = matchDay.atTime(kickoff == null ? DEFAULT_KICKOFF : kickoff);
         LocalDateTime endDate = matchDay.atTime(DAY_END);
         LocalDateTime open = (openDate == null || openDate.isAfter(lockDeadline)) ? lockDeadline : openDate;
         return new Window(matchDay, open, lockDeadline, endDate);

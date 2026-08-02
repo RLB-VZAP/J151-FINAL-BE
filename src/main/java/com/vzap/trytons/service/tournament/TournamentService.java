@@ -8,6 +8,7 @@ import com.vzap.trytons.dto.tournament.TournamentSettingsDTO;
 import com.vzap.trytons.dto.tournament.MatchDayResponseDTO;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -57,7 +58,8 @@ public interface TournamentService {
      * still in the future, and the move keeps the tournament in the order it
      * was drawn.
      */
-    MatchDayResponseDTO updateMatchDay(UUID actorUserId, UUID leagueId, UUID roundId, LocalDate matchDay);
+    MatchDayResponseDTO updateMatchDay(UUID actorUserId, UUID leagueId, UUID roundId,
+                                       LocalDate matchDay, LocalTime kickoff);
 
     /**
      * The administrator "play this round now" override: drags a round's window

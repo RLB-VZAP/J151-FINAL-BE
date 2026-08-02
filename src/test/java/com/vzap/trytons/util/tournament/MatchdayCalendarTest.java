@@ -21,7 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>These tests pin the replacement. The rules being protected are:
  * <ul>
- *   <li>a matchday is only ever a Wednesday, Saturday or Sunday;</li>
+ *   <li>a matchday is only ever a Monday, Wednesday, Friday, Saturday or
+ *       Sunday -- never a Tuesday or a Thursday;</li>
  *   <li>a window's kickoff is strictly after the anchor it was scheduled
  *       from -- never on it, never before it;</li>
  *   <li>every window satisfies both halves of {@code chk_fantasyRound_dates},
@@ -33,30 +34,46 @@ class MatchdayCalendarTest {
 
     // 2026-08-03 is a Monday, which fixes the weekday of every date below.
     private static final LocalDate MONDAY = LocalDate.of(2026, 8, 3);
+    private static final LocalDate TUESDAY = LocalDate.of(2026, 8, 4);
     private static final LocalDate WEDNESDAY = LocalDate.of(2026, 8, 5);
+    private static final LocalDate THURSDAY = LocalDate.of(2026, 8, 6);
+    private static final LocalDate FRIDAY = LocalDate.of(2026, 8, 7);
     private static final LocalDate SATURDAY = LocalDate.of(2026, 8, 8);
     private static final LocalDate SUNDAY = LocalDate.of(2026, 8, 9);
 
     @Test
-    @DisplayName("Only Wednesday, Saturday and Sunday are match days")
-    void matchDaysAreWednesdaySaturdaySunday() {
+    @DisplayName("Match days are Mon, Wed, Fri, Sat, Sun -- and only those")
+    void matchDaysAreTheRugbyWeek() {
         assertEquals(DayOfWeek.MONDAY, MONDAY.getDayOfWeek(), "test fixture dates have drifted");
 
+        assertTrue(MatchdayCalendar.isMatchDay(MONDAY));
         assertTrue(MatchdayCalendar.isMatchDay(WEDNESDAY));
+        assertTrue(MatchdayCalendar.isMatchDay(FRIDAY));
         assertTrue(MatchdayCalendar.isMatchDay(SATURDAY));
         assertTrue(MatchdayCalendar.isMatchDay(SUNDAY));
 
-        assertFalse(MatchdayCalendar.isMatchDay(MONDAY));
-        assertFalse(MatchdayCalendar.isMatchDay(MONDAY.plusDays(1)));   // Tuesday
-        assertFalse(MatchdayCalendar.isMatchDay(MONDAY.plusDays(3)));   // Thursday
-        assertFalse(MatchdayCalendar.isMatchDay(MONDAY.plusDays(4)));   // Friday
+        // The only two days that are not match days.
+        assertFalse(MatchdayCalendar.isMatchDay(TUESDAY));
+        assertFalse(MatchdayCalendar.isMatchDay(THURSDAY));
         assertFalse(MatchdayCalendar.isMatchDay(null));
     }
 
     @Test
-    @DisplayName("A Monday anchor lands on the Wednesday")
-    void mondayAnchorLandsOnWednesday() {
-        assertEquals(WEDNESDAY, MatchdayCalendar.firstMatchDayAfter(MONDAY.atTime(9, 0)));
+    @DisplayName("A Monday morning anchor still plays that Monday")
+    void mondayMorningKeepsTheSameDay() {
+        assertEquals(MONDAY, MatchdayCalendar.firstMatchDayAfter(MONDAY.atTime(9, 0)));
+    }
+
+    @Test
+    @DisplayName("A Tuesday anchor rolls on to the Wednesday")
+    void tuesdayAnchorLandsOnWednesday() {
+        assertEquals(WEDNESDAY, MatchdayCalendar.firstMatchDayAfter(TUESDAY.atTime(9, 0)));
+    }
+
+    @Test
+    @DisplayName("A Thursday anchor rolls on to the Friday")
+    void thursdayAnchorLandsOnFriday() {
+        assertEquals(FRIDAY, MatchdayCalendar.firstMatchDayAfter(THURSDAY.atTime(9, 0)));
     }
 
     @Test
@@ -66,16 +83,16 @@ class MatchdayCalendarTest {
     }
 
     @Test
-    @DisplayName("A Wednesday anchor after kickoff rolls on to the Saturday")
-    void wednesdayAfterKickoffRollsToSaturday() {
-        assertEquals(SATURDAY, MatchdayCalendar.firstMatchDayAfter(WEDNESDAY.atTime(16, 0)));
+    @DisplayName("A Wednesday anchor after kickoff rolls on to the Friday")
+    void wednesdayAfterKickoffRollsToFriday() {
+        assertEquals(FRIDAY, MatchdayCalendar.firstMatchDayAfter(WEDNESDAY.atTime(16, 0)));
     }
 
     @Test
     @DisplayName("Kickoff exactly on the anchor is not strictly after it")
     void kickoffOnTheAnchorRollsForward() {
-        assertEquals(SATURDAY,
-                MatchdayCalendar.firstMatchDayAfter(WEDNESDAY.atTime(MatchdayCalendar.KICKOFF)));
+        assertEquals(FRIDAY,
+                MatchdayCalendar.firstMatchDayAfter(WEDNESDAY.atTime(MatchdayCalendar.DEFAULT_KICKOFF)));
     }
 
     @Test
@@ -85,30 +102,30 @@ class MatchdayCalendarTest {
     }
 
     @Test
-    @DisplayName("The matchday after a Sunday is the following Wednesday")
-    void sundayIsFollowedByWednesday() {
-        assertEquals(WEDNESDAY.plusWeeks(1), MatchdayCalendar.nextMatchDayAfter(SUNDAY));
+    @DisplayName("The matchday after a Sunday is the following Monday")
+    void sundayIsFollowedByMonday() {
+        assertEquals(MONDAY.plusWeeks(1), MatchdayCalendar.nextMatchDayAfter(SUNDAY));
     }
 
     @Test
-    @DisplayName("A Sunday evening anchor rolls on to the following Wednesday")
-    void sundayEveningRollsToWednesday() {
-        assertEquals(WEDNESDAY.plusWeeks(1), MatchdayCalendar.firstMatchDayAfter(SUNDAY.atTime(20, 0)));
+    @DisplayName("A Sunday evening anchor rolls on to the following Monday")
+    void sundayEveningRollsToMonday() {
+        assertEquals(MONDAY.plusWeeks(1), MatchdayCalendar.firstMatchDayAfter(SUNDAY.atTime(20, 0)));
     }
 
     @Test
-    @DisplayName("Six windows follow Wed, Sat, Sun, Wed, Sat, Sun")
+    @DisplayName("Six windows follow Mon, Wed, Fri, Sat, Sun, Mon")
     void sixWindowsFollowTheRugbyWeek() {
         List<MatchdayCalendar.Window> windows = MatchdayCalendar.schedule(MONDAY.atTime(9, 0), 6);
 
         assertEquals(6, windows.size());
         assertEquals(List.of(
+                        MONDAY,
                         WEDNESDAY,
+                        FRIDAY,
                         SATURDAY,
                         SUNDAY,
-                        WEDNESDAY.plusWeeks(1),
-                        SATURDAY.plusWeeks(1),
-                        SUNDAY.plusWeeks(1)),
+                        MONDAY.plusWeeks(1)),
                 windows.stream().map(MatchdayCalendar.Window::matchDay).toList());
     }
 
@@ -150,7 +167,7 @@ class MatchdayCalendarTest {
     @DisplayName("Every window kicks off at 15:00 on its own matchday")
     void lockDeadlineIsKickoffOnTheMatchday() {
         for (MatchdayCalendar.Window window : MatchdayCalendar.schedule(MONDAY.atTime(9, 0), 8)) {
-            assertEquals(window.matchDay().atTime(MatchdayCalendar.KICKOFF), window.lockDeadline());
+            assertEquals(window.matchDay().atTime(MatchdayCalendar.DEFAULT_KICKOFF), window.lockDeadline());
             assertEquals(window.matchDay(), window.lockDeadline().toLocalDate());
             assertTrue(MatchdayCalendar.isMatchDay(window.matchDay()));
         }
@@ -176,14 +193,51 @@ class MatchdayCalendarTest {
     }
 
     @Test
+    @DisplayName("A chosen kickoff becomes the round's lock deadline")
+    void windowForHonoursAChosenKickoff() {
+        MatchdayCalendar.Window window =
+                MatchdayCalendar.windowFor(SATURDAY, SATURDAY.atTime(8, 0), LocalTime.of(19, 30));
+
+        // The kickoff IS the lock deadline: every fixture in the round reads its
+        // date and time from this one timestamp, so the two cannot drift apart.
+        assertEquals(SATURDAY.atTime(19, 30), window.lockDeadline());
+        assertEquals(SATURDAY, window.matchDay());
+
+        // chk_fantasyRound_dates still holds at the new time.
+        assertFalse(window.lockDeadline().isBefore(window.openDate()));
+        assertFalse(window.endDate().isBefore(window.lockDeadline()));
+    }
+
+    @Test
+    @DisplayName("A late kickoff still clamps an opening that would follow it")
+    void windowForClampsAnOpeningAfterAChosenKickoff() {
+        MatchdayCalendar.Window window =
+                MatchdayCalendar.windowFor(SATURDAY, SATURDAY.atTime(23, 0), LocalTime.of(11, 0));
+
+        assertEquals(SATURDAY.atTime(11, 0), window.lockDeadline());
+        assertEquals(SATURDAY.atTime(11, 0), window.openDate(), "an opening after kickoff must clamp to it");
+        assertFalse(window.lockDeadline().isBefore(window.openDate()));
+    }
+
+    @Test
+    @DisplayName("A null kickoff falls back to the default")
+    void windowForFallsBackToTheDefaultKickoff() {
+        MatchdayCalendar.Window window = MatchdayCalendar.windowFor(SATURDAY, SATURDAY.atTime(8, 0), null);
+        assertEquals(SATURDAY.atTime(MatchdayCalendar.DEFAULT_KICKOFF), window.lockDeadline());
+    }
+
+    @Test
     @DisplayName("A run over the new year keeps its ordering")
     void aRunAcrossTheNewYearKeepsOrdering() {
-        // 2026-12-28 is a Monday, so this run crosses into 2027.
+        // 2026-12-28 is a Monday, so this run crosses into 2027. Monday is a
+        // match day and 09:00 is before kickoff, so the run opens that same day:
+        // Mon 28 Dec, Wed 30 Dec, Fri 1 Jan, Sat 2 Jan, Sun 3 Jan, Mon 4 Jan.
         List<MatchdayCalendar.Window> windows =
                 MatchdayCalendar.schedule(LocalDate.of(2026, 12, 28).atTime(9, 0), 6);
 
-        assertEquals(LocalDate.of(2026, 12, 30), windows.get(0).matchDay());
-        assertEquals(LocalDate.of(2027, 1, 3), windows.get(2).matchDay());
+        assertEquals(LocalDate.of(2026, 12, 28), windows.get(0).matchDay());
+        assertEquals(LocalDate.of(2027, 1, 1), windows.get(2).matchDay());
+        assertEquals(LocalDate.of(2027, 1, 4), windows.get(5).matchDay());
 
         for (int i = 1; i < windows.size(); i++) {
             assertTrue(windows.get(i).matchDay().isAfter(windows.get(i - 1).matchDay()),
@@ -201,7 +255,7 @@ class MatchdayCalendarTest {
         MatchdayCalendar.Window window =
                 MatchdayCalendar.windowFor(SATURDAY, SUNDAY.atTime(9, 0));
 
-        assertEquals(SATURDAY.atTime(MatchdayCalendar.KICKOFF), window.openDate());
+        assertEquals(SATURDAY.atTime(MatchdayCalendar.DEFAULT_KICKOFF), window.openDate());
         assertFalse(window.lockDeadline().isBefore(window.openDate()));
         assertFalse(window.endDate().isBefore(window.lockDeadline()));
     }
@@ -213,6 +267,6 @@ class MatchdayCalendarTest {
         MatchdayCalendar.Window window = MatchdayCalendar.windowFor(WEDNESDAY, opened);
 
         assertEquals(opened, window.openDate());
-        assertEquals(WEDNESDAY.atTime(MatchdayCalendar.KICKOFF), window.lockDeadline());
+        assertEquals(WEDNESDAY.atTime(MatchdayCalendar.DEFAULT_KICKOFF), window.lockDeadline());
     }
 }

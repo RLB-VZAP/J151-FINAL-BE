@@ -437,6 +437,11 @@ public class TournamentServiceImpl implements TournamentService {
         return round.getLockDeadline().toLocalDate();
     }
 
+    /** The kickoff a round is played at -- the time half of the same timestamp. */
+    private LocalTime matchDayTimeOf(FantasyRound round) {
+        return round.getLockDeadline().toLocalTime();
+    }
+
     /**
      * The anchor for a tournament's next matchday: the moment its latest
      * scheduled round closes, so each new matchday lands strictly after the
@@ -499,7 +504,7 @@ public class TournamentServiceImpl implements TournamentService {
                 // The round's lock deadline is the kickoff, so it -- not the
                 // opening of the transfer window -- is the fixture's date.
                 .fixtureDate(matchDayOf(round))
-                .fixtureTime(MatchdayCalendar.KICKOFF)
+                .fixtureTime(MatchdayCalendar.DEFAULT_KICKOFF)
                 .status(FixtureStatus.UPCOMING)
                 .tournamentId(tournament.getTournamentId())
                 .poolId(poolId)
@@ -1030,7 +1035,8 @@ public class TournamentServiceImpl implements TournamentService {
     // ------------------------------------------------------------------
 
     @Override
-    public MatchDayResponseDTO updateMatchDay(UUID actorUserId, UUID leagueId, UUID roundId, LocalDate matchDay) {
+    public MatchDayResponseDTO updateMatchDay(UUID actorUserId, UUID leagueId, UUID roundId,
+                                              LocalDate matchDay, LocalTime requestedKickoff) {
         // 1. Nothing may be missing. Checked before anything is read so a
         //    malformed request never reaches the database.
         if (actorUserId == null || leagueId == null || roundId == null || matchDay == null) {
@@ -1082,12 +1088,19 @@ public class TournamentServiceImpl implements TournamentService {
         // 7. The same matchday predicate the generator uses, so a date one
         //    accepts the other can never reject.
         if (!MatchdayCalendar.isMatchDay(matchDay)) {
-            throw new ValidationException("Match days must fall on a Wednesday, Saturday or Sunday.");
+            throw new ValidationException(
+                    "Match days must fall on a Monday, Wednesday, Friday, Saturday or Sunday.");
         }
 
-        // 8. Still in the future.
-        LocalDateTime kickoff = matchDay.atTime(MatchdayCalendar.KICKOFF);
-        if (!MatchDayEditRules.isInFuture(matchDay, LocalDateTime.now())) {
+        // 7b. A round keeps its current kickoff unless a new one is given.
+        LocalTime newKickoff = requestedKickoff != null
+                ? requestedKickoff
+                : matchDayTimeOf(round);
+
+        // 8. Still in the future -- measured at the chosen kickoff, so moving a
+        //    round to later today is legal while moving it to an hour ago is not.
+        LocalDateTime kickoff = matchDay.atTime(newKickoff);
+        if (!kickoff.isAfter(LocalDateTime.now())) {
             throw new ValidationException("A match day must be in the future.");
         }
 
@@ -1109,7 +1122,7 @@ public class TournamentServiceImpl implements TournamentService {
         // intermediate state. The transfer window opens where the previous
         // matchday closed, exactly as MatchdayCalendar.schedule tiles them.
         LocalDateTime openDate = previousEnd != null ? previousEnd.plusSeconds(1) : round.getOpenDate();
-        MatchdayCalendar.Window window = MatchdayCalendar.windowFor(matchDay, openDate);
+        MatchdayCalendar.Window window = MatchdayCalendar.windowFor(matchDay, openDate, newKickoff);
 
         if (!fantasyRoundDAO.updateRoundSchedule(roundId,
                 window.openDate(), window.lockDeadline(), window.endDate())) {
@@ -1122,7 +1135,7 @@ public class TournamentServiceImpl implements TournamentService {
         round.setLockDeadline(window.lockDeadline());
         round.setEndDate(window.endDate());
 
-        int fixturesMoved = moveFixturesTo(fixtures, matchDayOf(round));
+        int fixturesMoved = moveFixturesTo(fixtures, matchDayOf(round), matchDayTimeOf(round));
 
         Fixture sample = fixtures.get(0);
         return MatchDayResponseDTO.builder()
@@ -1131,7 +1144,7 @@ public class TournamentServiceImpl implements TournamentService {
                 .stage(sample.getStage())
                 .stageLabel(stageLabel(sample.getStage()))
                 .matchDay(matchDayOf(round))
-                .kickoff(MatchdayCalendar.KICKOFF)
+                .kickoff(matchDayTimeOf(round))
                 .fixturesMoved(fixturesMoved)
                 .build();
     }
@@ -1200,7 +1213,7 @@ public class TournamentServiceImpl implements TournamentService {
 
     /** Re-dates every fixture of a round, leaving status and simulationDate alone. */
     private int moveFixturesTo(List<Fixture> fixtures, LocalDate matchDay) {
-        return moveFixturesTo(fixtures, matchDay, MatchdayCalendar.KICKOFF);
+        return moveFixturesTo(fixtures, matchDay, MatchdayCalendar.DEFAULT_KICKOFF);
     }
 
     private int moveFixturesTo(List<Fixture> fixtures, LocalDate matchDay, LocalTime kickoff) {

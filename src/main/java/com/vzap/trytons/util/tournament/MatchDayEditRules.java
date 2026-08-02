@@ -27,7 +27,7 @@ public final class MatchDayEditRules {
         if (matchDay == null || now == null) {
             return false;
         }
-        return matchDay.atTime(MatchdayCalendar.KICKOFF).isAfter(now);
+        return matchDay.atTime(MatchdayCalendar.DEFAULT_KICKOFF).isAfter(now);
     }
 
     /**

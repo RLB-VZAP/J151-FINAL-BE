@@ -20,6 +20,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -99,8 +100,9 @@ public class TournamentResource {
                                    @PathParam("roundId") UUID roundId,
                                    MatchDayUpdateRequestDTO request) {
         LocalDate matchDay = request == null ? null : request.getMatchDay();
+        LocalTime kickoff = request == null ? null : request.getKickoff();
         MatchDayResponseDTO moved =
-                tournamentService.updateMatchDay(getCurrentUserId(), leagueId, roundId, matchDay);
+                tournamentService.updateMatchDay(getCurrentUserId(), leagueId, roundId, matchDay, kickoff);
         return Response.ok(moved).build();
     }
 
